@@ -1,0 +1,18 @@
+# ─── Garment Strike – AI Supply Chain Hackathon ───────────────────────────────
+# Python 3.12+
+
+# LLM routing (supports Gemini, OpenAI, Anthropic, etc.)
+litellm>=1.40.0
+
+# Data validation & JSON output schema enforcement
+pydantic>=2.7.0
+
+# Rich terminal dashboard
+rich>=13.7.0
+
+# Environment variable management
+python-dotenv>=1.0.1
+
+# Testing
+pytest>=8.2.0
+pytest-mock>=3.14.0

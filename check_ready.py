@@ -1,0 +1,173 @@
+"""
+check_ready.py
+--------------
+Pre-hackathon readiness checker for Garment Strike.
+
+Checks:
+  1) Gemini API key presence
+  2) Ollama local availability (localhost:11434)
+  3) Agent folder validation and whether each team would trigger
+     auto-generated board layout fallback.
+
+Usage:
+  python check_ready.py
+  python check_ready.py --agents-dir agentes
+"""
+from __future__ import annotations
+
+import argparse
+import socket
+from pathlib import Path
+
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+from core.engine import AlmacenParser
+
+console = Console()
+
+
+def check_gemini_key() -> tuple[bool, str]:
+    import os
+
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if key:
+        return True, "GEMINI_API_KEY configurada"
+    return False, "Falta GEMINI_API_KEY (crear .env o exportar variable)"
+
+
+def check_ollama_running(host: str = "127.0.0.1", port: int = 11434) -> tuple[bool, str]:
+    try:
+        with socket.create_connection((host, port), timeout=1.2):
+            return True, f"Ollama activo en {host}:{port}"
+    except OSError as exc:
+        return False, f"Ollama no responde en {host}:{port} ({exc})"
+
+
+def validate_agents(agents_dir: Path) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+
+    if not agents_dir.exists():
+        return [
+            {
+                "equipo": "(global)",
+                "estado": "ERROR",
+                "detalle": f"Carpeta no encontrada: {agents_dir}",
+            }
+        ]
+
+    for team_dir in sorted(agents_dir.iterdir()):
+        if not team_dir.is_dir():
+            continue
+
+        team = team_dir.name
+        agent_md = team_dir / "agent.md"
+        almacen_files = sorted(team_dir.glob("almacen_*.md"))
+
+        if not agent_md.exists():
+            rows.append(
+                {
+                    "equipo": team,
+                    "estado": "WARN",
+                    "detalle": "Falta agent.md",
+                }
+            )
+            continue
+
+        if not almacen_files:
+            rows.append(
+                {
+                    "equipo": team,
+                    "estado": "WARN",
+                    "detalle": "Falta almacen_*.md (se usaria auto-generacion)",
+                }
+            )
+            continue
+
+        ships, used_fallback, reason = AlmacenParser.parse_with_status(
+            almacen_files[0], emit_warning=False
+        )
+        _ = ships  # explicit: parse validates board when possible
+
+        if used_fallback:
+            rows.append(
+                {
+                    "equipo": team,
+                    "estado": "WARN",
+                    "detalle": f"Auto-generacion requerida: {reason}",
+                }
+            )
+        else:
+            rows.append(
+                {
+                    "equipo": team,
+                    "estado": "OK",
+                    "detalle": "Archivo almacen valido",
+                }
+            )
+
+    if not rows:
+        rows.append(
+            {
+                "equipo": "(global)",
+                "estado": "WARN",
+                "detalle": "No se encontraron subcarpetas de equipos en /agentes",
+            }
+        )
+
+    return rows
+
+
+def render_status(label: str, ok: bool, detail: str) -> None:
+    color = "green" if ok else "red"
+    icon = "OK" if ok else "FAIL"
+    console.print(f"[{color}]{icon}[/{color}] [bold]{label}[/bold] - {detail}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Garment Strike readiness checker")
+    parser.add_argument("--agents-dir", default="agentes", help="Carpeta de equipos")
+    args = parser.parse_args()
+
+    load_dotenv()
+
+    console.print(Panel.fit("Garment Strike - Check Ready", border_style="cyan"))
+
+    gemini_ok, gemini_msg = check_gemini_key()
+    ollama_ok, ollama_msg = check_ollama_running()
+
+    render_status("Gemini API", gemini_ok, gemini_msg)
+    render_status("Ollama Local", ollama_ok, ollama_msg)
+
+    rows = validate_agents(Path(args.agents_dir))
+
+    tbl = Table(title="Validacion de equipos (/agentes)")
+    tbl.add_column("Equipo", style="bold")
+    tbl.add_column("Estado")
+    tbl.add_column("Detalle")
+
+    for row in rows:
+        state = row["estado"]
+        style = "green" if state == "OK" else "yellow" if state == "WARN" else "red"
+        tbl.add_row(row["equipo"], f"[{style}]{state}[/{style}]", row["detalle"])
+
+    console.print(tbl)
+
+    has_error = any(r["estado"] == "ERROR" for r in rows)
+    if has_error:
+        console.print("\n[red]Resultado: NO LISTO[/red]")
+        return 1
+
+    has_warn = any(r["estado"] == "WARN" for r in rows) or (not gemini_ok) or (not ollama_ok)
+    if has_warn:
+        console.print("\n[yellow]Resultado: LISTO CON ADVERTENCIAS[/yellow]")
+        return 0
+
+    console.print("\n[green]Resultado: LISTO PARA HACKATHON[/green]")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
