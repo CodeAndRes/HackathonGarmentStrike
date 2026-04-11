@@ -33,3 +33,6 @@ Thumbs.db
 tournament_results.json
 
 .env
+*.log
+match_turns.log
+llm_debug.log

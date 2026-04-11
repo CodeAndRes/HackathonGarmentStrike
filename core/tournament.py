@@ -172,25 +172,54 @@ def run_match(
                 if llm_client.quick_mode
                 else target_board.grid_text(reveal_ships=False)
             )
-            move: AgentMove = llm_client.get_move(
-                agent_md=agent_mds[current],
-                opponent_board_text=board_text,
-                move_history=_build_history(game.move_log),
-                my_name=current,
-                opponent_name=opponent,
-            )
+            forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
 
-            col = move.coordenada[0]
-            row = int(move.coordenada[1:])
-            result = game.apply_move(col, row, move.razonamiento, move.estrategia_aplicada)
+            try:
+                move: AgentMove = llm_client.get_move(
+                    agent_md=agent_mds[current],
+                    opponent_board_text=board_text,
+                    move_history=_build_history(game.move_log),
+                    my_name=current,
+                    opponent_name=opponent,
+                    forbidden_coords=forbidden_set,
+                )
+                col = move.coordenada[0]
+                row = int(move.coordenada[1:])
+                razon = move.razonamiento
+                estrategia = move.estrategia_aplicada
+                lat = move.latency_ms
+            except Exception as e:
+                # El modelo falló (error de red, cuota, auth, etc.) o alucinó repetidamente.
+                # Reportamos el error real antes del fallback.
+                error_msg = f"LLM Error: {str(e)}"
+                
+                # Elegimos la primera celda libre para no crashear y continuar la partida.
+                libre = None
+                for c in "ABCDEFGHIJ":
+                    for r in range(1, 11):
+                        cand = f"{c}{r}"
+                        if cand not in forbidden_set:
+                            libre = cand
+                            break
+                    if libre:
+                        break
+                
+                col, row = libre[0], int(libre[1:])
+                razon = f"SISTEMA: Fallback por error crítico de API. Detalle: {error_msg}"
+                estrategia = "EMERGENCY FALLBACK"
+                lat = 0.0
+
+            result = game.apply_move(col, row, razon, estrategia)
 
             if result == "already_shot":
                 wasted[current] += 1
 
             with log_file.open("a", encoding="utf-8") as f:
-                lat_str = f" {move.latency_ms/1000.0:.2f}s" if move.latency_ms else ""
+                lat_str = f" {lat/1000.0:.2f}s" if lat else ""
                 f.write(f"[T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {result.upper():<12} | lat:{lat_str}\n")
-                if result == "already_shot":
+                if "SISTEMA" in razon:
+                    f.write(f"           ↳ (AVISO: El LLM falló. Se usó tiro forzado para continuar)\n")
+                elif result == "already_shot":
                     f.write(f"           ↳ (Error: AI intentó disparar donde ya había disparado)\n")
 
             # Refresh dashboard after every shot
@@ -200,8 +229,8 @@ def run_match(
                     board_b=board_b,
                     move_log=game.move_log,
                     current_agent=current,
-                    last_strategy=move.estrategia_aplicada,
-                    last_reasoning=move.razonamiento,
+                    last_strategy=estrategia,
+                    last_reasoning=razon,
                 )
 
             # ── GOLDEN RULE ────────────────────────────────────────────────────

@@ -45,8 +45,8 @@ class AgentMove(BaseModel):
     """
 
     coordenada: str
-    razonamiento: str = ""
-    estrategia_aplicada: str = ""
+    razonamiento: str
+    estrategia_aplicada: str
     latency_ms: Optional[float] = None
 
     @field_validator("coordenada")
@@ -76,9 +76,9 @@ class MoveHistoryEntry(BaseModel):
 
 _SYSTEM_PROMPT = """\
 Eres un agente de Garment Strike (Supply Chain Battleship). Tablero 10×10 (A-J, 1-10).
-Responde SOLO con JSON válido de un nivel:
-{"coordenada":"<A-J><1-10>"}
-Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10. NO dispares a celdas ya disparadas. No devuelvas explicaciones ni razonamientos.
+Responde SOLO con JSON válido:
+{"coordenada":"<A-J><1-10>","razonamiento":"<breve>","estrategia_aplicada":"<nombre>"}
+Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10.
 """
 
 
@@ -98,10 +98,10 @@ class LLMClient:
         self,
         model: str = "gemini/gemini-1.5-pro",
         api_key: Optional[str] = None,
-        max_retries: int = 1,
+        max_retries: int = 5,
         temperature: float = 0.0,
         quick_mode: bool = True,
-        max_tokens: int = 80,
+        max_tokens: int = 512,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -173,7 +173,7 @@ class LLMClient:
                 f"ESTADO ACTUAL:\n{opponent_board_text}\n"
                 f"ÚLTIMO MSG:\n{history_block}\n\n"
                 f"ATENCIÓN: ¡NUNCA repitas una de las CELDAS PROHIBIDAS!\n"
-                f"Elige la MEJOR coordenada nueva. Responde SOLO con JSON: {{\"coordenada\":\"X\"}}"
+                f"Elige la MEJOR coordenada nueva. Responde SOLO con JSON: {{\"coordenada\":\"A1\", \"razonamiento\":\"...\", \"estrategia_aplicada\":\"...\"}}"
             )
 
         return (
@@ -205,12 +205,14 @@ class LLMClient:
         move_history: list[MoveHistoryEntry],
         my_name: str,
         opponent_name: str,
+        forbidden_coords: set[str] = None,
     ) -> AgentMove:
         """
         Ask the LLM for its next move.
         Retries up to max_retries times with a correction hint on bad output.
         Raises ValueError if all retries exhausted.
         """
+        time.sleep(5)  # Rate limiting for Free Tier (max 15 RPM)
         prompt = self.build_prompt(
             agent_md, opponent_board_text, move_history, my_name, opponent_name
         )
@@ -233,20 +235,55 @@ class LLMClient:
                 if self.is_local_model:
                     request_kwargs["num_predict"] = self.max_tokens
 
-                # Gemini/OpenAI support strict response_format; some local providers don't.
                 if not self.is_local_model:
-                    request_kwargs["response_format"] = {"type": "json_object"}
+                    # request_kwargs["response_format"] = {"type": "json_object"}
+                    pass
+
+                # --- DEBUG LOG START ---
+                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
+                    debug_f.write(f"\n{'='*80}\n")
+                    debug_f.write(f"TURNO: {my_name} vs {opponent_name} | Intento: {attempt}\n")
+                    debug_f.write(f"{'-'*80}\n## PROMPT ENVIADO:\n")
+                    for m in request_kwargs["messages"]:
+                        debug_f.write(f"[{m['role'].upper()}]:\n{m['content']}\n")
+                    debug_f.write(f"{'-'*80}\n")
+                # --- DEBUG LOG END ---
 
                 response = litellm.completion(**request_kwargs)
-                raw = response.choices[0].message.content or ""
+                raw = (response.choices[0].message.content or "").strip()
+                
+                # --- DEBUG RESPONSE START ---
+                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
+                    debug_f.write(f"## RESPUESTA LLM:\n{raw}\n")
+                # --- DEBUG RESPONSE END ---
+                
+                if not raw:
+                    raise ValueError("La API devolvió una respuesta vacía.")
+                
                 normalized = self._normalize_raw_response(raw)
-                data = json.loads(normalized)
+                try:
+                    data = json.loads(normalized)
+                except (json.JSONDecodeError, ValueError) as json_err:
+                    # Diagnóstico: Si falla, imprimimos los primeros 100 char para ver qué está pasando
+                    print(f"DEBUG: JSON corrupto o incompleto. Crudo (truncado): {raw[:100]}...")
+                    # Si falla el JSON, intentamos extraerlo manualmente por si acaso
+                    extracted = self._extract_json_object(normalized)
+                    data = json.loads(extracted)
+
                 data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
-                return AgentMove(**data)
+                move = AgentMove(**data)
+                
+                if forbidden_coords and move.coordenada in forbidden_coords:
+                    raise ValueError(
+                        f"¡ALERTA! Acabas de proponer {move.coordenada}, pero ESA CELDA YA FUE DISPARADA PREVIAMENTE. "
+                        "Revisa la lista de CELDAS PROHIBIDAS y responde de nuevo eligiendo una casilla COMPLETAMENTE NUEVA."
+                    )
+                return move
 
             except (json.JSONDecodeError, KeyError, ValueError) as exc:
                 last_error = exc
                 if attempt < self.max_retries:
+                    time.sleep(2)  # Pequeña pausa antes de reintentar por si fue cuota
                     prompt += (
                         f"\n\n[CORRECCIÓN REQUERIDA – Intento {attempt} inválido: {exc}. "
                         "Responde SÓLO con JSON válido y coordenada A-J + 1-10.]"
