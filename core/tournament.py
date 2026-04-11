@@ -16,6 +16,7 @@ Reviewer Agent – The Golden Rule is enforced in run_match():
 from __future__ import annotations
 
 import json
+import random
 from dataclasses import asdict, dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -31,6 +32,12 @@ from core.llm_client import AgentMove, LLMClient, MoveHistoryEntry
 from core.visualizer import GameDashboard
 
 console = Console()
+LOGISTICS_MAP = {
+    "hit": "Prenda encajada",
+    "miss": "Prenda perdida",
+    "sunk": "Pedido ENCAJADO",
+    "already_shot": "Celuad duplicada"
+}
 
 
 # ── Agent config ──────────────────────────────────────────────────────────────
@@ -197,17 +204,15 @@ def run_match(
                 # Reportamos el error real antes del fallback.
                 error_msg = f"LLM Error: {str(e)}"
                 
-                # Elegimos la primera celda libre para no crashear y continuar la partida.
-                libre = None
+                # Elegimos una celda libre ALEATORIA para no crashear y continuar la partida.
+                libres = []
                 for c in "ABCDEFGHIJ":
                     for r in range(1, 11):
                         cand = f"{c}{r}"
                         if cand not in forbidden_set:
-                            libre = cand
-                            break
-                    if libre:
-                        break
+                            libres.append(cand)
                 
+                libre = random.choice(libres) if libres else "A1"
                 col, row = libre[0], int(libre[1:])
                 razon = f"SISTEMA: Fallback por error crítico de API. Detalle: {error_msg}"
                 estrategia = "EMERGENCY FALLBACK"
@@ -220,7 +225,8 @@ def run_match(
 
             with log_file.open("a", encoding="utf-8") as f:
                 lat_str = f" {lat/1000.0:.2f}s" if lat else ""
-                f.write(f"[T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {result.upper():<12} | lat:{lat_str}\n")
+                log_res = LOGISTICS_MAP.get(result, result.upper())
+                f.write(f"[T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {log_res:<16} | lat:{lat_str}\n")
                 if "SISTEMA" in razon:
                     f.write(f"           ↳ (AVISO: El LLM falló. Se usó tiro forzado para continuar)\n")
                 elif result == "already_shot":

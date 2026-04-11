@@ -200,24 +200,27 @@ class LLMClient:
         my_name: str,
         opponent_name: str,
     ) -> list[dict]:
+        # Filter history to only include this agent's shots
+        my_history = [m for m in move_history if m.agente == my_name]
+
         history_text = "\n".join(
-            f"[T{m.turno}] {m.agente} -> {m.coordenada} ({m.resultado.upper()})"
-            for m in move_history
+            f"[T{m.turno}] -> {m.coordenada} ({m.resultado.upper()})"
+            for m in my_history
         )
         if not history_text:
-            history_text = "(Ningún movimiento previo)"
+            history_text = "(No previous shots)"
 
         system_content = (
-            f"Eres un estratega en 'Garment Strike'. Tablero 10x10 (A-J, 1-10).\n"
-            f"ESTRATEGIA DEL EQUIPO {my_name}:\n{agent_md}\n\n"
-            f"Responde SOLO con un JSON válido. Formato esperado:\n"
-            f'{{"coordenada": "E5", "razonamiento": "analisis...", "estrategia_aplicada": "..."}}'
+            f"You are playing Battleship. Grid is 10x10 (A-J, 1-10).\n"
+            f"YOUR STRATEGY ({my_name}):\n{agent_md}\n\n"
+            f"Respond ONLY with a valid JSON. Expected format keys MUST be in Spanish:\n"
+            f'{{"coordenada": "E5", "razonamiento": "short analysis...", "estrategia_aplicada": "..."}}'
         )
 
         user_content = (
-            f"ESTADO ACTUAL DEL TABLERO RIVAL:\n{opponent_board_text}\n\n"
-            f"HISTORIAL DE LOS ULTIMOS MOVIMIENTOS:\n{history_text}\n\n"
-            f"Teniendo en cuenta el tablero y los movimientos previos (para NO repetirlos), ¿cuál es tu siguiente coordenada estratégica?"
+            f"OPPONENT BOARD STATE:\n{opponent_board_text}\n\n"
+            f"YOUR PREVIOUS SHOTS:\n{history_text}\n\n"
+            f"Based on the board state and your previous shots (do not repeat coordinates), what is your next target coordinate?"
         )
 
         return [
@@ -242,7 +245,9 @@ class LLMClient:
         (no accumulated corrections that poison the context).
         Raises ValueError if all retries exhausted.
         """
-        time.sleep(5)  # Rate limiting for Free Tier (max 15 RPM)
+        # Only sleep if we are using a remote API (Gemini/OpenAI) to respect RPM limits.
+        if not self.is_local_model:
+            time.sleep(5)
         
         messages = self.build_messages(
             agent_md, opponent_board_text, move_history, my_name, opponent_name

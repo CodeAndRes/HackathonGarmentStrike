@@ -154,3 +154,28 @@ If exceeded, propose caching layer design.
 - **Next Focus**: Profile real performance, implement caching/async if needed for hackathon
 
 **Last Action**: Changed verbose_match.py to use `ollama/phi3:mini` for next test run.
+
+---
+
+## 🛠️ Actualización Técnica: Estabilidad y Logística (Post-Refactor)
+
+Tras las pruebas de rendimiento, hemos aplicado una capa de optimización crítica para resolver los problemas de truncado y velocidad:
+
+### 1. Robustez ante Fallos (Anti-Truncado)
+*   **Parser Multi-Etapa**: Implementado en `llm_client.py`. Capaz de recuperar coordenadas mediante **Regex** si el JSON de la IA se corta (soluciona el bloqueo previo con Gemini).
+*   **Gestión Fresh-Retry**: Los reintentos ya no acumulan errores; cada llamada es un contexto limpio.
+
+### 2. Memoria Selectiva
+*   **Filtro de Historial**: El agente ahora solo recibe sus propios movimientos (últimos 10), eliminando el ruido de los movimientos del rival.
+*   **Battleship Logic**: Uso de terminología en inglés para mejorar el razonamiento espacial del LLM.
+
+### 3. Personalización Logística (Branding)
+Mapeo visual completo de términos militares a logística:
+*   `HIT` ➔ 📦 **Prenda Encajada**
+*   `SUNK` ➔ 🔥 **Pedido Encajado**
+*   `MISS` ➔ ❔ **Prenda Perdida**
+
+### 4. Soporte Local Optimizado
+*   **Sleep Dinámico**: El retardo de 5s se desactiva automáticamente para modelos locales.
+*   **Tiro Random Inteligente**: Fallback aleatorio exclusivo para celdas no atacadas.
+

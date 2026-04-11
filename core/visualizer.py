@@ -40,10 +40,10 @@ _RESULT_STYLE: dict[str, str] = {
 }
 
 _RESULT_ICON: dict[str, str] = {
-    "hit": "💥 HIT",
-    "sunk": "🔥 SUNK",
-    "miss": "💧 MISS",
-    "already_shot": "⚠️  ALREADY SHOT",
+    "hit": "📦 PRENDA ENCAJADA",
+    "sunk": "🔥 PEDIDO ENCAJADO",
+    "miss": "❔ PRENDA PERDIDA",
+    "already_shot": "⚠️ REPETIDO",
 }
 
 
@@ -135,12 +135,12 @@ def render_scores(
     bar = Text()
     bar.append(f"  Turno #{turn}   ", style="bold white")
     bar.append(f"[{name_a}] ", style="bold green")
-    bar.append(f"pedidos hundidos: {sunk_count(board_b)}/5  |  ", style="yellow")
-    bar.append(f"impactos totales: {hit_coords(board_b)}   ", style="cyan")
+    bar.append(f"pedidos encajados: {sunk_count(board_b)}/5  |  ", style="yellow")
+    bar.append(f"prendas encajadas: {hit_coords(board_b)}   ", style="cyan")
     bar.append("  │  ", style="dim")
     bar.append(f"[{name_b}] ", style="bold red")
-    bar.append(f"pedidos hundidos: {sunk_count(board_a)}/5  |  ", style="yellow")
-    bar.append(f"impactos totales: {hit_coords(board_a)}", style="cyan")
+    bar.append(f"pedidos encajados: {sunk_count(board_a)}/5  |  ", style="yellow")
+    bar.append(f"prendas encajadas: {hit_coords(board_a)}", style="cyan")
     return bar
 
 
