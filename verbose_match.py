@@ -29,7 +29,7 @@ agent_md_a = config_a.load_agent_md()
 agent_md_b = config_b.load_agent_md()
 
 game = Game("Alpha", board_a, "Beta", board_b)
-llm_client = LLMClient(model="ollama/phi3:mini", max_retries=1)
+llm_client = LLMClient(model="ollama/phi3:mini", max_retries=1, quick_mode=True)
 agent_mds = {"Alpha": agent_md_a, "Beta": agent_md_b}
 wasted = {"Alpha": 0, "Beta": 0}
 move_log = []
@@ -56,7 +56,10 @@ while True:
     print(f"[T{turn:>3}] {current:>5} pensando...", end=" ", flush=True)
     sys.stdout.flush()
     
-    opponent_board_text = opponent_board.grid_text(reveal_ships=False)
+    if llm_client.quick_mode:
+        opponent_board_text = opponent_board.grid_text_minimal()
+    else:
+        opponent_board_text = opponent_board.grid_text(reveal_ships=False)
     move_history = []  # Simplificado
     
     try:
@@ -68,13 +71,18 @@ while True:
             opponent_name=opponent,
         )
         coord = agent_move.coordenada
+        razonamiento = agent_move.razonamiento
+        estrategia = agent_move.estrategia_aplicada
+        latencia = agent_move.latency_ms
     except Exception as e:
         print(f"ERROR: {e}")
         sys.stdout.flush()
         break
     
     # Apply move
-    result = game.apply_move(current, coord)
+    col = coord[0]
+    row = int(coord[1:])
+    result = game.apply_move(col, row, razonamiento, estrategia)
     
     # Log
     move_log.append({
@@ -86,7 +94,8 @@ while True:
     
     # Print turn result
     status = result.upper()
-    print(f"-> {coord:>2}  | {status:<8}")
+    lat_str = f"{latencia/1000.0:.2f}s" if latencia else "N/A"
+    print(f"-> {coord:>2}  | {status:<8} | ⏱ {lat_str}")
     sys.stdout.flush()
     
     # Check if hit/sunk to decide turn switch

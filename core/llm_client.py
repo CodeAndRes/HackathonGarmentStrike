@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from typing import Optional
 
 from pydantic import BaseModel, field_validator
@@ -44,8 +45,9 @@ class AgentMove(BaseModel):
     """
 
     coordenada: str
-    razonamiento: str
-    estrategia_aplicada: str
+    razonamiento: str = ""
+    estrategia_aplicada: str = ""
+    latency_ms: Optional[float] = None
 
     @field_validator("coordenada")
     @classmethod
@@ -74,9 +76,9 @@ class MoveHistoryEntry(BaseModel):
 
 _SYSTEM_PROMPT = """\
 Eres un agente de Garment Strike (Supply Chain Battleship). Tablero 10×10 (A-J, 1-10).
-Responde SOLO con JSON válido:
-{"coordenada":"<A-J><1-10>","razonamiento":"<breve>","estrategia_aplicada":"<nombre>"}
-Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10. NO dispares a celdas ya disparadas.
+Responde SOLO con JSON válido de un nivel:
+{"coordenada":"<A-J><1-10>"}
+Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10. NO dispares a celdas ya disparadas. No devuelvas explicaciones ni razonamientos.
 """
 
 
@@ -98,7 +100,7 @@ class LLMClient:
         api_key: Optional[str] = None,
         max_retries: int = 1,
         temperature: float = 0.0,
-        quick_mode: bool = False,
+        quick_mode: bool = True,
         max_tokens: int = 80,
     ) -> None:
         if not LITELLM_AVAILABLE:
@@ -158,21 +160,20 @@ class LLMClient:
         my_name: str,
         opponent_name: str,
     ) -> str:
-        last_n = 3
+        last_n = 1 if self.quick_mode else 3
         history_block = "\n".join(
             f"  [T{e.turno:>3}] {e.agente:<15} → {e.coordenada}  "
             f"resultado={e.resultado.upper()}"
-            + (f"  (razón: {e.razonamiento})" if (e.razonamiento and not self.quick_mode) else "")
             for e in move_history[-last_n:]
-        ) or "  (ningún movimiento aún)"
+        ) if move_history else "  (ningún movimiento)"
 
         if self.quick_mode:
             return (
-                f"## MANIFIESTO\n{agent_md}\n\n"
-                f"Eres {my_name} vs {opponent_name}.\n"
-                f"TABLERO RIVAL:\n```\n{opponent_board_text}\n```\n"
-                f"ÚLTIMOS {last_n} MOVIMIENTOS:\n{history_block}\n\n"
-                f"Elige la MEJOR coordenada. Responde SOLO con JSON."
+                f"## REGLAS\n{agent_md}\n\n"
+                f"ESTADO ACTUAL:\n{opponent_board_text}\n"
+                f"ÚLTIMO MSG:\n{history_block}\n\n"
+                f"ATENCIÓN: ¡NUNCA repitas una de las CELDAS PROHIBIDAS!\n"
+                f"Elige la MEJOR coordenada nueva. Responde SOLO con JSON: {{\"coordenada\":\"X\"}}"
             )
 
         return (
@@ -214,6 +215,7 @@ class LLMClient:
             agent_md, opponent_board_text, move_history, my_name, opponent_name
         )
         last_error: Exception | None = None
+        start_time = time.perf_counter()
 
         for attempt in range(1, self.max_retries + 1):
             try:
@@ -239,6 +241,7 @@ class LLMClient:
                 raw = response.choices[0].message.content or ""
                 normalized = self._normalize_raw_response(raw)
                 data = json.loads(normalized)
+                data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
                 return AgentMove(**data)
 
             except (json.JSONDecodeError, KeyError, ValueError) as exc:

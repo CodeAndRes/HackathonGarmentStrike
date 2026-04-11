@@ -204,6 +204,20 @@ class Board:
             rows.append(f"{ri + 1:>2} " + " ".join(row_data))
         return "\n".join(rows)
 
+    def grid_text_minimal(self) -> str:
+        """Hyper-token-efficient board text: returns only known coordinates."""
+        agua = []
+        impacto = []
+        for (col, row), result in self.shots_received.items():
+            c = format_coord(col, row)
+            if result in ("hit", "sunk"):
+                impacto.append(c)
+            else:
+                agua.append(c)
+        prohibidos = agua + impacto
+        prohibidos_txt = ", ".join(prohibidos) if prohibidos else "Ninguna"
+        return f"CELDAS PROHIBIDAS (NO DISPARAR AQUÍ): {prohibidos_txt}"
+
 
 # ── Move record ───────────────────────────────────────────────────────────────
 

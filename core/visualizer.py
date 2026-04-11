@@ -12,11 +12,12 @@ from __future__ import annotations
 
 from rich import box
 from rich.columns import Columns
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.rule import Rule
+from rich.live import Live
 
 from core.engine import Board, BOARD_COLS, MoveRecord
 
@@ -152,6 +153,13 @@ class GameDashboard:
     def __init__(self, name_a: str, name_b: str) -> None:
         self.name_a = name_a
         self.name_b = name_b
+        self.live = Live(console=console, auto_refresh=False, screen=True)
+
+    def start(self) -> None:
+        self.live.start()
+
+    def stop(self) -> None:
+        self.live.stop()
 
     def render(
         self,
@@ -162,40 +170,26 @@ class GameDashboard:
         last_strategy: str = "",
         last_reasoning: str = "",
     ) -> None:
-        console.clear()
-        console.print(Rule("[bold yellow]  ⚡  GARMENT STRIKE – Supply Chain Simulation  ⚡  [/bold yellow]"))
-
-        # Score bar
-        console.print(
-            render_scores(
-                self.name_a, board_a,
-                self.name_b, board_b,
-                turn=len(move_log),
-            )
-        )
-        console.print()
+        elements = [
+            Rule("[bold yellow]  ⚡  GARMENT STRIKE – Supply Chain Simulation  ⚡  [/bold yellow]"),
+            render_scores(self.name_a, board_a, self.name_b, board_b, turn=len(move_log)),
+            Text()
+        ]
 
         # Dual board (spectator: both revealed)
-        tbl_a = render_board(
-            board_a,
-            title=f"[green]{self.name_a}[/green]  (propio)",
-            reveal=True,
-        )
-        tbl_b = render_board(
-            board_b,
-            title=f"[red]{self.name_b}[/red]  (propio)",
-            reveal=True,
-        )
-        console.print(Columns([tbl_a, tbl_b], equal=True, expand=True))
+        tbl_a = render_board(board_a, title=f"[green]{self.name_a}[/green]  (propio)", reveal=True)
+        tbl_b = render_board(board_b, title=f"[red]{self.name_b}[/red]  (propio)", reveal=True)
+        elements.append(Columns([tbl_a, tbl_b], equal=True, expand=True))
 
         # Move log
-        console.print(render_move_log(move_log))
+        elements.append(render_move_log(move_log))
 
         # Thought telemetry (only when we have data)
         if last_strategy or last_reasoning:
-            console.print(
-                render_telemetry(current_agent, last_strategy, last_reasoning)
-            )
+            elements.append(render_telemetry(current_agent, last_strategy, last_reasoning))
+
+        group = Group(*elements)
+        self.live.update(group, refresh=True)
 
     def print_winner(self, winner: str | None, total_turns: int) -> None:
         console.print()

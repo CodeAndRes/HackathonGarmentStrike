@@ -140,54 +140,79 @@ def run_match(
     agent_mds = {config_a.name: agent_md_a, config_b.name: agent_md_b}
     wasted: dict[str, int] = {config_a.name: 0, config_b.name: 0}
 
-    while True:
-        finished, winner = game.is_over()
-        if finished:
-            break
+    log_file = Path("match_turns.log")
+    if log_file.exists():
+        log_file.unlink()
 
-        current = game.current_agent
-        opponent = game.opponent
-        target_board = game.agents[current]   # board being attacked
-
-        # Ask the LLM for a move
-        # Ask the LLM for a move
-        board_text = (
-            target_board.grid_text_compact(reveal_ships=False)
-            if llm_client.quick_mode
-            else target_board.grid_text(reveal_ships=False)
-        )
-        move: AgentMove = llm_client.get_move(
-            agent_md=agent_mds[current],
-            opponent_board_text=board_text,
-            move_history=_build_history(game.move_log),
-            my_name=current,
-            opponent_name=opponent,
+    if dashboard:
+        dashboard.start()
+        dashboard.render(
+            board_a=board_a,
+            board_b=board_b,
+            move_log=game.move_log,
+            current_agent=config_a.name,
+            last_strategy="Iniciando...",
+            last_reasoning="Estableciendo conexión con el LLM para el primer turno...",
         )
 
-        col = move.coordenada[0]
-        row = int(move.coordenada[1:])
-        result = game.apply_move(col, row, move.razonamiento, move.estrategia_aplicada)
+    try:
+        while True:
+            finished, winner = game.is_over()
+            if finished:
+                break
 
-        if result == "already_shot":
-            wasted[current] += 1
+            current = game.current_agent
+            opponent = game.opponent
+            target_board = game.agents[current]   # board being attacked
 
-        # Refresh dashboard after every shot
-        if dashboard:
-            dashboard.render(
-                board_a=board_a,
-                board_b=board_b,
-                move_log=game.move_log,
-                current_agent=current,
-                last_strategy=move.estrategia_aplicada,
-                last_reasoning=move.razonamiento,
+            # Ask the LLM for a move
+            # Ask the LLM for a move
+            board_text = (
+                target_board.grid_text_minimal()
+                if llm_client.quick_mode
+                else target_board.grid_text(reveal_ships=False)
+            )
+            move: AgentMove = llm_client.get_move(
+                agent_md=agent_mds[current],
+                opponent_board_text=board_text,
+                move_history=_build_history(game.move_log),
+                my_name=current,
+                opponent_name=opponent,
             )
 
-        # ── GOLDEN RULE ────────────────────────────────────────────────────
-        # HIT or SUNK  → same agent shoots again (do NOT switch).
-        # MISS or ALREADY_SHOT → pass the turn to the other agent.
-        # ──────────────────────────────────────────────────────────────────
-        if result not in ("hit", "sunk"):
-            game.switch_turn()
+            col = move.coordenada[0]
+            row = int(move.coordenada[1:])
+            result = game.apply_move(col, row, move.razonamiento, move.estrategia_aplicada)
+
+            if result == "already_shot":
+                wasted[current] += 1
+
+            with log_file.open("a", encoding="utf-8") as f:
+                lat_str = f" {move.latency_ms/1000.0:.2f}s" if move.latency_ms else ""
+                f.write(f"[T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {result.upper():<12} | lat:{lat_str}\n")
+                if result == "already_shot":
+                    f.write(f"           ↳ (Error: AI intentó disparar donde ya había disparado)\n")
+
+            # Refresh dashboard after every shot
+            if dashboard:
+                dashboard.render(
+                    board_a=board_a,
+                    board_b=board_b,
+                    move_log=game.move_log,
+                    current_agent=current,
+                    last_strategy=move.estrategia_aplicada,
+                    last_reasoning=move.razonamiento,
+                )
+
+            # ── GOLDEN RULE ────────────────────────────────────────────────────
+            # HIT or SUNK  → same agent shoots again (do NOT switch).
+            # MISS or ALREADY_SHOT → pass the turn to the other agent.
+            # ──────────────────────────────────────────────────────────────────
+            if result not in ("hit", "sunk"):
+                game.switch_turn()
+    finally:
+        if dashboard:
+            dashboard.stop()
 
     finished, winner = game.is_over()
 
