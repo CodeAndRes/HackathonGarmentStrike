@@ -101,7 +101,7 @@ class TournamentReport:
 # ── History helpers ───────────────────────────────────────────────────────────
 
 
-def _build_history(move_log, last_n: int = 3) -> list[MoveHistoryEntry]:
+def _build_history(move_log, last_n: int = 10) -> list[MoveHistoryEntry]:
     return [
         MoveHistoryEntry(
             turno=r.turn,
@@ -143,6 +143,10 @@ def run_match(
     log_file = Path("match_turns.log")
     if log_file.exists():
         log_file.unlink()
+
+    debug_file = Path("llm_debug.log")
+    if debug_file.exists():
+        debug_file.unlink()
 
     if dashboard:
         dashboard.start()

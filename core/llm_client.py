@@ -74,10 +74,7 @@ class MoveHistoryEntry(BaseModel):
 
 # ── System prompt (fixed, injected once per session) ─────────────────────────
 
-_SYSTEM_PROMPT = """Eres un estratega en 'Garment Strike'. Tablero 10x10 (A-J, 1-10).
-Responde SOLO con un JSON en UNA SOLA LINEA, ejemplo:
-{"coordenada":"E5","razonamiento":"Centro del tablero","estrategia_aplicada":"Damero"}
-IMPORTANTE: JSON en UNA sola linea, sin saltos de linea, sin explicaciones extra."""
+# _SYSTEM_PROMPT is now generated dynamically per-request.
 
 
 # ── LLM Client ────────────────────────────────────────────────────────────────
@@ -99,7 +96,7 @@ class LLMClient:
         max_retries: int = 3,
         temperature: float = 0.2,
         quick_mode: bool = True,
-        max_tokens: int = 256,
+        max_tokens: int = 300,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -195,20 +192,38 @@ class LLMClient:
 
     # ── Prompt construction ──────────────────────────────────────────────────
 
-    def build_prompt(
+    def build_messages(
         self,
         agent_md: str,
         opponent_board_text: str,
         move_history: list[MoveHistoryEntry],
         my_name: str,
         opponent_name: str,
-    ) -> str:
-        # Keep it short - this is the KEY insight from debugging
-        return (
-            f"ESTRATEGIA: {agent_md}\n"
-            f"TABLERO: {opponent_board_text}\n"
-            f"Responde con JSON en UNA linea."
+    ) -> list[dict]:
+        history_text = "\n".join(
+            f"[T{m.turno}] {m.agente} -> {m.coordenada} ({m.resultado.upper()})"
+            for m in move_history
         )
+        if not history_text:
+            history_text = "(Ningún movimiento previo)"
+
+        system_content = (
+            f"Eres un estratega en 'Garment Strike'. Tablero 10x10 (A-J, 1-10).\n"
+            f"ESTRATEGIA DEL EQUIPO {my_name}:\n{agent_md}\n\n"
+            f"Responde SOLO con un JSON válido. Formato esperado:\n"
+            f'{{"coordenada": "E5", "razonamiento": "analisis...", "estrategia_aplicada": "..."}}'
+        )
+
+        user_content = (
+            f"ESTADO ACTUAL DEL TABLERO RIVAL:\n{opponent_board_text}\n\n"
+            f"HISTORIAL DE LOS ULTIMOS MOVIMIENTOS:\n{history_text}\n\n"
+            f"Teniendo en cuenta el tablero y los movimientos previos (para NO repetirlos), ¿cuál es tu siguiente coordenada estratégica?"
+        )
+
+        return [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_content},
+        ]
 
     # ── LLM call with retry ──────────────────────────────────────────────────
 
@@ -229,7 +244,7 @@ class LLMClient:
         """
         time.sleep(5)  # Rate limiting for Free Tier (max 15 RPM)
         
-        prompt = self.build_prompt(
+        messages = self.build_messages(
             agent_md, opponent_board_text, move_history, my_name, opponent_name
         )
         last_error: Exception | None = None
@@ -237,28 +252,23 @@ class LLMClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                # CRITICAL: Fresh messages each attempt - never accumulate corrections
-                messages = [
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ]
-
                 request_kwargs = {
                     "model": self.model,
                     "messages": messages,
                     "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
                 }
 
-                # Pass num_predict for Ollama compatibility
+                # Pass max_tokens to local models only due to Gemini's max_tokens bug
                 if self.is_local_model:
+                    request_kwargs["max_tokens"] = self.max_tokens
                     request_kwargs["num_predict"] = self.max_tokens
 
                 # --- DEBUG LOG ---
                 with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
                     debug_f.write(f"\n{'='*80}\n")
                     debug_f.write(f"TURNO: {my_name} | Intento: {attempt}\n")
-                    debug_f.write(f"PROMPT ({len(prompt)} chars): {prompt[:200]}...\n")
+                    for msg in messages:
+                        debug_f.write(f"[{msg['role'].upper()}] ({len(msg['content'])} chars):\n{msg['content'][:300]}...\n")
                     debug_f.write(f"{'-'*80}\n")
 
                 response = litellm.completion(**request_kwargs)
