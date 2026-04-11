@@ -74,12 +74,10 @@ class MoveHistoryEntry(BaseModel):
 
 # ── System prompt (fixed, injected once per session) ─────────────────────────
 
-_SYSTEM_PROMPT = """\
-Eres un agente de Garment Strike (Supply Chain Battleship). Tablero 10×10 (A-J, 1-10).
-Responde SOLO con JSON válido:
-{"coordenada":"<A-J><1-10>","razonamiento":"<breve>","estrategia_aplicada":"<nombre>"}
-Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10.
-"""
+_SYSTEM_PROMPT = """Eres un estratega en 'Garment Strike'. Tablero 10x10 (A-J, 1-10).
+Responde SOLO con un JSON en UNA SOLA LINEA, ejemplo:
+{"coordenada":"E5","razonamiento":"Centro del tablero","estrategia_aplicada":"Damero"}
+IMPORTANTE: JSON en UNA sola linea, sin saltos de linea, sin explicaciones extra."""
 
 
 # ── LLM Client ────────────────────────────────────────────────────────────────
@@ -98,10 +96,10 @@ class LLMClient:
         self,
         model: str = "gemini/gemini-1.5-pro",
         api_key: Optional[str] = None,
-        max_retries: int = 5,
-        temperature: float = 0.0,
+        max_retries: int = 3,
+        temperature: float = 0.2,
         quick_mode: bool = True,
-        max_tokens: int = 512,
+        max_tokens: int = 256,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -118,14 +116,11 @@ class LLMClient:
         if api_key:
             os.environ["LITELLM_API_KEY"] = api_key
 
+    # ── JSON extraction (always applied, not just for local models) ──────
+
     @staticmethod
     def _strip_json_fences(raw: str) -> str:
-        """
-        Remove markdown fences often returned by local models, e.g.:
-          ```json
-          {...}
-          ```
-        """
+        """Remove markdown fences (```json ... ```) that models love to add."""
         text = raw.strip()
         if text.startswith("```"):
             text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
@@ -142,13 +137,61 @@ class LLMClient:
             return text
         return text[start : end + 1]
 
-    def _normalize_raw_response(self, raw: str) -> str:
-        """Normalize LLM output before json.loads; stricter for local models."""
-        cleaned = raw.strip()
-        if self.is_local_model:
-            cleaned = self._strip_json_fences(cleaned)
-            cleaned = self._extract_json_object(cleaned)
-        return cleaned
+    @staticmethod
+    def _extract_coord_fallback(raw: str) -> Optional[str]:
+        """
+        Last-resort: regex-extract a coordinate like 'E5' or 'J10' from 
+        any text, even truncated JSON. This is why local models 'worked' -
+        the response always at least contained a coordinate.
+        """
+        m = re.search(r'"coordenada"\s*:\s*"([A-Ja-j](?:10|[1-9]))"', raw)
+        if m:
+            return m.group(1).upper()
+        # Even more desperate: any standalone coordinate pattern
+        m = re.search(r'\b([A-Ja-j](?:10|[1-9]))\b', raw)
+        if m:
+            return m.group(1).upper()
+        return None
+
+    def _parse_response(self, raw: str) -> dict:
+        """
+        Multi-stage parser that handles all known Gemini quirks:
+        1. Strip markdown fences
+        2. Extract JSON object
+        3. Parse JSON
+        4. Fallback: regex-extract coordinate from truncated response
+        """
+        # Stage 1: Clean fences (Gemini wraps in ```json``` even when told not to)
+        cleaned = self._strip_json_fences(raw)
+        
+        # Stage 2: Extract JSON object substring
+        extracted = self._extract_json_object(cleaned)
+        
+        # Stage 3: Try parsing
+        try:
+            data = json.loads(extracted)
+            # Normalize key aliases (coord -> coordenada)
+            if "coord" in data and "coordenada" not in data:
+                data["coordenada"] = data["coord"]
+            if "razonamiento" not in data:
+                data["razonamiento"] = data.get("razon", "Analisis del tablero")
+            if "estrategia_aplicada" not in data:
+                data["estrategia_aplicada"] = "General"
+            return data
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        # Stage 4: Truncated JSON fallback - extract coordinate with regex
+        coord = self._extract_coord_fallback(raw)
+        if coord:
+            return {
+                "coordenada": coord,
+                "razonamiento": "Respuesta parcial del LLM (auto-recuperada)",
+                "estrategia_aplicada": "Auto-recovery",
+            }
+        
+        # Nothing worked
+        raise ValueError(f"No se pudo extraer coordenada de la respuesta: {raw[:80]}...")
 
     # ── Prompt construction ──────────────────────────────────────────────────
 
@@ -160,40 +203,11 @@ class LLMClient:
         my_name: str,
         opponent_name: str,
     ) -> str:
-        last_n = 1 if self.quick_mode else 3
-        history_block = "\n".join(
-            f"  [T{e.turno:>3}] {e.agente:<15} → {e.coordenada}  "
-            f"resultado={e.resultado.upper()}"
-            for e in move_history[-last_n:]
-        ) if move_history else "  (ningún movimiento)"
-
-        if self.quick_mode:
-            return (
-                f"## REGLAS\n{agent_md}\n\n"
-                f"ESTADO ACTUAL:\n{opponent_board_text}\n"
-                f"ÚLTIMO MSG:\n{history_block}\n\n"
-                f"ATENCIÓN: ¡NUNCA repitas una de las CELDAS PROHIBIDAS!\n"
-                f"Elige la MEJOR coordenada nueva. Responde SOLO con JSON: {{\"coordenada\":\"A1\", \"razonamiento\":\"...\", \"estrategia_aplicada\":\"...\"}}"
-            )
-
+        # Keep it short - this is the KEY insight from debugging
         return (
-            f"## MANIFIESTO ESTRATÉGICO (agent.md de {my_name})\n"
-            f"---\n"
-            f"{agent_md}\n"
-            f"---\n\n"
-            f"## ESTADO DEL TURNO\n"
-            f"- Eres: **{my_name}**\n"
-            f"- Rival: **{opponent_name}**\n\n"
-            f"## TABLERO RIVAL ({'?' if not opponent_board_text else 'estado actual'})\n"
-            f"```\n"
-            f"{opponent_board_text}\n"
-            f"```\n"
-            f"Leyenda: ~ celda desconocida | X impacto | O agua\n\n"
-            f"## ÚLTIMOS {last_n} MOVIMIENTOS\n"
-            f"{history_block}\n\n"
-            f"## INSTRUCCIÓN\n"
-            f"Basándote en tu manifiesto estratégico, elige la MEJOR coordenada para disparar ahora.\n"
-            f"Responde ÚNICAMENTE con el JSON especificado en las reglas del sistema."
+            f"ESTRATEGIA: {agent_md}\n"
+            f"TABLERO: {opponent_board_text}\n"
+            f"Responde con JSON en UNA linea."
         )
 
     # ── LLM call with retry ──────────────────────────────────────────────────
@@ -209,10 +223,12 @@ class LLMClient:
     ) -> AgentMove:
         """
         Ask the LLM for its next move.
-        Retries up to max_retries times with a correction hint on bad output.
+        Retries up to max_retries times. Each retry is a FRESH call
+        (no accumulated corrections that poison the context).
         Raises ValueError if all retries exhausted.
         """
         time.sleep(5)  # Rate limiting for Free Tier (max 15 RPM)
+        
         prompt = self.build_prompt(
             agent_md, opponent_board_text, move_history, my_name, opponent_name
         )
@@ -221,12 +237,15 @@ class LLMClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
+                # CRITICAL: Fresh messages each attempt - never accumulate corrections
+                messages = [
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ]
+
                 request_kwargs = {
                     "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": _SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
+                    "messages": messages,
                     "temperature": self.temperature,
                     "max_tokens": self.max_tokens,
                 }
@@ -235,59 +254,38 @@ class LLMClient:
                 if self.is_local_model:
                     request_kwargs["num_predict"] = self.max_tokens
 
-                if not self.is_local_model:
-                    # request_kwargs["response_format"] = {"type": "json_object"}
-                    pass
-
-                # --- DEBUG LOG START ---
+                # --- DEBUG LOG ---
                 with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
                     debug_f.write(f"\n{'='*80}\n")
-                    debug_f.write(f"TURNO: {my_name} vs {opponent_name} | Intento: {attempt}\n")
-                    debug_f.write(f"{'-'*80}\n## PROMPT ENVIADO:\n")
-                    for m in request_kwargs["messages"]:
-                        debug_f.write(f"[{m['role'].upper()}]:\n{m['content']}\n")
+                    debug_f.write(f"TURNO: {my_name} | Intento: {attempt}\n")
+                    debug_f.write(f"PROMPT ({len(prompt)} chars): {prompt[:200]}...\n")
                     debug_f.write(f"{'-'*80}\n")
-                # --- DEBUG LOG END ---
 
                 response = litellm.completion(**request_kwargs)
                 raw = (response.choices[0].message.content or "").strip()
-                
-                # --- DEBUG RESPONSE START ---
-                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
-                    debug_f.write(f"## RESPUESTA LLM:\n{raw}\n")
-                # --- DEBUG RESPONSE END ---
-                
-                if not raw:
-                    raise ValueError("La API devolvió una respuesta vacía.")
-                
-                normalized = self._normalize_raw_response(raw)
-                try:
-                    data = json.loads(normalized)
-                except (json.JSONDecodeError, ValueError) as json_err:
-                    # Diagnóstico: Si falla, imprimimos los primeros 100 char para ver qué está pasando
-                    print(f"DEBUG: JSON corrupto o incompleto. Crudo (truncado): {raw[:100]}...")
-                    # Si falla el JSON, intentamos extraerlo manualmente por si acaso
-                    extracted = self._extract_json_object(normalized)
-                    data = json.loads(extracted)
 
+                # --- DEBUG RESPONSE ---
+                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
+                    debug_f.write(f"RESP ({len(raw)} chars): {raw}\n")
+
+                if not raw:
+                    raise ValueError("La API devolvio una respuesta vacia.")
+
+                # Parse with multi-stage fallback (handles fences + truncation)
+                data = self._parse_response(raw)
                 data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
                 move = AgentMove(**data)
                 
                 if forbidden_coords and move.coordenada in forbidden_coords:
                     raise ValueError(
-                        f"¡ALERTA! Acabas de proponer {move.coordenada}, pero ESA CELDA YA FUE DISPARADA PREVIAMENTE. "
-                        "Revisa la lista de CELDAS PROHIBIDAS y responde de nuevo eligiendo una casilla COMPLETAMENTE NUEVA."
+                        f"Coordenada {move.coordenada} ya fue disparada."
                     )
                 return move
 
             except (json.JSONDecodeError, KeyError, ValueError) as exc:
                 last_error = exc
                 if attempt < self.max_retries:
-                    time.sleep(2)  # Pequeña pausa antes de reintentar por si fue cuota
-                    prompt += (
-                        f"\n\n[CORRECCIÓN REQUERIDA – Intento {attempt} inválido: {exc}. "
-                        "Responde SÓLO con JSON válido y coordenada A-J + 1-10.]"
-                    )
+                    time.sleep(2)  # Small pause before retry
 
             except Exception as exc:
                 # Re-raise unexpected errors (network, auth, quota) immediately
@@ -296,6 +294,6 @@ class LLMClient:
                 ) from exc
 
         raise ValueError(
-            f"No se obtuvo coordenada válida del LLM tras {self.max_retries} intentos. "
-            f"Último error: {last_error}"
+            f"No se obtuvo coordenada valida del LLM tras {self.max_retries} intentos. "
+            f"Ultimo error: {last_error}"
         )
