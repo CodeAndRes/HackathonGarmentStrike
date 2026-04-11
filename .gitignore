@@ -31,3 +31,5 @@ Thumbs.db
 
 # Tournament output
 tournament_results.json
+
+.env

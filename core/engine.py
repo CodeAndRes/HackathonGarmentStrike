@@ -196,6 +196,14 @@ class Board:
         lines.append("   +" + "---" * 10 + "-+")
         return "\n".join(lines)
 
+    def grid_text_compact(self, reveal_ships: bool = False) -> str:
+        """Token-efficient grid: plain rows separated by spaces, no ASCII borders."""
+        header = " ".join(BOARD_COLS)
+        rows = [header]
+        for ri, row_data in enumerate(self.visible_state(reveal_ships)):
+            rows.append(f"{ri + 1:>2} " + " ".join(row_data))
+        return "\n".join(rows)
+
 
 # ── Move record ───────────────────────────────────────────────────────────────
 

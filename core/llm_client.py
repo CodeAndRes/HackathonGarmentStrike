@@ -73,29 +73,10 @@ class MoveHistoryEntry(BaseModel):
 # ── System prompt (fixed, injected once per session) ─────────────────────────
 
 _SYSTEM_PROMPT = """\
-Eres un agente estratégico del juego Garment Strike, una simulación de Supply Chain.
-
-REGLAS FUNDAMENTALES:
-- Tablero 10×10: columnas A-J, filas 1-10.
-- Hay 5 pedidos (cajas) de tamaño 5, 4, 3, 3 y 2 ocultos en el tablero rival.
-- Gana quien hunda todos los pedidos del rival primero.
-- REGLA DE ORO: si disparas y aciertas (HIT o SUNK), repites turno INMEDIATAMENTE.
-- No puedes disparar a una celda ya disparada.
-
-Tu misión en cada turno: elegir la mejor coordenada según tu manifiesto estratégico.
-
-FORMATO DE RESPUESTA — responde ÚNICAMENTE con un JSON válido, nada más:
-{
-  "coordenada": "<LETRA><NÚMERO>",
-  "razonamiento": "<por qué eliges esta celda>",
-  "estrategia_aplicada": "<nombre o fragmento de tu manifiesto>"
-}
-
-Restricciones de coordenada:
-  · Letra: A, B, C, D, E, F, G, H, I o J  (exactamente una letra mayúscula)
-  · Número: 1 a 10  (no 0, no 11, no decimales, no guiones)
-  · Ejemplos válidos: A1  B5  J10  C8
-  · Ejemplos INVÁLIDOS: K5  B-12  A11  5B  ""
+Eres un agente de Garment Strike (Supply Chain Battleship). Tablero 10×10 (A-J, 1-10).
+Responde SOLO con JSON válido:
+{"coordenada":"<A-J><1-10>","razonamiento":"<breve>","estrategia_aplicada":"<nombre>"}
+Coordenada válida: letra A-J + número 1-10. Ej: A1, B5, J10. NO dispares a celdas ya disparadas.
 """
 
 
@@ -115,8 +96,10 @@ class LLMClient:
         self,
         model: str = "gemini/gemini-1.5-pro",
         api_key: Optional[str] = None,
-        max_retries: int = 3,
-        temperature: float = 0.3,
+        max_retries: int = 1,
+        temperature: float = 0.0,
+        quick_mode: bool = False,
+        max_tokens: int = 80,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -125,6 +108,8 @@ class LLMClient:
         self.model = model
         self.max_retries = max_retries
         self.temperature = temperature
+        self.quick_mode = quick_mode
+        self.max_tokens = max_tokens
         self.is_local_model = self.model.lower().startswith("ollama/")
 
         # Allow explicit override; otherwise rely on env vars loaded by caller
@@ -173,12 +158,22 @@ class LLMClient:
         my_name: str,
         opponent_name: str,
     ) -> str:
+        last_n = 3
         history_block = "\n".join(
             f"  [T{e.turno:>3}] {e.agente:<15} → {e.coordenada}  "
             f"resultado={e.resultado.upper()}"
-            + (f"  (razón: {e.razonamiento})" if e.razonamiento else "")
-            for e in move_history[-5:]
+            + (f"  (razón: {e.razonamiento})" if (e.razonamiento and not self.quick_mode) else "")
+            for e in move_history[-last_n:]
         ) or "  (ningún movimiento aún)"
+
+        if self.quick_mode:
+            return (
+                f"## MANIFIESTO\n{agent_md}\n\n"
+                f"Eres {my_name} vs {opponent_name}.\n"
+                f"TABLERO RIVAL:\n```\n{opponent_board_text}\n```\n"
+                f"ÚLTIMOS {last_n} MOVIMIENTOS:\n{history_block}\n\n"
+                f"Elige la MEJOR coordenada. Responde SOLO con JSON."
+            )
 
         return (
             f"## MANIFIESTO ESTRATÉGICO (agent.md de {my_name})\n"
@@ -193,7 +188,7 @@ class LLMClient:
             f"{opponent_board_text}\n"
             f"```\n"
             f"Leyenda: ~ celda desconocida | X impacto | O agua\n\n"
-            f"## ÚLTIMOS 5 MOVIMIENTOS\n"
+            f"## ÚLTIMOS {last_n} MOVIMIENTOS\n"
             f"{history_block}\n\n"
             f"## INSTRUCCIÓN\n"
             f"Basándote en tu manifiesto estratégico, elige la MEJOR coordenada para disparar ahora.\n"
@@ -229,7 +224,12 @@ class LLMClient:
                         {"role": "user", "content": prompt},
                     ],
                     "temperature": self.temperature,
+                    "max_tokens": self.max_tokens,
                 }
+
+                # Pass num_predict for Ollama compatibility
+                if self.is_local_model:
+                    request_kwargs["num_predict"] = self.max_tokens
 
                 # Gemini/OpenAI support strict response_format; some local providers don't.
                 if not self.is_local_model:

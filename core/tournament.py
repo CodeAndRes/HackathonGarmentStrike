@@ -101,7 +101,7 @@ class TournamentReport:
 # ── History helpers ───────────────────────────────────────────────────────────
 
 
-def _build_history(move_log, last_n: int = 5) -> list[MoveHistoryEntry]:
+def _build_history(move_log, last_n: int = 3) -> list[MoveHistoryEntry]:
     return [
         MoveHistoryEntry(
             turno=r.turn,
@@ -150,9 +150,15 @@ def run_match(
         target_board = game.agents[current]   # board being attacked
 
         # Ask the LLM for a move
+        # Ask the LLM for a move
+        board_text = (
+            target_board.grid_text_compact(reveal_ships=False)
+            if llm_client.quick_mode
+            else target_board.grid_text(reveal_ships=False)
+        )
         move: AgentMove = llm_client.get_move(
             agent_md=agent_mds[current],
-            opponent_board_text=target_board.grid_text(reveal_ships=False),
+            opponent_board_text=board_text,
             move_history=_build_history(game.move_log),
             my_name=current,
             opponent_name=opponent,
@@ -251,9 +257,10 @@ def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
 
 def run_tournament(
     agents_dir: str | Path = "agentes",
-    llm_model: str = "gemini/gemini-1.5-pro",
+    llm_model: str = "ollama/qwen2:0.5b",
     output_file: str = "tournament_results.json",
     visual: bool = True,
+    quick_mode: bool = True,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -263,7 +270,12 @@ def run_tournament(
             f"Se encontraron: {len(agents)}."
         )
 
-    llm_client = LLMClient(model=llm_model)
+    llm_client = LLMClient(
+        model=llm_model,
+        temperature=0.0,
+        max_retries=1,
+        quick_mode=quick_mode,
+    )
     report = TournamentReport()
     pairs = list(combinations(agents, 2))
 
