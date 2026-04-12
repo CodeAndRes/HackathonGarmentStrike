@@ -268,7 +268,7 @@ class LLMClient:
                 # in early turns, causing premature truncation.
 
                 # --- DEBUG LOG ---
-                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
+                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
                     debug_f.write(f"\n{'='*80}\n")
                     debug_f.write(f"TURNO: {my_name} | Intento: {attempt}\n")
                     for msg in messages:
@@ -279,7 +279,7 @@ class LLMClient:
                 raw = (response.choices[0].message.content or "").strip()
 
                 # --- DEBUG RESPONSE ---
-                with open("llm_debug.log", "a", encoding="utf-8") as debug_f:
+                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
                     debug_f.write(f"RESP ({len(raw)} chars): {raw}\n")
 
                 if not raw:

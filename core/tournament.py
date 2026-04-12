@@ -147,11 +147,11 @@ def run_match(
     agent_mds = {config_a.name: agent_md_a, config_b.name: agent_md_b}
     wasted: dict[str, int] = {config_a.name: 0, config_b.name: 0}
 
-    log_file = Path("match_turns.log")
+    log_file = Path("logs/match_turns.log")
     if log_file.exists():
         log_file.unlink()
 
-    debug_file = Path("llm_debug.log")
+    debug_file = Path("logs/llm_debug.log")
     if debug_file.exists():
         debug_file.unlink()
 
