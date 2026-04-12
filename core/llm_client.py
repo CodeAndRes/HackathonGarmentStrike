@@ -216,6 +216,16 @@ class LLMClient:
             history_text = "(None)"
 
 
+        # Check for fallback recovery (if last move was system-forced)
+        warning_text = ""
+        if my_history and my_history[-1].razonamiento:
+            if "SISTEMA: Fallback" in my_history[-1].razonamiento:
+                warning_text = (
+                    "⚠️ CRITICAL: Your previous response was invalid or repeated a cell. \n"
+                    "The system had to force a random shot. \n"
+                    "RE-FOCUS: Check THE BOARD (X and O) carefully. Do NOT shoot there.\n\n"
+                )
+
         system_content = prompts.SYSTEM_PROMPT.format(
             my_name=my_name,
             opponent_name=opponent_name,
@@ -223,6 +233,7 @@ class LLMClient:
         )
 
         user_content = prompts.USER_PROMPT_TEMPLATE.format(
+            warning_text=warning_text,
             opponent_board_text=opponent_board_text,
             history_text=history_text
         )

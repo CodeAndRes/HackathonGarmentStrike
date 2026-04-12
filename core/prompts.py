@@ -24,6 +24,7 @@ SYSTEM_PROMPT = (
 )
 
 USER_PROMPT_TEMPLATE = (
+    "{warning_text}"
     "### OPPONENT BOARD:\n"
     "{opponent_board_text}\n\n"
     "### YOUR LAST SHOTS:\n"

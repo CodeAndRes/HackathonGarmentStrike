@@ -21,18 +21,30 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import yaml
 from pathlib import Path
-
 from dotenv import load_dotenv
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt
 from rich.rule import Rule
 
 console = Console()
-
-# Load .env if present (silently ignored if not found)
 load_dotenv()
+
+# Load settings.yaml if present
+SETTINGS_PATH = Path("settings.yaml")
+if SETTINGS_PATH.exists():
+    try:
+        with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+            full_settings = yaml.safe_load(f) or {}
+            SETTINGS = full_settings.get("engine", {})
+    except Exception as e:
+        console.print(f"[yellow]Aviso: No se pudo leer settings.yaml ({e}). Usando defaults.[/yellow]")
+        SETTINGS = {}
+else:
+    SETTINGS = {}
 
 
 # ── Sub-command handlers ──────────────────────────────────────────────────────
@@ -172,7 +184,7 @@ def build_parser() -> argparse.ArgumentParser:
     base_parser = argparse.ArgumentParser(add_help=False)
     base_parser.add_argument(
         "--model",
-        default=os.getenv("DEFAULT_MODEL", "gemini/gemini-1.5-pro"),
+        default=SETTINGS.get("default_model", os.getenv("DEFAULT_MODEL", "gemini/gemini-1.5-pro")),
         help="LiteLLM model identifier  (default: %(default)s)",
     )
     base_parser.add_argument(
@@ -183,19 +195,19 @@ def build_parser() -> argparse.ArgumentParser:
     base_parser.add_argument(
         "--sleep",
         type=float,
-        default=float(os.getenv("API_SLEEP", "0.0")),
+        default=float(SETTINGS.get("api_sleep", os.getenv("API_SLEEP", "0.0"))),
         help="Wait N seconds between moves (remote models) (default: %(default)s)",
     )
     base_parser.add_argument(
         "--max-tokens",
         type=int,
-        default=int(os.getenv("MAX_TOKENS", "150")),
+        default=int(SETTINGS.get("max_tokens", os.getenv("MAX_TOKENS", "150"))),
         help="Max tokens to generate per move (default: %(default)s)",
     )
     base_parser.add_argument(
         "--ui-sleep",
         type=float,
-        default=float(os.getenv("UI_SLEEP", "1.2")),
+        default=float(SETTINGS.get("ui_sleep", os.getenv("UI_SLEEP", "1.2"))),
         help="Slow down UI rendering by N seconds (default: %(default)s)",
     )
 
