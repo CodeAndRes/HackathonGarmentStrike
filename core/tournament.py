@@ -37,7 +37,7 @@ LOGISTICS_MAP = {
     "hit": "Prenda encajada",
     "miss": "Prenda perdida",
     "sunk": "Pedido ENCAJADO",
-    "already_shot": "Celuad duplicada"
+    "already_shot": "Celda duplicada"
 }
 
 

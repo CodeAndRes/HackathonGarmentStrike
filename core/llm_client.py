@@ -205,8 +205,8 @@ class LLMClient:
         opponent_name: str,
         forbidden_coords: set[str],
     ) -> list[dict]:
-        # Filter history to only include this agent's LAST 10 shots
-        my_history = [m for m in move_history if m.agente == my_name][-10:]
+        # Filter history to only include this agent's LAST 5 shots
+        my_history = [m for m in move_history if m.agente == my_name][-5:]
 
         history_text = "\n".join(
             f"{m.coordenada}: {m.resultado.upper()}"
@@ -215,19 +215,6 @@ class LLMClient:
         if not history_text:
             history_text = "(None)"
 
-        if not forbidden_coords:
-            forbidden_text = "(None)"
-        else:
-            from collections import defaultdict
-            rows = defaultdict(list)
-            # Sort as letters then numbers correctly
-            sorted_coords = sorted(list(forbidden_coords), key=lambda x: (x[0], int(x[1:])))
-            for c in sorted_coords:
-                rows[c[0]].append(c)
-            forbidden_text = "\n".join(
-                f"{r}: " + ", ".join(rows[r]) 
-                for r in "ABCDEFGHIJ" if r in rows
-            )
 
         system_content = prompts.SYSTEM_PROMPT.format(
             my_name=my_name,
@@ -236,7 +223,6 @@ class LLMClient:
         )
 
         user_content = prompts.USER_PROMPT_TEMPLATE.format(
-            forbidden_coords=forbidden_text,
             opponent_board_text=opponent_board_text,
             history_text=history_text
         )
@@ -279,6 +265,7 @@ class LLMClient:
                     "messages": messages,
                     "temperature": self.temperature,
                     "max_tokens": self.max_tokens,
+                    "timeout": 60,
                 }
 
                 # We avoid passing max_tokens/num_predict by default because 
