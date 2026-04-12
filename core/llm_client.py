@@ -100,6 +100,7 @@ class LLMClient:
         quick_mode: bool = True,
         api_sleep: float = 6.0,
         max_tokens: int = 150,
+        board_size: int = 10,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -111,6 +112,7 @@ class LLMClient:
         self.quick_mode = quick_mode
         self.api_sleep = api_sleep
         self.max_tokens = max_tokens
+        self.board_size = board_size
         self.is_local_model = self.model.lower().startswith("ollama/")
 
         # Allow explicit override; otherwise rely on env vars loaded by caller
@@ -226,16 +228,30 @@ class LLMClient:
                     "RE-FOCUS: Check THE BOARD (X and O) carefully. Do NOT shoot there.\n\n"
                 )
 
+        # Calculate boundary text for prompt
+        max_letter = "ABCDEFGHIJ"[self.board_size - 1]
+        range_text = f"A-{max_letter}, 1-{self.board_size}"
+
         system_content = prompts.SYSTEM_PROMPT.format(
             my_name=my_name,
             opponent_name=opponent_name,
-            agent_md=agent_md
+            agent_md=agent_md,
+            size=self.board_size,
+            range_text=range_text
         )
+
+        # Build explicit forbidden list for the prompt
+        if forbidden_coords:
+            forbidden_text = ", ".join(sorted(forbidden_coords)) if forbidden_coords else "(none)"
+        else:
+            forbidden_text = "(none)"
 
         user_content = prompts.USER_PROMPT_TEMPLATE.format(
             warning_text=warning_text,
             opponent_board_text=opponent_board_text,
-            history_text=history_text
+            history_text=history_text,
+            forbidden_text=forbidden_text,
+            range_text=range_text,
         )
 
         return [
@@ -307,6 +323,10 @@ class LLMClient:
                 data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
                 move = AgentMove(**data)
                 
+                # Dynamic boundary check
+                from core.engine import parse_coord
+                parse_coord(move.coordenada, size=self.board_size)
+
                 if forbidden_coords and move.coordenada in forbidden_coords:
                     raise ValueError(
                         f"Coordenada {move.coordenada} ya fue disparada."

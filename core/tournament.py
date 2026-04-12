@@ -53,9 +53,9 @@ class AgentConfig:
     def load_agent_md(self) -> str:
         return self.agent_md_path.read_text(encoding="utf-8")
 
-    def load_board(self) -> Board:
-        ships = AlmacenParser.parse(self.almacen_path)
-        return Board(ships)
+    def load_board(self, size: int = 10) -> Board:
+        ships = AlmacenParser.parse(self.almacen_path, size=size)
+        return Board(size=size, ships=ships)
 
 
 # ── Match / tournament records ────────────────────────────────────────────────
@@ -131,6 +131,8 @@ def run_match(
     llm_client: LLMClient,
     visual: bool = True,
     ui_sleep: float = 1.0,
+    board_size: int = 10,
+    max_turns: int = 50,
 ) -> MatchRecord:
     """
     Play one full match.
@@ -139,8 +141,8 @@ def run_match(
         After apply_move() returns 'hit' or 'sunk', switch_turn() is NOT called.
         The same agent fires again in the next loop iteration.
     """
-    board_a = config_a.load_board()
-    board_b = config_b.load_board()
+    board_a = config_a.load_board(size=board_size)
+    board_b = config_b.load_board(size=board_size)
     agent_md_a = config_a.load_agent_md()
     agent_md_b = config_b.load_agent_md()
 
@@ -168,16 +170,59 @@ def run_match(
             last_reasoning="Estableciendo conexión con el LLM para el primer turno...",
         )
 
+    timeout_winner = None
     try:
         while True:
             finished, winner = game.is_over()
             if finished:
                 break
             
-            # OPTIMIZATION LIMIT: 50 turns
-            if game.turn_count >= 50:
+            # OPTIMIZATION LIMIT
+            if game.turn_count >= max_turns:
                 with log_file.open("a", encoding="utf-8") as f:
-                    f.write(f"\n[SISTEMA] Límite de 50 turnos alcanzado. Cortando partida para optimización.\n")
+                    f.write(f"\n[SISTEMA] Límite de {max_turns} turnos alcanzado. Aplicando desempate por puntos.\n")
+                
+                # Winner evaluation logic on timeout
+                # 1. Sunk ships (pedidos encajados) — who sank more enemy ships
+                sunk_a = sum(1 for s in board_b.ships if s.is_sunk)  # A sank on B's board
+                sunk_b = sum(1 for s in board_a.ships if s.is_sunk)  # B sank on A's board
+                
+                # 2. Total hits on enemy (prendas encajadas)
+                hits_by_a = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
+                hits_by_b = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
+                
+                # 3. Hits received on OWN board (less is better — defensive metric)
+                dmg_to_a = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
+                dmg_to_b = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
+
+                if sunk_a > sunk_b:
+                    timeout_winner = config_a.name
+                    reason = "PUNTOS"
+                elif sunk_b > sunk_a:
+                    timeout_winner = config_b.name
+                    reason = "PUNTOS"
+                elif hits_by_a > hits_by_b:
+                    timeout_winner = config_a.name
+                    reason = "HITS"
+                elif hits_by_b > hits_by_a:
+                    timeout_winner = config_b.name
+                    reason = "HITS"
+                elif dmg_to_a < dmg_to_b:
+                    timeout_winner = config_a.name
+                    reason = "DEFENSA"
+                elif dmg_to_b < dmg_to_a:
+                    timeout_winner = config_b.name
+                    reason = "DEFENSA"
+                else:
+                    timeout_winner = None
+                    reason = "EMPATE ABSOLUTO"
+                
+                if timeout_winner:
+                   with log_file.open("a", encoding="utf-8") as f:
+                       f.write(f"[SISTEMA] Victoria concedida a {timeout_winner} por {reason}.\n")
+                else:
+                   with log_file.open("a", encoding="utf-8") as f:
+                       f.write(f"[SISTEMA] {reason}: Nadie consigue ventaja.\n")
                 break
 
             current = game.current_agent
@@ -214,13 +259,13 @@ def run_match(
                 
                 # Elegimos una celda libre ALEATORIA para no crashear y continuar la partida.
                 libres = []
-                for c in "ABCDEFGHIJ":
-                    for r in range(1, 11):
+                for c in target_board.cols:
+                    for r in target_board.rows:
                         cand = f"{c}{r}"
                         if cand not in forbidden_set:
                             libres.append(cand)
                 
-                libre = random.choice(libres) if libres else "A1"
+                libre = random.choice(libres) if libres else f"{target_board.cols[0]}1"
                 col, row = libre[0], int(libre[1:])
                 razon = f"SISTEMA: Fallback por error crítico de API. Detalle: {error_msg}"
                 estrategia = "EMERGENCY FALLBACK"
@@ -262,7 +307,9 @@ def run_match(
         if dashboard:
             dashboard.stop()
 
-    finished, winner = game.is_over()
+    # Natural end (all ships sunk) takes priority; otherwise use timeout tiebreaker
+    finished, natural_winner = game.is_over()
+    winner = natural_winner if finished else timeout_winner
 
     if dashboard:
         dashboard.print_winner(winner, game.turn_count)
@@ -337,6 +384,8 @@ def run_tournament(
     api_sleep: float = 6.0,
     max_tokens: int = 150,
     ui_sleep: float = 1.0,
+    board_size: int = 10,
+    max_turns: int = 50,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -364,7 +413,12 @@ def run_tournament(
     for config_a, config_b in track(pairs, description="Jugando partidas..."):
         console.print(Rule(f"[cyan]{config_a.name}  vs  {config_b.name}[/cyan]"))
         try:
-            match = run_match(config_a, config_b, llm_client, visual=visual, ui_sleep=ui_sleep)
+            match = run_match(
+                config_a, config_b, llm_client, 
+                visual=visual, ui_sleep=ui_sleep, 
+                board_size=board_size,
+                max_turns=max_turns
+            )
         except Exception as exc:
             console.print(f"[red]Error en la partida: {exc}[/red]")
             match = MatchRecord(

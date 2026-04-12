@@ -6,11 +6,11 @@ Isolates strategy from engine logic and optimizes for latency.
 """
 
 SYSTEM_PROMPT = (
-    "You are a Battleship AI (10x10 A-J, 1-10).\n"
+    "You are a Battleship AI ({size}x{size} grid).\n"
     "Goal: Sink all ships fast.\n\n"
     "RULES:\n"
     "1. NEVER target coordinates already marked as 'X' (hit) or 'O' (miss) in the board.\n"
-    "2. Valid coordinates only: A1 to J10.\n"
+    "2. Valid coordinates ONLY: {range_text}.\n"
     "3. Sinking is automatic. NO redundant shots.\n"
     "4. Reply ONLY with JSON.\n\n"
     "Format:\n"
@@ -29,5 +29,7 @@ USER_PROMPT_TEMPLATE = (
     "{opponent_board_text}\n\n"
     "### YOUR LAST SHOTS:\n"
     "{history_text}\n\n"
-    "Command: Choose a new coordinate (A-J, 1-10) not already marked in the board:"
+    "### DO NOT SHOOT (already fired):\n"
+    "{forbidden_text}\n\n"
+    "Command: Choose ONE coordinate ({range_text}) NOT in the list above:"
 )

@@ -19,7 +19,7 @@ from rich.text import Text
 from rich.rule import Rule
 from rich.live import Live
 
-from core.engine import Board, BOARD_COLS, MoveRecord
+from core.engine import Board, MoveRecord
 
 console = Console()
 
@@ -60,7 +60,7 @@ def render_board(board: Board, title: str, reveal: bool = False) -> Table:
         title_style="bold white",
     )
     tbl.add_column("", style="bold white", justify="right", width=3, no_wrap=True)
-    for col in BOARD_COLS:
+    for col in board.cols:
         tbl.add_column(col, justify="center", width=3, no_wrap=True)
 
     for ri, row_data in enumerate(grid):
@@ -135,11 +135,13 @@ def render_scores(
     bar = Text()
     bar.append(f"  Turno #{turn}   ", style="bold white")
     bar.append(f"[{name_a}] ", style="bold green")
-    bar.append(f"pedidos encajados: {sunk_count(board_b)}/5  |  ", style="yellow")
+    total_a = len(board_b.ships)
+    bar.append(f"pedidos encajados: {sunk_count(board_b)}/{total_a}  |  ", style="yellow")
     bar.append(f"prendas encajadas: {hit_coords(board_b)}   ", style="cyan")
     bar.append("  │  ", style="dim")
     bar.append(f"[{name_b}] ", style="bold red")
-    bar.append(f"pedidos encajados: {sunk_count(board_a)}/5  |  ", style="yellow")
+    total_b = len(board_a.ships)
+    bar.append(f"pedidos encajados: {sunk_count(board_a)}/{total_b}  |  ", style="yellow")
     bar.append(f"prendas encajadas: {hit_coords(board_a)}", style="cyan")
     return bar
 

@@ -70,9 +70,12 @@ def cmd_play(args: argparse.Namespace) -> None:
         model=args.model,
         api_sleep=args.sleep,
         max_tokens=args.max_tokens,
+        board_size=args.board_size,
     )
     match = run_match(
-        config_a, config_b, llm_client, visual=not args.no_visual, ui_sleep=args.ui_sleep
+        config_a, config_b, llm_client, visual=not args.no_visual, 
+        ui_sleep=args.ui_sleep, board_size=args.board_size,
+        max_turns=args.max_turns
     )
 
     winner_str = match.winner if match.winner else "EMPATE"
@@ -95,6 +98,8 @@ def cmd_tournament(args: argparse.Namespace) -> None:
         api_sleep=args.sleep,
         max_tokens=args.max_tokens,
         ui_sleep=args.ui_sleep,
+        board_size=args.board_size,
+        max_turns=args.max_turns,
     )
 
 
@@ -209,6 +214,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=float(SETTINGS.get("ui_sleep", os.getenv("UI_SLEEP", "1.2"))),
         help="Slow down UI rendering by N seconds (default: %(default)s)",
+    )
+    base_parser.add_argument(
+        "--board-size",
+        type=int,
+        default=int(SETTINGS.get("board_size", 10)),
+        help="Grid size (6 to 10) (default: %(default)s)",
+    )
+    base_parser.add_argument(
+        "--max-turns",
+        type=int,
+        default=int(SETTINGS.get("max_turns", 50)),
+        help="Max turns per match (default: %(default)s)",
     )
 
     parser = argparse.ArgumentParser(

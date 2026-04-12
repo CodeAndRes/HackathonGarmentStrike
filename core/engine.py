@@ -1,10 +1,10 @@
 """
 core/engine.py
 ──────────────
-Pure game logic for Garment Strike (10×10 Supply Chain Battleship).
+Pure game logic for Garment Strike (dynamic Supply Chain Battleship).
 
-Board   : A1–J10  (columns A-J, rows 1-10)
-Pedidos : sizes 5, 4, 3, 3, 2  (must all be placed)
+Board   : 6×6 up to 10×10 (configurable via board_size parameter)
+Pedidos : sizes 5, 4, 3, 3, 2  (adjusted if they don't fit the board)
 Rules   : HIT or SUNK → same agent shoots again (handled by caller).
 
 Developer Agent  – core board logic.
@@ -21,29 +21,43 @@ from typing import Literal
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-BOARD_COLS: list[str] = list("ABCDEFGHIJ")
-BOARD_ROWS: list[int] = list(range(1, 11))
+# Las constantes globales ahora son funciones generadoras
+def get_board_cols(size: int) -> list[str]:
+    return list("ABCDEFGHIJ"[:size])
 
-# Canonical ship configuration – sorted descending for comparison
+def get_board_rows(size: int) -> list[int]:
+    return list(range(1, size + 1))
+
+# Canonical ship configuration
 REQUIRED_SHIP_SIZES: list[int] = sorted([5, 4, 3, 3, 2], reverse=True)
 
 ShotResult = Literal["hit", "miss", "sunk", "already_shot"]
 
-_COORD_RE = re.compile(r"^([A-Ja-j])(10|[1-9])$")
+# Regex genérica para validar coordenadas dinámicas
+_COORD_BASE_RE = re.compile(r"^([A-Ja-j])(\d+)$")
 
 
 # ── Coordinate helpers ────────────────────────────────────────────────────────
 
 
-def parse_coord(raw: str) -> tuple[str, int]:
-    """Parse 'B5' → ('B', 5).  Raises ValueError on invalid format."""
-    m = _COORD_RE.match(raw.strip())
+def parse_coord(raw: str, size: int = 10) -> tuple[str, int]:
+    """Parse 'B5' → ('B', 5) validating against board size."""
+    m = _COORD_BASE_RE.match(raw.strip())
     if not m:
+        raise ValueError(f"Formato de coordenada inválido: {raw!r}")
+    
+    col = m.group(1).upper()
+    row = int(m.group(2))
+    
+    valid_cols = get_board_cols(size)
+    valid_rows = get_board_rows(size)
+    
+    if col not in valid_cols or row not in valid_rows:
         raise ValueError(
-            f"Coordenada inválida: {raw!r}. "
-            "Formato esperado: letra A-J + número 1-10  (ej: B5, J10)."
+            f"Coordenada {raw!r} fuera del tablero {size}x{size} "
+            f"(A-{valid_cols[-1]}{valid_rows[0]}-{valid_rows[-1]})."
         )
-    return m.group(1).upper(), int(m.group(2))
+    return col, row
 
 
 def format_coord(col: str, row: int) -> str:
@@ -88,7 +102,8 @@ class Ship:
                 )
         elif len(unique_rows) == 1:
             # Horizontal
-            col_idxs = sorted(BOARD_COLS.index(c) for c in cols)
+            alphabet = "ABCDEFGHIJ"  # full alphabet; only used for index math
+            col_idxs = sorted(alphabet.index(c) for c in cols)
             expected = list(range(col_idxs[0], col_idxs[0] + self.size))
             if col_idxs != expected:
                 raise ValueError(
@@ -111,13 +126,20 @@ class Ship:
 
 
 class Board:
-    """One player's 10 × 10 ocean grid."""
+    """
+    Ocean grid holding ships and recording incoming shots.
+    Can be 6x6 up to 10x10.
+    """
 
-    def __init__(self, ships: list[Ship]) -> None:
-        self.ships = ships
+    def __init__(self, size: int = 10, ships: list[Ship] | None = None) -> None:
+        self.size = size
+        self.cols = get_board_cols(size)
+        self.rows = get_board_rows(size)
+        self.ships = ships or []
         # Maps coord → result of the shot that landed there
         self.shots_received: dict[tuple[str, int], ShotResult] = {}
-        self._validate_placement()
+        if ships:
+            self._validate_placement()
 
     # -- Validation -----------------------------------------------------------
 
@@ -125,9 +147,9 @@ class Board:
         seen: set[tuple[str, int]] = set()
         for ship in self.ships:
             for col, row in ship.cells:
-                if col not in BOARD_COLS or row not in BOARD_ROWS:
+                if col not in self.cols or row not in self.rows:
                     raise ValueError(
-                        f"Celda {format_coord(col, row)} fuera del tablero (A1–J10)."
+                        f"Celda {format_coord(col, row)} fuera del tablero (A1-{self.cols[-1]}{self.size})."
                     )
                 if (col, row) in seen:
                     raise ValueError(
@@ -172,33 +194,41 @@ class Board:
 
     def visible_state(self, reveal_ships: bool = False) -> list[list[str]]:
         """
-        Returns 10×10 grid of single-char strings.
+        Returns grid of single-char strings for current size.
         '~' unknown | 'X' hit/sunk | 'O' miss | '#' ship (only when reveal_ships=True)
         """
-        grid: list[list[str]] = [["~"] * 10 for _ in range(10)]
+        grid: list[list[str]] = [["~"] * self.size for _ in range(self.size)]
         if reveal_ships:
             for ship in self.ships:
                 for col, row in ship.cells:
-                    grid[row - 1][BOARD_COLS.index(col)] = "#"
+                    try:
+                        ci = self.cols.index(col)
+                        grid[row - 1][ci] = "#"
+                    except ValueError:
+                        # This should have been caught by validation, but let's be safe
+                        continue
         for (col, row), result in self.shots_received.items():
-            ci = BOARD_COLS.index(col)
-            ri = row - 1
-            grid[ri][ci] = "X" if result in ("hit", "sunk") else "O"
+            try:
+                ci = self.cols.index(col)
+                ri = row - 1
+                grid[ri][ci] = "X" if result in ("hit", "sunk") else "O"
+            except ValueError:
+                continue
         return grid
 
     def grid_text(self, reveal_ships: bool = False) -> str:
         """Human-readable ASCII grid for LLM prompt injection."""
-        header = "    " + "  ".join(BOARD_COLS)
-        lines = [header, "   +" + "---" * 10 + "-+"]
+        header = "    " + "  ".join(self.cols)
+        lines = [header, "   +" + "---" * self.size + "-+"]
         for ri, row_data in enumerate(self.visible_state(reveal_ships)):
             row_num = str(ri + 1).rjust(2)
             lines.append(f"{row_num} | " + "  ".join(row_data) + "  |")
-        lines.append("   +" + "---" * 10 + "-+")
+        lines.append("   +" + "---" * self.size + "-+")
         return "\n".join(lines)
 
     def grid_text_compact(self, reveal_ships: bool = False) -> str:
         """Token-efficient grid: plain rows separated by spaces, no ASCII borders."""
-        header = " ".join(BOARD_COLS)
+        header = " ".join(self.cols)
         rows = [header]
         for ri, row_data in enumerate(self.visible_state(reveal_ships)):
             rows.append(f"{ri + 1:>2} " + " ".join(row_data))
@@ -257,25 +287,23 @@ class AlmacenParser:
     """
 
     _SIMPLE = re.compile(
-        r"^(?:P|Pedido_?)(\d+)\s*:\s*"
-        r"((?:[A-Ja-j](?:10|[1-9])\s*)+)",
-        re.IGNORECASE | re.MULTILINE,
+        r"(?:P|Pedido_?)(\d+)\s*:\s*((?:[A-Ja-j]\d+\s*)+)", re.IGNORECASE
     )
     _TABLE = re.compile(
         r"\|\s*(?:P|Pedido_?)(\d+)\s*\|\s*\d+\s*\|\s*"
-        r"((?:[A-Ja-j](?:10|[1-9])\s*)+)\s*\|",
+        r"((?:[A-Ja-j]\d+\s*)+)\s*\|",
         re.IGNORECASE,
     )
 
     @classmethod
-    def parse(cls, filepath: str | Path) -> list[Ship]:
+    def parse(cls, filepath: str | Path, size: int = 10) -> list[Ship]:
         """Parse warehouse file and return list of Ship objects (fault-tolerant)."""
-        ships, _, _ = cls.parse_with_status(filepath)
+        ships, _, _ = cls.parse_with_status(filepath, size=size)
         return ships
 
     @classmethod
     def parse_with_status(
-        cls, filepath: str | Path, emit_warning: bool = True
+        cls, filepath: str | Path, size: int = 10, emit_warning: bool = True
     ) -> tuple[list[Ship], bool, str]:
         """
         Parse warehouse file with status metadata.
@@ -291,7 +319,7 @@ class AlmacenParser:
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            return cls.generate_random_layout(), True, reason
+            return cls.generate_random_layout(size=size), True, reason
 
         ships: list[Ship] = []
         try:
@@ -299,7 +327,7 @@ class AlmacenParser:
                 for m in pat.finditer(text):
                     order_id = f"P{m.group(1)}"
                     raw_coords = m.group(2).split()
-                    cells = [parse_coord(c) for c in raw_coords]
+                    cells = [parse_coord(c, size=size) for c in raw_coords]
                     ships.append(Ship(order_id=order_id, size=len(cells), cells=cells))
                 if ships:
                     break
@@ -310,7 +338,7 @@ class AlmacenParser:
                 )
 
             # Validate full board configuration in one place.
-            Board(ships)
+            Board(size=size, ships=ships)
             return ships, False, "ok"
         except Exception as exc:
             reason = f"Formato inválido en {str(filepath)!r}: {exc}"
@@ -320,31 +348,38 @@ class AlmacenParser:
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            return cls.generate_random_layout(), True, reason
+            return cls.generate_random_layout(size=size), True, reason
 
     @classmethod
-    def generate_random_layout(cls) -> list[Ship]:
-        """Generate a legal random layout with required sizes: 5,4,3,3,2."""
+    def generate_random_layout(cls, size: int = 10) -> list[Ship]:
+        """Generate a legal random layout with required sizes: 5,4,3,3,2 (if they fit)."""
+        cols = get_board_cols(size)
+        rows = get_board_rows(size)
         occupied: set[tuple[str, int]] = set()
         ships: list[Ship] = []
 
-        for idx, size in enumerate(REQUIRED_SHIP_SIZES, start=1):
+        # Adjust ship sizes if board is too small for a size-5 ship
+        effective_sizes = [s for s in REQUIRED_SHIP_SIZES if s <= size]
+        if not effective_sizes:
+             effective_sizes = [2] # absolute fallback
+
+        for idx, s_size in enumerate(effective_sizes, start=1):
             placed = False
             for _ in range(500):
                 horizontal = random.choice([True, False])
                 if horizontal:
-                    row = random.choice(BOARD_ROWS)
-                    start_ci = random.randint(0, len(BOARD_COLS) - size)
-                    cells = [(BOARD_COLS[start_ci + off], row) for off in range(size)]
+                    row = random.choice(rows)
+                    start_ci = random.randint(0, len(cols) - s_size)
+                    cells = [(cols[start_ci + off], row) for off in range(s_size)]
                 else:
-                    col = random.choice(BOARD_COLS)
-                    start_row = random.randint(1, len(BOARD_ROWS) - size + 1)
-                    cells = [(col, start_row + off) for off in range(size)]
+                    col = random.choice(cols)
+                    start_row = random.randint(1, len(rows) - s_size + 1)
+                    cells = [(col, start_row + off) for off in range(s_size)]
 
                 if any(c in occupied for c in cells):
                     continue
 
-                ship = Ship(order_id=f"P{idx}", size=size, cells=cells)
+                ship = Ship(order_id=f"P{idx}", size=s_size, cells=cells)
                 ships.append(ship)
                 occupied.update(cells)
                 placed = True
@@ -369,9 +404,11 @@ class Game:
         This class is a pure state machine. The caller (tournament.py / main.py)
         must check apply_move() result and call switch_turn() only on 'miss'
         or 'already_shot'.  This keeps turn logic transparent and testable.
-    """
 
-    MAX_TURNS = 120  # short hackathon-safe cap to avoid stalled matches
+    Turn limit and tiebreaker logic are handled by the caller (tournament.py),
+    NOT by this class. This class only detects the natural end condition
+    (all ships sunk).
+    """
 
     def __init__(
         self,
@@ -443,29 +480,11 @@ class Game:
     def is_over(self) -> tuple[bool, str | None]:
         """
         Returns (finished, winner_name).
-        At MAX_TURNS, winner is decided by total impacts (hit+sunk).
+        Only checks the natural end condition: all of one player's ships sunk.
+        Turn limits and tiebreakers are the caller's responsibility.
         """
         for name, own_board in self.boards.items():
             if own_board.all_sunk:
                 winner = self.names[1 - self.names.index(name)]
                 return True, winner
-        if self.turn_count >= self.MAX_TURNS:
-            metrics: dict[str, tuple[int, int, int]] = {}
-            for name in self.names:
-                target_board = self.agents[name]
-                impacts = sum(
-                    1 for r in target_board.shots_received.values() if r in ("hit", "sunk")
-                )
-                sunk_ships = sum(1 for s in target_board.ships if s.is_sunk)
-                # tuple sorted descending: impacts, sunk ships, shots fired
-                metrics[name] = (impacts, sunk_ships, self.shots_fired[name])
-
-            # Deterministic winner selection even on perfect tie:
-            # impacts > sunk ships > total shots fired > registration order.
-            winner = sorted(
-                self.names,
-                key=lambda n: (metrics[n][0], metrics[n][1], metrics[n][2]),
-                reverse=True,
-            )[0]
-            return True, winner
         return False, None

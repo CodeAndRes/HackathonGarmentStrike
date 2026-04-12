@@ -29,3 +29,4 @@
     - Selección de modelo de IA 
 - [ ] Separar el archivo de parametros del de claves api key 
 - [ ] Posible envio de contexto mayor tras Fallback 
+- [ ] Tamaño de tablero dinámico
