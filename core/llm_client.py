@@ -263,10 +263,9 @@ class LLMClient:
                     "temperature": self.temperature,
                 }
 
-                # Pass max_tokens to local models only due to Gemini's max_tokens bug
-                if self.is_local_model:
-                    request_kwargs["max_tokens"] = self.max_tokens
-                    request_kwargs["num_predict"] = self.max_tokens
+                # We avoid passing max_tokens/num_predict by default because 
+                # some providers (Gemini, Ollama) misinterpret it as a character limit 
+                # in early turns, causing premature truncation.
 
                 # --- DEBUG LOG ---
                 with open("llm_debug.log", "a", encoding="utf-8") as debug_f:

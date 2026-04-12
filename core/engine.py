@@ -203,7 +203,6 @@ class Board:
         for ri, row_data in enumerate(self.visible_state(reveal_ships)):
             rows.append(f"{ri + 1:>2} " + " ".join(row_data))
         return "\n".join(rows)
-
     def grid_text_minimal(self) -> str:
         """Hyper-token-efficient board text: returns only known coordinates."""
         agua = []
@@ -214,9 +213,17 @@ class Board:
                 impacto.append(c)
             else:
                 agua.append(c)
-        prohibidos = agua + impacto
-        prohibidos_txt = ", ".join(prohibidos) if prohibidos else "Ninguna"
-        return f"CELDAS PROHIBIDAS (NO DISPARAR AQUÍ): {prohibidos_txt}"
+        
+        txt = ""
+        if impacto:
+            txt += f"IMPACTOS PREVIOS (X): {', '.join(impacto)}\n"
+        if agua:
+            txt += f"AGUA/MISS PREVIO (O): {', '.join(agua)}\n"
+        
+        if not txt:
+            return "TABLERO RIVAL: (Aún no has disparado)"
+        
+        return f"ESTADO ACTUAL DEL TABLERO RIVAL:\n{txt}"
 
 
 # ── Move record ───────────────────────────────────────────────────────────────

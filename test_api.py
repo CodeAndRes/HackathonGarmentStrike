@@ -22,7 +22,7 @@ load_dotenv()
 
 try:
     response = completion(
-        model="gemini/gemini-2.5-flash",  # Puedes cambiar a "gemini/gemini-1.5-flash" si usas Gemini
+        model=os.getenv("DEFAULT_MODEL", "gemini/gemini-3-flash-preview"),
         messages=[{"role": "user", "content": "Responde SOLO con la palabra: OK"}],
         temperature=0.0,
         max_tokens=5

@@ -4,12 +4,17 @@ test_llm_fast.py
 ───────────────
 Test rápido del LLM para verificar que Ollama responde.
 """
+import os
+from dotenv import load_dotenv
 from core.llm_client import LLMClient
+
+load_dotenv()
+MODEL = os.getenv("DEFAULT_MODEL", "ollama/llama3")
 
 print("[*] Probando conexión a Ollama...")
 
 try:
-    client = LLMClient(model="ollama/llama3:latest", max_retries=1)
+    client = LLMClient(model=MODEL, max_retries=1)
     
     # Test: Move decision (similar a lo que haría en una partida)
     print("\n[1] Test move decision:")

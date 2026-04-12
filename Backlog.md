@@ -1,0 +1,29 @@
+# 📝 Notes.
+- [ ] Hay que traducir en la respuesta del LLM los terminos asociados a Battleship a terminologia de Logistica.
+    - SUNK -> Pedido Encajado.
+    - HIT -> Prenda encajada. 
+    - MISS -> Prenda perdida.
+- [ ]  Tiro forzado debería ser random pero excluyendo las coordenadas que ya han sido atacadas.
+- [ ] Intentar fijar el tamaño de la pantalla del terminal para que no se rompa el formato. 
+- ⚠️ Posible cambio de estrategia: 
+    - Los equipos programaran un modulo en python (Brain.py)que se encargue de decidir la estrategia
+    - El modulo puede consultar a la IA cada 10 turnos.
+    - Se le pasa el historial completo de los (miss,hit y sunk) y la IA devolvería cuandrante a atacar.
+
+- [ ] El sleep de 5 segundos igual no es necesario segun los tiempo de la última partida.
+- [ ] Comprimir la información de celdas prohibidas agrupadas por miss, hit y sunk.
+- [ ] Posible combinación de dos modelos de IA para mejorar la estrategia.
+    - Uno para ejecutar la estrategia y obedecer las reglas.
+    - Otro para establecer la estrategia, delimitando zonas de búsqueda.    
+- Parece que hay problemas con la separación de roles de cadajugador, parece que la IA esta recordando y tomando deciciones de estrategicas sobre las jugadas del oponente, parece que no esta bien definido el rol de cada jugador.
+- [ ] Hay probar la retención de memoria de la IA, lo ideal es que se le pasen las reglas al inicio y luego solo el estado del tablero y las jugadas realizadas. 
+- [ ] organizar todas las pruebas unitarias 
+- [ ] Que en los logs aparezca la fecha y hora y el modelo que ha ejecutado la jugada.
+- [ ] Explorar la posibilidad usar distintos modelos de IA para cada jugador.
+- [ ] 
+
+- [ ] Crear un menu basico 
+    - Tests
+    - Partida normal
+    - Partida minimalista
+    - Selección de modelo de IA 
