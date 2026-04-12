@@ -249,9 +249,8 @@ class LLMClient:
         (no accumulated corrections that poison the context).
         Raises ValueError if all retries exhausted.
         """
-        # Only sleep if we are using a remote API (Gemini/OpenAI) to respect RPM limits.
         if not self.is_local_model:
-            time.sleep(5)
+            time.sleep(4)
         
         messages = self.build_messages(
             agent_md, opponent_board_text, move_history, my_name, opponent_name, forbidden_coords
@@ -265,6 +264,7 @@ class LLMClient:
                     "model": self.model,
                     "messages": messages,
                     "temperature": self.temperature,
+                    "max_tokens": 150,
                 }
 
                 # We avoid passing max_tokens/num_predict by default because 
