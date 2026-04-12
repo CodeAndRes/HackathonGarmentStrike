@@ -25,6 +25,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt, IntPrompt
+from rich.rule import Rule
 
 console = Console()
 
@@ -74,31 +77,113 @@ def cmd_tournament(args: argparse.Namespace) -> None:
     )
 
 
+def run_interactive_menu(args: argparse.Namespace) -> None:
+    """Interactively ask the user what they want to do."""
+    while True:
+        console.clear()
+        console.print(
+            Panel(
+                "[bold yellow]⚡ GARMENT STRIKE – AI Supply Chain Simulator ⚡[/bold yellow]\n"
+                "[dim]Hackathon Abril 2026[/dim]",
+                expand=False,
+            )
+        )
+        console.print("\n[bold cyan]Menú Principal:[/bold cyan]")
+        console.print("1. [green]Ejecutar Pruebas (Tests)[/green]")
+        console.print("2. [yellow]Partida de Ejemplo (Alpha vs Beta)[/yellow]")
+        console.print("3. [magenta]Partida Personalizada[/magenta]")
+        console.print("4. [red]Salir[/red]")
+
+        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4"], default="4")
+
+        if choice == "1":
+            import subprocess
+
+            console.print("\n[bold]Lanzando pytest...[/bold]")
+            subprocess.run([sys.executable, "-m", "pytest", "tests/", "-v"])
+            Prompt.ask("\nPresiona Enter para volver")
+
+        elif choice == "2":
+            # Quick match config
+            args.command = "play"
+            args.team_a = "Alpha"
+            args.agent_a = "agentes/ejemplo/agent.md"
+            args.almacen_a = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            args.team_b = "Beta"
+            args.agent_b = "agentes/ejemplo/agent.md"
+            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            cmd_play(args)
+            Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
+
+        elif choice == "3":
+            console.print("\n[bold cyan]-- Configuración de Partida Personalizada --[/bold cyan]")
+            # Note: This is a simplified interactive setup. 
+            # Could be expanded to list folders in agentes/
+            args.command = "play"
+            args.team_a = Prompt.ask("Nombre Equipo A", default="Equipo_A")
+            args.team_b = Prompt.ask("Nombre Equipo B", default="Equipo_B")
+            
+            models = [
+                "gemini/gemini-1.5-pro",
+                "gemini/gemini-3-flash-preview",
+                "ollama/llama3:latest",
+                "ollama/gemma4:e4b",
+                "ollama/phi3:mini",
+                "ollama/qwen3.5:0.8b"
+            ]
+            console.print("\nModelos sugeridos:")
+            for i, m in enumerate(models, 1):
+                console.print(f"{i}. {m}")
+            
+            m_idx = IntPrompt.ask("Selecciona un modelo (o introduce nombre manual)", default=1)
+            if 1 <= m_idx <= len(models):
+                args.model = models[m_idx-1]
+            else:
+                args.model = Prompt.ask("Nombre del modelo (LiteLLM format)")
+            
+            # Simple path defaults for now
+            args.agent_a = "agentes/ejemplo/agent.md"
+            args.almacen_a = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            args.agent_b = "agentes/ejemplo/agent.md"
+            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            
+            cmd_play(args)
+            Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
+
+        elif choice == "4":
+            console.print("[yellow]Saliendo...[/yellow]")
+            break
+
+
 # ── Argument parser ───────────────────────────────────────────────────────────
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="garment-strike",
-        description="Garment Strike – AI Supply Chain Simulation Engine",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument(
+    # Common arguments for both CLI and interactive mode
+    base_parser = argparse.ArgumentParser(add_help=False)
+    base_parser.add_argument(
         "--model",
         default=os.getenv("DEFAULT_MODEL", "gemini/gemini-1.5-pro"),
         help="LiteLLM model identifier  (default: %(default)s)",
     )
-    parser.add_argument(
+    base_parser.add_argument(
         "--no-visual",
         action="store_true",
         help="Disable the Rich terminal dashboard (useful for CI / logging).",
     )
 
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(
+        prog="garment-strike",
+        description="Garment Strike - AI Supply Chain Simulation Engine",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+        parents=[base_parser]
+    )
 
-    # ── play ──────────────────────────────────────────────────────────────────
-    play = sub.add_parser("play", help="Partida única entre dos equipos.")
+    sub = parser.add_subparsers(dest="command", required=False)
+
+    # -- play ------------------------------------------------------------------
+    play = sub.add_parser("play", help="Partida única entre dos equipos.", parents=[base_parser])
     play.add_argument("--team-a", required=True, metavar="NAME", help="Nombre del equipo A.")
     play.add_argument("--agent-a", required=True, metavar="PATH", help="Ruta al agent.md del equipo A.")
     play.add_argument("--almacen-a", required=True, metavar="PATH", help="Ruta al almacen_*.md del equipo A.")
@@ -106,8 +191,8 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--agent-b", required=True, metavar="PATH", help="Ruta al agent.md del equipo B.")
     play.add_argument("--almacen-b", required=True, metavar="PATH", help="Ruta al almacen_*.md del equipo B.")
 
-    # ── tournament ────────────────────────────────────────────────────────────
-    tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.")
+    # -- tournament ------------------------------------------------------------
+    tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
     tour.add_argument(
         "--agents-dir",
         default="agentes",
@@ -136,6 +221,8 @@ def main() -> None:
             cmd_play(args)
         elif args.command == "tournament":
             cmd_tournament(args)
+        else:
+            run_interactive_menu(args)
     except KeyboardInterrupt:
         console.print("\n[yellow]Partida interrumpida por el usuario.[/yellow]")
         sys.exit(0)

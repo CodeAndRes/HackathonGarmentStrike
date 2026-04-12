@@ -23,6 +23,8 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
+from core import prompts
+
 try:
     import litellm
 
@@ -204,23 +206,21 @@ class LLMClient:
         my_history = [m for m in move_history if m.agente == my_name]
 
         history_text = "\n".join(
-            f"[T{m.turno}] -> {m.coordenada} ({m.resultado.upper()})"
+            f"{m.coordenada}: {m.resultado.upper()}"
             for m in my_history
         )
         if not history_text:
-            history_text = "(No previous shots)"
+            history_text = "(None)"
 
-        system_content = (
-            f"You are playing Battleship. Grid is 10x10 (A-J, 1-10).\n"
-            f"YOUR STRATEGY ({my_name}):\n{agent_md}\n\n"
-            f"Respond ONLY with a valid JSON. Expected format keys MUST be in Spanish:\n"
-            f'{{"coordenada": "E5", "razonamiento": "short analysis...", "estrategia_aplicada": "..."}}'
+        system_content = prompts.SYSTEM_PROMPT.format(
+            my_name=my_name,
+            opponent_name=opponent_name,
+            agent_md=agent_md
         )
 
-        user_content = (
-            f"OPPONENT BOARD STATE:\n{opponent_board_text}\n\n"
-            f"YOUR PREVIOUS SHOTS:\n{history_text}\n\n"
-            f"Based on the board state and your previous shots (do not repeat coordinates), what is your next target coordinate?"
+        user_content = prompts.USER_PROMPT_TEMPLATE.format(
+            opponent_board_text=opponent_board_text,
+            history_text=history_text
         )
 
         return [
@@ -269,8 +269,9 @@ class LLMClient:
 
                 # --- DEBUG LOG ---
                 with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
+                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                     debug_f.write(f"\n{'='*80}\n")
-                    debug_f.write(f"TURNO: {my_name} | Intento: {attempt}\n")
+                    debug_f.write(f"[{timestamp}] TURNO: {my_name} | Modelo: {self.model} | Intento: {attempt}\n")
                     for msg in messages:
                         debug_f.write(f"[{msg['role'].upper()}] ({len(msg['content'])} chars):\n{msg['content'][:300]}...\n")
                     debug_f.write(f"{'-'*80}\n")

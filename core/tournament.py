@@ -171,6 +171,12 @@ def run_match(
             finished, winner = game.is_over()
             if finished:
                 break
+            
+            # OPTIMIZATION LIMIT: 50 turns
+            if game.turn_count >= 50:
+                with log_file.open("a", encoding="utf-8") as f:
+                    f.write(f"\n[SISTEMA] Límite de 50 turnos alcanzado. Cortando partida para optimización.\n")
+                break
 
             current = game.current_agent
             opponent = game.opponent
