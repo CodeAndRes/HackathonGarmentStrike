@@ -201,9 +201,10 @@ class LLMClient:
         move_history: list[MoveHistoryEntry],
         my_name: str,
         opponent_name: str,
+        forbidden_coords: set[str],
     ) -> list[dict]:
-        # Filter history to only include this agent's shots
-        my_history = [m for m in move_history if m.agente == my_name]
+        # Filter history to only include this agent's LAST 10 shots
+        my_history = [m for m in move_history if m.agente == my_name][-10:]
 
         history_text = "\n".join(
             f"{m.coordenada}: {m.resultado.upper()}"
@@ -212,6 +213,8 @@ class LLMClient:
         if not history_text:
             history_text = "(None)"
 
+        forbidden_text = ", ".join(sorted(list(forbidden_coords))) if forbidden_coords else "(None)"
+
         system_content = prompts.SYSTEM_PROMPT.format(
             my_name=my_name,
             opponent_name=opponent_name,
@@ -219,6 +222,7 @@ class LLMClient:
         )
 
         user_content = prompts.USER_PROMPT_TEMPLATE.format(
+            forbidden_coords=forbidden_text,
             opponent_board_text=opponent_board_text,
             history_text=history_text
         )
@@ -250,7 +254,7 @@ class LLMClient:
             time.sleep(5)
         
         messages = self.build_messages(
-            agent_md, opponent_board_text, move_history, my_name, opponent_name
+            agent_md, opponent_board_text, move_history, my_name, opponent_name, forbidden_coords
         )
         last_error: Exception | None = None
         start_time = time.perf_counter()
