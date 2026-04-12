@@ -98,7 +98,8 @@ class LLMClient:
         max_retries: int = 3,
         temperature: float = 0.2,
         quick_mode: bool = True,
-        max_tokens: int = 300,
+        api_sleep: float = 6.0,
+        max_tokens: int = 150,
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -249,8 +250,8 @@ class LLMClient:
         (no accumulated corrections that poison the context).
         Raises ValueError if all retries exhausted.
         """
-        if not self.is_local_model:
-            time.sleep(4)
+        if not self.is_local_model and self.api_sleep > 0:
+            time.sleep(self.api_sleep)
         
         messages = self.build_messages(
             agent_md, opponent_board_text, move_history, my_name, opponent_name, forbidden_coords
@@ -264,7 +265,7 @@ class LLMClient:
                     "model": self.model,
                     "messages": messages,
                     "temperature": self.temperature,
-                    "max_tokens": 150,
+                    "max_tokens": self.max_tokens,
                 }
 
                 # We avoid passing max_tokens/num_predict by default because 

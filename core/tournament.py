@@ -331,6 +331,8 @@ def run_tournament(
     output_file: str = "tournament_results.json",
     visual: bool = True,
     quick_mode: bool = True,
+    api_sleep: float = 6.0,
+    max_tokens: int = 150,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -345,6 +347,8 @@ def run_tournament(
         temperature=0.0,
         max_retries=1,
         quick_mode=quick_mode,
+        api_sleep=api_sleep,
+        max_tokens=max_tokens,
     )
     report = TournamentReport()
     pairs = list(combinations(agents, 2))

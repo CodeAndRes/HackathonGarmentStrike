@@ -54,7 +54,11 @@ def cmd_play(args: argparse.Namespace) -> None:
         almacen_path=Path(args.almacen_b),
     )
 
-    llm_client = LLMClient(model=args.model)
+    llm_client = LLMClient(
+        model=args.model,
+        api_sleep=args.sleep,
+        max_tokens=args.max_tokens,
+    )
     match = run_match(config_a, config_b, llm_client, visual=not args.no_visual)
 
     winner_str = match.winner if match.winner else "EMPATE"
@@ -74,6 +78,8 @@ def cmd_tournament(args: argparse.Namespace) -> None:
         llm_model=args.model,
         output_file=args.output,
         visual=not args.no_visual,
+        api_sleep=args.sleep,
+        max_tokens=args.max_tokens,
     )
 
 
@@ -170,6 +176,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-visual",
         action="store_true",
         help="Disable the Rich terminal dashboard (useful for CI / logging).",
+    )
+    base_parser.add_argument(
+        "--sleep",
+        type=float,
+        default=float(os.getenv("API_SLEEP", "0.0")),
+        help="Wait N seconds between moves (remote models) (default: %(default)s)",
+    )
+    base_parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=int(os.getenv("MAX_TOKENS", "150")),
+        help="Max tokens to generate per move (default: %(default)s)",
     )
 
     parser = argparse.ArgumentParser(
