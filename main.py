@@ -59,7 +59,9 @@ def cmd_play(args: argparse.Namespace) -> None:
         api_sleep=args.sleep,
         max_tokens=args.max_tokens,
     )
-    match = run_match(config_a, config_b, llm_client, visual=not args.no_visual)
+    match = run_match(
+        config_a, config_b, llm_client, visual=not args.no_visual, ui_sleep=args.ui_sleep
+    )
 
     winner_str = match.winner if match.winner else "EMPATE"
     console.print(f"\n[bold]Ganador:[/bold] {winner_str}")
@@ -80,6 +82,7 @@ def cmd_tournament(args: argparse.Namespace) -> None:
         visual=not args.no_visual,
         api_sleep=args.sleep,
         max_tokens=args.max_tokens,
+        ui_sleep=args.ui_sleep,
     )
 
 
@@ -188,6 +191,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=int(os.getenv("MAX_TOKENS", "150")),
         help="Max tokens to generate per move (default: %(default)s)",
+    )
+    base_parser.add_argument(
+        "--ui-sleep",
+        type=float,
+        default=float(os.getenv("UI_SLEEP", "1.2")),
+        help="Slow down UI rendering by N seconds (default: %(default)s)",
     )
 
     parser = argparse.ArgumentParser(

@@ -109,6 +109,7 @@ class LLMClient:
         self.max_retries = max_retries
         self.temperature = temperature
         self.quick_mode = quick_mode
+        self.api_sleep = api_sleep
         self.max_tokens = max_tokens
         self.is_local_model = self.model.lower().startswith("ollama/")
 
@@ -214,7 +215,19 @@ class LLMClient:
         if not history_text:
             history_text = "(None)"
 
-        forbidden_text = ", ".join(sorted(list(forbidden_coords))) if forbidden_coords else "(None)"
+        if not forbidden_coords:
+            forbidden_text = "(None)"
+        else:
+            from collections import defaultdict
+            rows = defaultdict(list)
+            # Sort as letters then numbers correctly
+            sorted_coords = sorted(list(forbidden_coords), key=lambda x: (x[0], int(x[1:])))
+            for c in sorted_coords:
+                rows[c[0]].append(c)
+            forbidden_text = "\n".join(
+                f"{r}: " + ", ".join(rows[r]) 
+                for r in "ABCDEFGHIJ" if r in rows
+            )
 
         system_content = prompts.SYSTEM_PROMPT.format(
             my_name=my_name,

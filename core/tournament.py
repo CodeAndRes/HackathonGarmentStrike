@@ -16,6 +16,7 @@ Reviewer Agent – The Golden Rule is enforced in run_match():
 from __future__ import annotations
 
 import json
+import time
 import random
 from dataclasses import asdict, dataclass, field
 from itertools import combinations
@@ -129,6 +130,7 @@ def run_match(
     config_b: AgentConfig,
     llm_client: LLMClient,
     visual: bool = True,
+    ui_sleep: float = 1.0,
 ) -> MatchRecord:
     """
     Play one full match.
@@ -248,6 +250,7 @@ def run_match(
                     last_strategy=estrategia,
                     last_reasoning=razon,
                 )
+                time.sleep(ui_sleep)
 
             # ── GOLDEN RULE ────────────────────────────────────────────────────
             # HIT or SUNK  → same agent shoots again (do NOT switch).
@@ -333,6 +336,7 @@ def run_tournament(
     quick_mode: bool = True,
     api_sleep: float = 6.0,
     max_tokens: int = 150,
+    ui_sleep: float = 1.0,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -360,7 +364,7 @@ def run_tournament(
     for config_a, config_b in track(pairs, description="Jugando partidas..."):
         console.print(Rule(f"[cyan]{config_a.name}  vs  {config_b.name}[/cyan]"))
         try:
-            match = run_match(config_a, config_b, llm_client, visual=visual)
+            match = run_match(config_a, config_b, llm_client, visual=visual, ui_sleep=ui_sleep)
         except Exception as exc:
             console.print(f"[red]Error en la partida: {exc}[/red]")
             match = MatchRecord(
