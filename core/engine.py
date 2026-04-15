@@ -33,6 +33,13 @@ REQUIRED_SHIP_SIZES: list[int] = sorted([5, 4, 3, 3, 2], reverse=True)
 
 ShotResult = Literal["hit", "miss", "sunk", "already_shot"]
 
+LOGISTICS_MAP = {
+    "hit": "Prenda encajada",
+    "miss": "Prenda perdida",
+    "sunk": "Pedido ENCAJADO",
+    "already_shot": "Celda duplicada"
+}
+
 # Regex genérica para validar coordenadas dinámicas
 _COORD_BASE_RE = re.compile(r"^([A-Ja-j])(\d+)$")
 

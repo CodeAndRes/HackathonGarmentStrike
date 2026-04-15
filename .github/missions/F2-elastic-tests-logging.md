@@ -63,13 +63,13 @@ Verificar que TODOS los puntos de salida usan el `LOGISTICS_MAP`:
 ---
 
 ## ✅ Verification Gate
-- [ ] `python -m pytest tests/ -v` → 100% pass con `ship_sizes=[3,3,2]` en settings.yaml.
-- [ ] `python -m pytest tests/ -v` → 100% pass con `ship_sizes=[5,4,3,3,2]` en settings.yaml.
-- [ ] Los tests NO importan ni usan `REQUIRED_SHIP_SIZES` directamente.
-- [ ] `match_turns.log` muestra timestamp + modelo en cada línea.
+- [x] `python -m pytest tests/ -v` → 100% pass con `ship_sizes=[3,3,2]` en settings.yaml.
+- [x] `python -m pytest tests/ -v` → 100% pass con `ship_sizes=[5,4,3,3,2]` en settings.yaml.
+- [x] Los tests NO importan ni usan `REQUIRED_SHIP_SIZES` directamente.
+- [x] `match_turns.log` muestra timestamp + modelo en cada línea.
 
 ---
-**Status**: [PENDING]  
+**Status**: [COMPLETED]  
 **Assigned to**: @supply-qa + @supply-dev  
 **Depends on**: MISSION-F1-ELASTIC-CONFIG [COMPLETED]  
 **Approval Required**: No

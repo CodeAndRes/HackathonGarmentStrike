@@ -163,6 +163,30 @@ class TestAgentMoveInvalidCoords:
             AgentMove(razonamiento="r", estrategia_aplicada="e")  # type: ignore[call-arg]
 
 
+class TestDynamicCoordinateValidation:
+    """F2.3: Tests de validación Pydantic dinámica pasándole el tamaño del tablero como contexto."""
+
+    def test_g5_rejected_on_6x6(self):
+        with pytest.raises(ValidationError):
+            AgentMove.model_validate(
+                {"coordenada": "G5", "razonamiento": "r", "estrategia_aplicada": "e"},
+                context={"board_size": 6}
+            )
+
+    def test_f6_accepted_on_6x6(self):
+        m = AgentMove.model_validate(
+            {"coordenada": "F6", "razonamiento": "r", "estrategia_aplicada": "e"},
+            context={"board_size": 6}
+        )
+        assert m.coordenada == "F6"
+
+    def test_j10_accepted_on_10x10(self):
+        m = AgentMove.model_validate(
+            {"coordenada": "J10", "razonamiento": "r", "estrategia_aplicada": "e"},
+            context={"board_size": 10}
+        )
+        assert m.coordenada == "J10"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # LLMClient.build_prompt (no LLM call needed)
 # ═══════════════════════════════════════════════════════════════════════════════

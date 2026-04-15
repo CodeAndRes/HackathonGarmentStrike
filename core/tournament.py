@@ -28,17 +28,11 @@ from rich.progress import track
 from rich.rule import Rule
 from rich.table import Table
 
-from core.engine import AlmacenParser, Board, Game
+from core.engine import AlmacenParser, Board, Game, LOGISTICS_MAP
 from core.llm_client import AgentMove, LLMClient, MoveHistoryEntry
 from core.visualizer import GameDashboard
 
 console = Console()
-LOGISTICS_MAP = {
-    "hit": "Prenda encajada",
-    "miss": "Prenda perdida",
-    "sunk": "Pedido ENCAJADO",
-    "already_shot": "Celda duplicada"
-}
 
 
 # ── Agent config ──────────────────────────────────────────────────────────────
@@ -285,7 +279,9 @@ def run_match(
             with log_file.open("a", encoding="utf-8") as f:
                 lat_str = f" {lat/1000.0:.2f}s" if lat else ""
                 log_res = LOGISTICS_MAP.get(result, result.upper())
-                f.write(f"[T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {log_res:<16} | lat:{lat_str}\n")
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                model_name = getattr(llm_client, "model", "unknown")
+                f.write(f"[{timestamp}] [{model_name}] [T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {log_res:<16} | lat:{lat_str}\n")
                 if "SISTEMA" in razon:
                     f.write(f"           ↳ (AVISO: El LLM falló. Se usó tiro forzado para continuar)\n")
                 elif result == "already_shot":

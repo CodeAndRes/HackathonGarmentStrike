@@ -19,7 +19,7 @@ from rich.text import Text
 from rich.rule import Rule
 from rich.live import Live
 
-from core.engine import Board, MoveRecord
+from core.engine import Board, MoveRecord, LOGISTICS_MAP
 
 console = Console()
 
@@ -40,10 +40,10 @@ _RESULT_STYLE: dict[str, str] = {
 }
 
 _RESULT_ICON: dict[str, str] = {
-    "hit": "📦 PRENDA ENCAJADA",
-    "sunk": "🔥 PEDIDO ENCAJADO",
-    "miss": "❔ PRENDA PERDIDA",
-    "already_shot": "⚠️ REPETIDO",
+    "hit": f"📦 {LOGISTICS_MAP['hit'].upper()}",
+    "sunk": f"🔥 {LOGISTICS_MAP['sunk'].upper()}",
+    "miss": f"❔ {LOGISTICS_MAP['miss'].upper()}",
+    "already_shot": f"⚠️ {LOGISTICS_MAP['already_shot'].upper()}",
 }
 
 

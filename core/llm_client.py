@@ -21,7 +21,7 @@ import re
 import time
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ValidationInfo
 
 from core import prompts
 
@@ -53,13 +53,21 @@ class AgentMove(BaseModel):
 
     @field_validator("coordenada")
     @classmethod
-    def validate_coordinate(cls, v: str) -> str:
+    def validate_coordinate(cls, v: str, info: ValidationInfo) -> str:
         clean = v.strip().upper()
         if not _COORD_RE.match(clean):
             raise ValueError(
                 f"Coordenada {v!r} inválida. "
                 "Debe ser letra A-J seguida de número 1-10  (ej: B5, J10)."
             )
+        
+        # Validación dinámica si se provee el contexto
+        if info.context is not None and "board_size" in info.context:
+            size = info.context["board_size"]
+            from core.engine import parse_coord
+            # parse_coord levanta ValueError si está fuera de límites
+            parse_coord(clean, size=size)
+
         return clean
 
 
@@ -210,8 +218,9 @@ class LLMClient:
         # Filter history to only include this agent's LAST 5 shots
         my_history = [m for m in move_history if m.agente == my_name][-5:]
 
+        from core.engine import LOGISTICS_MAP
         history_text = "\n".join(
-            f"{m.coordenada}: {m.resultado.upper()}"
+            f"{m.coordenada}: {LOGISTICS_MAP.get(m.resultado, m.resultado).upper()}"
             for m in my_history
         )
         if not history_text:
@@ -321,11 +330,7 @@ class LLMClient:
                 # Parse with multi-stage fallback (handles fences + truncation)
                 data = self._parse_response(raw)
                 data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
-                move = AgentMove(**data)
-                
-                # Dynamic boundary check
-                from core.engine import parse_coord
-                parse_coord(move.coordenada, size=self.board_size)
+                move = AgentMove.model_validate(data, context={"board_size": self.board_size})
 
                 if forbidden_coords and move.coordenada in forbidden_coords:
                     raise ValueError(
