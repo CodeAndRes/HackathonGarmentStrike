@@ -1,36 +1,39 @@
-# 📝 Notes.
-- [x] Hay que traducir en la respuesta del LLM los terminos asociados a Battleship a terminologia de Logistica.
-    - SUNK -> Pedido Encajado.
-    - HIT -> Prenda encajada. 
-    - MISS -> Prenda perdida.
-- [ ]  Tiro forzado debería ser random pero excluyendo las coordenadas que ya han sido atacadas.
-- [x] Intentar fijar el tamaño de la pantalla del terminal para que no se rompa el formato. 
-- ⚠️ Posible cambio de estrategia: 
-    - Los equipos programaran un modulo en python (Brain.py)que se encargue de decidir la estrategia
-    - El modulo puede consultar a la IA cada 10 turnos.
-    - Se le pasa el historial completo de los (miss,hit y sunk) y la IA devolvería cuandrante a atacar.
+# Garment Strike — Backlog & Roadmap
 
-- [ ] El sleep de 5 segundos igual no es necesario segun los tiempo de la última partida.
-- [x] Comprimir la información de celdas prohibidas agrupadas por miss, hit y sunk.
-- [ ] Posible combinación de dos modelos de IA para mejorar la estrategia.
-    - Uno para ejecutar la estrategia y obedecer las reglas.
-    - Otro para establecer la estrategia, delimitando zonas de búsqueda.    
-- Parece que hay problemas con la separación de roles de cadajugador, parece que la IA esta recordando y tomando deciciones de estrategicas sobre las jugadas del oponente, parece que no esta bien definido el rol de cada jugador.
-- [ ] Hay probar la retención de memoria de la IA, lo ideal es que se le pasen las reglas al inicio y luego solo el estado del tablero y las jugadas realizadas. 
-- [x] organizar todas las pruebas unitarias 
-- [x] Que en los logs aparezca la fecha y hora y el modelo que ha ejecutado la jugada.
-- [x] Explorar la posibilidad usar distintos modelos de IA para cada jugador.
-- [ ] 
+## 📝 Notas y Estrategia
+- ⚠️ **Posible cambio de estrategia:** 
+  - Los equipos programarán un módulo en python (`Brain.py`) que se encargue de decidir la estrategia.
+  - El módulo puede consultar a la IA cada 10 turnos.
+  - Se le pasa el historial completo de los (miss, hit y sunk) y la IA devolvería el cuadrante a atacar.
+- **Roles:** Parece que hay problemas con la separación de roles de cada jugador. Parece que la IA está recordando y tomando decisiones estratégicas sobre las jugadas del oponente. No está bien definido el rol de cada jugador o el aislamiento de state.
 
-- [x] Crear un menu basico 
-    - Tests
-    - Partida normal
-    - Partida minimalista
-    - Selección de modelo de IA 
-- [ ] Separar el archivo de parametros del de claves api key 
-- [ ] Posible envio de contexto mayor tras Fallback 
-- [x] Tamaño de tablero dinámico
-- [x] Asegurar la portabilidad
-    - Instrucciones claras de instalación y ejecución.
-    - Como obtener claves API de los distintos modelos de IA.
-- [ ] Revisar la creación de workflows y skills 
+---
+
+## 📋 Tareas Pendientes
+- [ ] **Tiro forzado:** Debe ser random pero excluyendo proactivamente las coordenadas que ya han sido atacadas.
+- [ ] **Tiempos de latencia:** El sleep de 5 segundos igual no es necesario según los tiempos de la última partida. Reducir o volver dinámico.
+- [ ] **Arquitectura Multi-Agente:** Posible combinación de dos modelos de IA para mejorar la estrategia.
+  - Uno para ejecutar la estrategia y obedecer las reglas.
+  - Otro para establecer la estrategia, delimitando zonas de búsqueda.
+- [ ] **Retención de memoria LLM:** Probar la retención de memoria de la IA. Lo ideal es que se le pasen las reglas al inicio y luego solo el estado del tablero y las jugadas realizadas.
+- [ ] **Seguridad/Config:** Separar el archivo de parámetros (settings) de la carga de las claves API-key (e.g., .env exclusivo o gestión de secretos).
+- [ ] **Recuperación:** Posible envío de contexto mayor tras Fallback (error de validación).
+- [ ] **Agentes Github:** Revisar la creación de posibles workflows y skills nuevas.
+
+---
+
+## ✅ Tareas Completadas (Fases 1, 2 y 3)
+- [x] Traducir en la respuesta del LLM los términos asociados a Battleship a terminología de Logística (`SUNK` -> Pedido Encajado, `HIT` -> Prenda encajada, `MISS` -> Prenda perdida).
+- [x] Fijar / avisar del tamaño de la pantalla del terminal para que no se rompa el formato Rich.
+- [x] Comprimir la información de celdas prohibidas/anteriores agrupadas por rangos (miss, hit y sunk) reduciendo tokens.
+- [x] Organizar y parametrizar todas las pruebas unitarias para ser multiconfiguración (más de 170 tests activos).
+- [x] Inyectar en los logs (`match_turns.log`) la fecha, hora y el modelo ejecutante.
+- [x] Explorar y habilitar la posibilidad de usar distintos modelos de IA para cada jugador simultáneamente.
+- [x] Crear un menú inicial interactivo completo con opciones de:
+  - Tests
+  - Partida normal y de Ejemplo
+  - Partida personalizada / minimalista
+  - Selección de modelos de IA y mapeo de equipos
+- [x] Tamaño de tablero dinámico (`board_size`) completamente propagado en la clase Board y parseadores.
+- [x] Configuración de barcos (pedidos) variables propagada por completo.
+- [x] Asegurar la portabilidad con instrucciones claras de instalación, requerimientos y cómo obtener claves API de los distintos modelos soportados.
