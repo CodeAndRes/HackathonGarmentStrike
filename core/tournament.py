@@ -231,7 +231,6 @@ def run_match(
             target_board = game.agents[current]   # board being attacked
 
             # Ask the LLM for a move
-            # Ask the LLM for a move
             board_text = (
                 target_board.grid_text_minimal()
                 if llm_client.quick_mode

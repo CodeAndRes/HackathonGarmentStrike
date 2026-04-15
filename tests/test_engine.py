@@ -24,6 +24,7 @@ from core.engine import (
     Ship,
     format_coord,
     parse_coord,
+    validate_game_config,
 )
 
 
@@ -426,3 +427,130 @@ class TestGame:
         game.apply_move("A", 2)
         assert game.shots_fired["Agent_A"] == 2
         assert game.shots_fired["Agent_B"] == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# F1.2 – ship_sizes propagation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestShipSizesPropagation:
+    """Verify ship_sizes flows correctly through Board, AlmacenParser, and generate_random_layout."""
+
+    def test_board_stores_custom_ship_sizes(self):
+        custom = [3, 2, 2]
+        board = Board(size=6, ships=[], ship_sizes=custom)
+        assert board.ship_sizes == sorted(custom, reverse=True)
+
+    def test_board_defaults_to_required_when_none(self):
+        board = Board(size=10, ships=[])
+        assert board.ship_sizes == REQUIRED_SHIP_SIZES
+
+    def test_board_validates_custom_sizes_on_placement(self):
+        """Board with custom ship_sizes should reject ships that don't match."""
+        ships = [
+            Ship("P1", 3, [("A", 1), ("B", 1), ("C", 1)]),
+            Ship("P2", 2, [("E", 1), ("F", 1)]),
+        ]
+        # Expect [3, 2] but only one size-2 ship → config mismatch
+        with pytest.raises(ValueError, match="incorrecta"):
+            Board(size=6, ships=[ships[0]], ship_sizes=[3, 2])
+
+    def test_board_6x6_with_custom_ships(self):
+        """A 6x6 board with [3, 2, 2] should work perfectly."""
+        ships = [
+            Ship("P1", 3, [("A", 1), ("B", 1), ("C", 1)]),
+            Ship("P2", 2, [("E", 1), ("F", 1)]),
+            Ship("P3", 2, [("A", 3), ("B", 3)]),
+        ]
+        board = Board(size=6, ships=ships, ship_sizes=[3, 2, 2])
+        assert len(board.ships) == 3
+        assert board.ship_sizes == [3, 2, 2]
+
+    def test_board_8x8_with_custom_ships(self):
+        """An 8x8 board with [4, 3, 2] should work."""
+        ships = [
+            Ship("P1", 4, [("A", r) for r in range(1, 5)]),
+            Ship("P2", 3, [("C", r) for r in range(1, 4)]),
+            Ship("P3", 2, [("E", 1), ("E", 2)]),
+        ]
+        board = Board(size=8, ships=ships, ship_sizes=[4, 3, 2])
+        assert len(board.ships) == 3
+
+    def test_generate_random_layout_custom_sizes(self):
+        """generate_random_layout with custom sizes should produce matching ships."""
+        custom = [3, 2, 2]
+        ships = AlmacenParser.generate_random_layout(size=6, ship_sizes=custom)
+        actual = sorted([s.size for s in ships], reverse=True)
+        assert actual == sorted(custom, reverse=True)
+
+    def test_generate_random_layout_defaults_to_required(self):
+        """Without ship_sizes, generate_random_layout should use REQUIRED_SHIP_SIZES."""
+        ships = AlmacenParser.generate_random_layout(size=10)
+        actual = sorted([s.size for s in ships], reverse=True)
+        assert actual == REQUIRED_SHIP_SIZES
+
+    def test_parser_fallback_uses_custom_sizes(self, tmp_path):
+        """When an almacen file is invalid, fallback should use the provided custom sizes."""
+        f = tmp_path / "almacen_bad.md"
+        f.write_text("garbage content, not valid", encoding="utf-8")
+        custom = [3, 2, 2]
+        ships, used_fallback, _ = AlmacenParser.parse_with_status(f, size=6, ship_sizes=custom)
+        assert used_fallback is True
+        actual = sorted([s.size for s in ships], reverse=True)
+        assert actual == sorted(custom, reverse=True)
+
+    def test_board_rejects_ship_larger_than_board(self):
+        """A ship of size 7 should be rejected on a 6x6 board."""
+        with pytest.raises(ValueError, match="exceeds board size"):
+            Board(size=6, ships=[], ship_sizes=[7, 2])
+
+    def test_board_rejects_ship_size_1(self):
+        """Ships of size 1 are not allowed."""
+        with pytest.raises(ValueError, match="Minimum ship size"):
+            Board(size=6, ships=[], ship_sizes=[3, 1])
+
+    def test_board_rejects_too_many_ship_cells(self):
+        """Total ship cells exceeding 50% of board area should be rejected."""
+        # 6x6 = 36 cells, 50% = 18. [5,5,5,5] = 20 cells → too many
+        with pytest.raises(ValueError, match="exceed 50%"):
+            Board(size=6, ships=[], ship_sizes=[5, 5, 5, 5])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# F1.4 – validate_game_config
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestValidateGameConfig:
+    """Tests for the centralized pre-flight config validator."""
+
+    def test_valid_config_passes(self):
+        """A valid configuration should not raise."""
+        validate_game_config(board_size=6, ship_sizes=[3, 2, 2])
+
+    def test_valid_default_config_passes(self):
+        """The default configuration (10x10, [5,4,3,3,2]) should pass."""
+        validate_game_config(board_size=10, ship_sizes=[5, 4, 3, 3, 2])
+
+    def test_board_size_too_small(self):
+        with pytest.raises(ValueError, match="entre 6 y 10"):
+            validate_game_config(board_size=5, ship_sizes=[3, 2])
+
+    def test_board_size_too_large(self):
+        with pytest.raises(ValueError, match="entre 6 y 10"):
+            validate_game_config(board_size=11, ship_sizes=[3, 2])
+
+    def test_ship_larger_than_board(self):
+        with pytest.raises(ValueError, match="mayor que el tablero"):
+            validate_game_config(board_size=6, ship_sizes=[7, 2])
+
+    def test_ship_size_1_rejected(self):
+        with pytest.raises(ValueError, match="mínimo"):
+            validate_game_config(board_size=10, ship_sizes=[5, 1])
+
+    def test_total_cells_exceed_half_board(self):
+        """50% of a 6x6 board = 18 cells. [5,5,5,5]=20 → should fail."""
+        with pytest.raises(ValueError, match="excede el 50%"):
+            validate_game_config(board_size=6, ship_sizes=[5, 5, 5, 5])
+

@@ -4,7 +4,7 @@ core/engine.py
 Pure game logic for Garment Strike (dynamic Supply Chain Battleship).
 
 Board   : 6×6 up to 10×10 (configurable via board_size parameter)
-Pedidos : sizes 5, 4, 3, 3, 2  (adjusted if they don't fit the board)
+Pedidos : configurable via ship_sizes parameter (default: [5, 4, 3, 3, 2])
 Rules   : HIT or SUNK → same agent shoots again (handled by caller).
 
 Developer Agent  – core board logic.
@@ -35,6 +35,24 @@ ShotResult = Literal["hit", "miss", "sunk", "already_shot"]
 
 # Regex genérica para validar coordenadas dinámicas
 _COORD_BASE_RE = re.compile(r"^([A-Ja-j])(\d+)$")
+
+def validate_game_config(board_size: int, ship_sizes: list[int]) -> None:
+    """Validate game configuration before starting a match.
+    
+    Raises ValueError with a descriptive message if the configuration is invalid.
+    This is a pre-flight check intended to be called from main.py / CLI before
+    constructing Board objects.
+    """
+    if not 6 <= board_size <= 10:
+        raise ValueError(f"board_size debe ser entre 6 y 10, recibido: {board_size}")
+    if any(s > board_size for s in ship_sizes):
+        raise ValueError(f"Ningún barco puede ser mayor que el tablero ({board_size})")
+    if any(s < 2 for s in ship_sizes):
+        raise ValueError(f"Tamaño mínimo de barco es 2")
+    total_cells = sum(ship_sizes)
+    max_cells = (board_size * board_size) // 2
+    if total_cells > max_cells:
+        raise ValueError(f"Total de celdas ({total_cells}) excede el 50% del tablero ({max_cells})")
 
 
 # ── Coordinate helpers ────────────────────────────────────────────────────────
