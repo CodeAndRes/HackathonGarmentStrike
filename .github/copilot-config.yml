@@ -31,6 +31,28 @@ agents:
       - path: "settings.yaml"
       - path: "README.md"
 
+  - id: supply-qa
+    name: "Supply Chain QA Agent"
+    description: "Specialized in parametrized testing, edge-case coverage, and regression prevention for dynamic game configurations."
+    
+    skills:
+      - id: test-designer
+        type: task-automation
+        description: "Designs and implements parametrized pytest fixtures for dynamic configurations"
+        allowed_paths:
+          - "tests/*.py"
+          - "core/*.py"  # read-only context
+      
+      - id: test-runner
+        type: command-execution
+        description: "Runs the full test suite and reports coverage"
+        command: "python -m pytest tests/ -v"
+
+    context:
+      - path: "core/engine.py"
+      - path: "core/llm_client.py"
+      - path: "settings.yaml"
+
 # ── Governance ───────────────────────────────────────────────────────────────
 policies:
   autonomous_merge:

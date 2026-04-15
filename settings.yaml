@@ -10,4 +10,5 @@ engine:
   max_retries: 3
   board_size: 10
   max_turns: 50
-  ship_sizes: [5, 4, 3, 3, 2]
+  ship_sizes: [3, 3, 2]
+#ship_sizes: [5, 4, 3, 3, 2]
