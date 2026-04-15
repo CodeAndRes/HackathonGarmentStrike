@@ -91,6 +91,9 @@ def validate_game_config(board_size: int, ship_sizes: list[int]) -> None:
 2. **Mission Log**: Crear `.github/missions/F1-ELASTIC-CONFIG-LOG.md`.
 3. **Closing Report**: Añadir sección `## Outcome` en este archivo.
 
+## Outcome
+The mission was fully completed successfully across all tasks (F1.1 to F1.5). The `ship_sizes` configuration is now completely decoupled from constants and flows successfully down to the `Board` validation logic. The new dynamic menu provides options to safely play custom configurations and choose specific agents with fallback guardrails in the tournament runner. `validate_game_config()` guards validation prior to game initialization. All 112 tests have passed showing continuous stability.
+
 ---
 
 ## 🔀 Integration
