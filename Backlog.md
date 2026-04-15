@@ -19,6 +19,20 @@
 - [ ] **Seguridad/Config:** Separar el archivo de parámetros (settings) de la carga de las claves API-key (e.g., .env exclusivo o gestión de secretos).
 - [ ] **Recuperación:** Posible envío de contexto mayor tras Fallback (error de validación).
 - [ ] **Agentes Github:** Revisar la creación de posibles workflows y skills nuevas.
+- [ ] La configuración de cajas de la partida personalizada queda un poco confusa, yo pensaba que debia ponerle parentesis!. 
+- [ ] Emplezar a iterar con diferentes estrategias y ver como se comporta la IA.
+- [ ] Aun hay terminos que hacen referencia al juego original undir la flota
+- [ ] En la ventana de razonaminto se ve como el modelos habla en terminos de barcos y hundir etc...
+- [ ] Podríamos ver el razonamiento de ambos jugadores
+- [ ] Hacer mas grande el log de la partida en el frontend, el texto se corta 
+- [ ] Error visible al cancelar la partida con Ctrl+C. 
+    ```
+       C:\Projects\BT-Supply-Impulse\core\engine.py:395: RuntimeWarning: [AlmacenParser] Formato inválido en 'agentes\\ejemplo\\almacen_equipo_ejemplo.md': Configuración de pedidos incorrecta. Esperado [3, 3, 2], recibido [5, 4, 3, 3, 2].. Usando layout aleatorio legal.
+        ships, _, _ = cls.parse_with_status(filepath, size=size, ship_sizes=ship_sizes)
+
+      Partida interrumpida por el usuario.
+      PS C:\Projects\BT-Supply-Impulse>
+    ```
 
 ---
 
