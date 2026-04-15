@@ -131,13 +131,24 @@ class Board:
     Can be 6x6 up to 10x10.
     """
 
-    def __init__(self, size: int = 10, ships: list[Ship] | None = None) -> None:
+    def __init__(self, size: int = 10, ships: list[Ship] | None = None, ship_sizes: list[int] | None = None) -> None:
         self.size = size
+        self.ship_sizes = sorted(ship_sizes if ship_sizes is not None else REQUIRED_SHIP_SIZES, reverse=True)
         self.cols = get_board_cols(size)
         self.rows = get_board_rows(size)
         self.ships = ships or []
         # Maps coord → result of the shot that landed there
         self.shots_received: dict[tuple[str, int], ShotResult] = {}
+        
+        # Validaciones de la configuración de barcos
+        if self.ship_sizes:
+            if max(self.ship_sizes) > self.size:
+                raise ValueError(f"Max ship size {max(self.ship_sizes)} exceeds board size {self.size}.")
+            if min(self.ship_sizes) < 2:
+                raise ValueError(f"Minimum ship size must be >= 2.")
+            if sum(self.ship_sizes) > (self.size * self.size) / 2:
+                raise ValueError(f"Total ship cells {sum(self.ship_sizes)} exceed 50% of the board area {(self.size * self.size)}.")
+
         if ships:
             self._validate_placement()
 
@@ -158,10 +169,10 @@ class Board:
                 seen.add((col, row))
 
         actual_sizes = sorted([s.size for s in self.ships], reverse=True)
-        if actual_sizes != REQUIRED_SHIP_SIZES:
+        if actual_sizes != self.ship_sizes:
             raise ValueError(
                 f"Configuración de pedidos incorrecta. "
-                f"Esperado {REQUIRED_SHIP_SIZES}, recibido {actual_sizes}."
+                f"Esperado {self.ship_sizes}, recibido {actual_sizes}."
             )
 
     # -- Shooting -------------------------------------------------------------
@@ -296,14 +307,14 @@ class AlmacenParser:
     )
 
     @classmethod
-    def parse(cls, filepath: str | Path, size: int = 10) -> list[Ship]:
+    def parse(cls, filepath: str | Path, size: int = 10, ship_sizes: list[int] | None = None) -> list[Ship]:
         """Parse warehouse file and return list of Ship objects (fault-tolerant)."""
-        ships, _, _ = cls.parse_with_status(filepath, size=size)
+        ships, _, _ = cls.parse_with_status(filepath, size=size, ship_sizes=ship_sizes)
         return ships
 
     @classmethod
     def parse_with_status(
-        cls, filepath: str | Path, size: int = 10, emit_warning: bool = True
+        cls, filepath: str | Path, size: int = 10, emit_warning: bool = True, ship_sizes: list[int] | None = None
     ) -> tuple[list[Ship], bool, str]:
         """
         Parse warehouse file with status metadata.
@@ -319,7 +330,7 @@ class AlmacenParser:
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            return cls.generate_random_layout(size=size), True, reason
+            return cls.generate_random_layout(size=size, ship_sizes=ship_sizes), True, reason
 
         ships: list[Ship] = []
         try:
@@ -338,7 +349,7 @@ class AlmacenParser:
                 )
 
             # Validate full board configuration in one place.
-            Board(size=size, ships=ships)
+            Board(size=size, ships=ships, ship_sizes=ship_sizes)
             return ships, False, "ok"
         except Exception as exc:
             reason = f"Formato inválido en {str(filepath)!r}: {exc}"
@@ -348,18 +359,19 @@ class AlmacenParser:
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            return cls.generate_random_layout(size=size), True, reason
+            return cls.generate_random_layout(size=size, ship_sizes=ship_sizes), True, reason
 
     @classmethod
-    def generate_random_layout(cls, size: int = 10) -> list[Ship]:
-        """Generate a legal random layout with required sizes: 5,4,3,3,2 (if they fit)."""
+    def generate_random_layout(cls, size: int = 10, ship_sizes: list[int] | None = None) -> list[Ship]:
+        """Generate a legal random layout with required sizes (if they fit)."""
         cols = get_board_cols(size)
         rows = get_board_rows(size)
         occupied: set[tuple[str, int]] = set()
         ships: list[Ship] = []
 
-        # Adjust ship sizes if board is too small for a size-5 ship
-        effective_sizes = [s for s in REQUIRED_SHIP_SIZES if s <= size]
+        # Adjust ship sizes if board is too small
+        target_sizes = sorted(ship_sizes if ship_sizes is not None else REQUIRED_SHIP_SIZES, reverse=True)
+        effective_sizes = [s for s in target_sizes if s <= size]
         if not effective_sizes:
              effective_sizes = [2] # absolute fallback
 

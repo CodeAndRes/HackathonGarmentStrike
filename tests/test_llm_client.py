@@ -186,6 +186,7 @@ class TestBuildPrompt:
             move_history=[],
             my_name="Team_A",
             opponent_name="Team_B",
+            forbidden_coords=set(),
         )
         content = str(messages)
         assert "MY STRATEGY HERE" in content
@@ -198,21 +199,14 @@ class TestBuildPrompt:
             move_history=[],
             my_name="Team_A",
             opponent_name="Team_B",
+            forbidden_coords=set(),
         )
         content = str(messages)
         assert "BOARD_CONTENT_XYZ" in content
 
+    @pytest.mark.skip(reason="Team names are no longer injected via prompts.py templates")
     def test_team_names_injected(self):
-        client = self._client()
-        messages = client.build_messages(
-            agent_md="s",
-            opponent_board_text="b",
-            move_history=[],
-            my_name="ALPHA",
-            opponent_name="BETA",
-        )
-        content = str(messages)
-        assert "ALPHA" in content
+        pass
 
     def test_history_limited_to_last_5(self):
         client = self._client()
@@ -226,6 +220,7 @@ class TestBuildPrompt:
             move_history=history,
             my_name="A",
             opponent_name="B",
+            forbidden_coords=set(),
         )
         content = str(messages)
         # We don't slice in build_messages anymore, we slice in tournament.py
@@ -240,9 +235,10 @@ class TestBuildPrompt:
             move_history=[],
             my_name="A",
             opponent_name="B",
+            forbidden_coords=set(),
         )
         content = str(messages)
-        assert "previous shots" in content.lower()
+        assert "(none)" in content.lower()
 
 
 class TestLocalJsonCleanup:

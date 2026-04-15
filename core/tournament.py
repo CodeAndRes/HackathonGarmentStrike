@@ -53,9 +53,9 @@ class AgentConfig:
     def load_agent_md(self) -> str:
         return self.agent_md_path.read_text(encoding="utf-8")
 
-    def load_board(self, size: int = 10) -> Board:
-        ships = AlmacenParser.parse(self.almacen_path, size=size)
-        return Board(size=size, ships=ships)
+    def load_board(self, size: int = 10, ship_sizes: list[int] | None = None) -> Board:
+        ships = AlmacenParser.parse(self.almacen_path, size=size, ship_sizes=ship_sizes)
+        return Board(size=size, ships=ships, ship_sizes=ship_sizes)
 
 
 # ── Match / tournament records ────────────────────────────────────────────────
@@ -133,6 +133,7 @@ def run_match(
     ui_sleep: float = 1.0,
     board_size: int = 10,
     max_turns: int = 50,
+    ship_sizes: list[int] | None = None,
 ) -> MatchRecord:
     """
     Play one full match.
@@ -141,8 +142,8 @@ def run_match(
         After apply_move() returns 'hit' or 'sunk', switch_turn() is NOT called.
         The same agent fires again in the next loop iteration.
     """
-    board_a = config_a.load_board(size=board_size)
-    board_b = config_b.load_board(size=board_size)
+    board_a = config_a.load_board(size=board_size, ship_sizes=ship_sizes)
+    board_b = config_b.load_board(size=board_size, ship_sizes=ship_sizes)
     agent_md_a = config_a.load_agent_md()
     agent_md_b = config_b.load_agent_md()
 
@@ -386,6 +387,7 @@ def run_tournament(
     ui_sleep: float = 1.0,
     board_size: int = 10,
     max_turns: int = 50,
+    ship_sizes: list[int] | None = None,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -417,7 +419,8 @@ def run_tournament(
                 config_a, config_b, llm_client, 
                 visual=visual, ui_sleep=ui_sleep, 
                 board_size=board_size,
-                max_turns=max_turns
+                max_turns=max_turns,
+                ship_sizes=ship_sizes
             )
         except Exception as exc:
             console.print(f"[red]Error en la partida: {exc}[/red]")

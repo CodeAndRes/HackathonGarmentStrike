@@ -1,0 +1,46 @@
+# GitHub Copilot Repository Configuration
+# Standard: v2.1 (April 2026)
+
+version: 1.0
+
+# ── Agents & Extensions ───────────────────────────────────────────────────────
+agents:
+  - id: supply-dev
+    name: "Supply Chain Developer Agent"
+    description: "Specialized in Garment Strike engine optimization, ship logistics, and tournament scaling."
+    
+    # Skills define what the agent is allowed to do autonomously
+    skills:
+      - id: mission-runner
+        type: task-automation
+        description: "Executes structured missions from .github/missions/"
+        allowed_paths:
+          - ".github/missions/*.md"
+          - "core/*.py"
+          - "main.py"
+          - "settings.yaml"
+      
+      - id: test-validator
+        type: command-execution
+        description: "Runs pytest and smoke tests to validate changes"
+        command: "pytest tests/ && python main.py play --board-size 6 --no-visual"
+
+    # Context that Copilot should always provide to this agent
+    context:
+      - path: "core/engine.py"
+      - path: "settings.yaml"
+      - path: "README.md"
+
+# ── Governance ───────────────────────────────────────────────────────────────
+policies:
+  autonomous_merge:
+    enabled: true
+    require_test_pass: true
+    branch_pattern: "feature/*"
+    target_branch: "main"
+
+# ── Mission Discovery ─────────────────────────────────────────────────────────
+missions:
+  directory: ".github/missions/"
+  auto_detect: true
+  status_file: ".github/missions/MORTAR_STATUS.json" # Internal tracking for pulsars

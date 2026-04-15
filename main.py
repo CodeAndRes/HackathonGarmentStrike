@@ -75,7 +75,8 @@ def cmd_play(args: argparse.Namespace) -> None:
     match = run_match(
         config_a, config_b, llm_client, visual=not args.no_visual, 
         ui_sleep=args.ui_sleep, board_size=args.board_size,
-        max_turns=args.max_turns
+        max_turns=args.max_turns,
+        ship_sizes=args.ship_sizes
     )
 
     winner_str = match.winner if match.winner else "EMPATE"
@@ -100,6 +101,7 @@ def cmd_tournament(args: argparse.Namespace) -> None:
         ui_sleep=args.ui_sleep,
         board_size=args.board_size,
         max_turns=args.max_turns,
+        ship_sizes=args.ship_sizes,
     )
 
 
@@ -226,6 +228,19 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=int(SETTINGS.get("max_turns", 50)),
         help="Max turns per match (default: %(default)s)",
+    )
+    
+    def parse_ship_sizes(s: str | list) -> list[int]:
+        if isinstance(s, list):
+            return [int(x) for x in s]
+        s = s.strip("[]")
+        return [int(x.strip()) for x in s.split(",")]
+
+    base_parser.add_argument(
+        "--ship-sizes",
+        type=parse_ship_sizes,
+        default=SETTINGS.get("ship_sizes", [5, 4, 3, 3, 2]),
+        help="Ship sizes comma-separated, e.g. 3,2,2 (default: %(default)s)",
     )
 
     parser = argparse.ArgumentParser(

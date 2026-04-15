@@ -29,4 +29,8 @@
     - Selección de modelo de IA 
 - [ ] Separar el archivo de parametros del de claves api key 
 - [ ] Posible envio de contexto mayor tras Fallback 
-- [ ] Tamaño de tablero dinámico
+- [x] Tamaño de tablero dinámico
+- [ ] Asegurar la portabilidad
+    - Instrucciones claras de instalación y ejecución.
+    - Como obtener claves API de los distintos modelos de IA.
+- [ ] Revisar la creación de workflows y skills 
