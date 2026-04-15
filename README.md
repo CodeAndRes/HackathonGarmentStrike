@@ -62,10 +62,15 @@ pip install -r requirements.txt
 
 ### 2. Configure API keys
 
+Dependiendo del modelo que decidas usar, necesitarás una clave de API. Copia el archivo base y configúralo:
 ```bash
 cp .env.example .env
-# Edit .env and fill in your GEMINI_API_KEY (or OPENAI_API_KEY, etc.)
 ```
+Edita `.env` y añade tu clave. ¿Dónde conseguirlas?
+- **Groq** (Rápido, gratis): [console.groq.com](https://console.groq.com/keys) (`GROQ_API_KEY`)
+- **Google Gemini** (Gratis/De pago): [aistudio.google.com](https://aistudio.google.com/app/apikey) (`GEMINI_API_KEY`)
+- **OpenAI** (De pago): [platform.openai.com](https://platform.openai.com/api-keys) (`OPENAI_API_KEY`)
+- **Ollama** (Local, gratis): No necesita API Key. Simplemente instala [ollama.com](https://ollama.com) y ejecuta `ollama run llama3`.
 
 ### 3. Run the tests (no API key needed)
 
@@ -73,7 +78,15 @@ cp .env.example .env
 pytest tests/ -v
 ```
 
-### 4. Play a single match
+### 4. Lanzar el Menú Interactivo (Fácil)
+
+La forma más sencilla de jugar o configurar partidas personalizadas (**incluyendo enfrentaiento de de modelos mixtos**) es sin pasar argumentos:
+
+```bash
+python main.py
+```
+
+### 5. Play a single match (CLI Avanzada)
 
 ```bash
 python main.py play \
@@ -85,7 +98,7 @@ python main.py play \
   --almacen-b agentes/ejemplo/almacen_equipo_ejemplo.md
 ```
 
-### 5. Run a full tournament
+### 6. Run a full tournament
 
 ```bash
 # Place each team's files in agentes/<team_name>/
@@ -149,13 +162,15 @@ Valida con pruebas relevantes y deja resumen de cambios, riesgos y siguientes pa
 
 ## 🔌 Supported LLM Models
 
-Pass any [LiteLLM-supported](https://docs.litellm.ai/docs/providers) model with `--model`:
+Pasando el flag `--model` (o `--model-a` y `--model-b` para partidas mixtas), puedes usar cualquier formato soportado por [LiteLLM](https://docs.litellm.ai/docs/providers):
 
-| Provider | Example |
-|---|---|
-| Google Gemini | `gemini/gemini-1.5-pro` |
-| OpenAI | `openai/gpt-4o` |
-| Anthropic | `anthropic/claude-3-5-sonnet-20241022` |
+| Provider / Type | Example string | Notes |
+|---|---|---|
+| **Ollama (Local)** | `ollama/llama3` o `ollama/gemma4:e4b` | Tu propio modelo local (Requiere instalar y lanzar Ollama). Muy seguro y sin coste. |
+| **Groq (Cloud rápida)** | `groq/llama-3.1-8b-instant` | Excelente para hackathons. Muy veloz. Poner `GROQ_API_KEY` en `.env`. |
+| **Google Gemini** | `gemini/gemini-1.5-pro` | Poner `GEMINI_API_KEY` en `.env`. Cuidado con los límites de RPM. |
+| **OpenAI** | `openai/gpt-4o` | Poner `OPENAI_API_KEY` en `.env`. |
+| **Anthropic** | `anthropic/claude-3-5-sonnet-20241022` | Poner `ANTHROPIC_API_KEY` en `.env`. |
 
 ---
 
@@ -213,6 +228,7 @@ After a tournament, `tournament_results.json` contains:
 python main.py [--model MODEL] [--no-visual] <command>
 
 Commands:
+  (none)      Starts interactive menu
   play        Single match
   tournament  Round-Robin tournament
 
@@ -223,6 +239,8 @@ play options:
   --team-b NAME     (same for team B)
   --agent-b PATH
   --almacen-b PATH
+  --model-a MODEL   Specific LLM for team A 
+  --model-b MODEL   Specific LLM for team B
 
 tournament options:
   --agents-dir DIR  Folder with team sub-folders  (default: agentes/)

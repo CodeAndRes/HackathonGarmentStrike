@@ -29,7 +29,5 @@ USER_PROMPT_TEMPLATE = (
     "{opponent_board_text}\n\n"
     "### YOUR LAST SHOTS:\n"
     "{history_text}\n\n"
-    "### DO NOT SHOOT (already fired):\n"
-    "{forbidden_text}\n\n"
-    "Command: Choose ONE coordinate ({range_text}) NOT in the list above:"
+    "Command: Choose ONE coordinate ({range_text}) NOT already shot:"
 )

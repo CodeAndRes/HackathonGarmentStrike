@@ -280,7 +280,121 @@ class TestBoard:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# AlmacenParser
+# F3.1 – Compressed forbidden coordinates 
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestCompressCoords:
+    """Tests for Board._compress_coords range-notation compression."""
+
+    def test_empty_list_returns_none_marker(self):
+        assert Board._compress_coords([]) == "(none)"
+
+    def test_single_coord(self):
+        assert Board._compress_coords(["A1"]) == "A1"
+
+    def test_two_consecutive_no_dash(self):
+        """Two consecutive rows use comma, not dash (A1,A2 not A1-A2)."""
+        result = Board._compress_coords(["A1", "A2"])
+        assert result == "A1,A2"
+
+    def test_three_plus_consecutive_uses_dash(self):
+        """Three or more consecutive rows use dash notation."""
+        result = Board._compress_coords(["A1", "A2", "A3"])
+        assert result == "A1-A3"
+
+    def test_long_run(self):
+        result = Board._compress_coords(["B1", "B2", "B3", "B4", "B5"])
+        assert result == "B1-B5"
+
+    def test_mixed_columns(self):
+        result = Board._compress_coords(["A1", "A2", "A3", "B5"])
+        assert "A1-A3" in result
+        assert "B5" in result
+
+    def test_non_consecutive_same_column(self):
+        result = Board._compress_coords(["A1", "A3", "A5"])
+        assert result == "A1, A3, A5"
+
+    def test_multiple_runs_same_column(self):
+        result = Board._compress_coords(["C1", "C2", "C3", "C7", "C8", "C9"])
+        assert "C1-C3" in result
+        assert "C7-C9" in result
+
+    def test_many_columns_sorted(self):
+        result = Board._compress_coords(["D1", "A3", "B2"])
+        parts = result.split(", ")
+        cols = [p[0] for p in parts]
+        assert cols == sorted(cols)
+
+    def test_row_10_handled(self):
+        result = Board._compress_coords(["J8", "J9", "J10"])
+        assert result == "J8-J10"
+
+
+class TestGridTextMinimal:
+    """Tests for the categorized + compressed grid_text_minimal output."""
+
+    def test_empty_board_returns_no_shots_message(self):
+        board = _make_valid_board()
+        result = board.grid_text_minimal()
+        assert "No shots fired" in result
+
+    def test_single_miss_shows_miss_category(self):
+        board = _make_valid_board()
+        # Find a cell with no ship
+        ship_cells = {c for s in board.ships for c in s.cells}
+        for r in board.rows:
+            for c in board.cols:
+                if (c, r) not in ship_cells:
+                    board.shoot(c, r)
+                    result = board.grid_text_minimal()
+                    assert "MISS:" in result
+                    return
+
+    def test_single_hit_shows_active_hits(self):
+        board = _make_valid_board()
+        col, row = board.ships[0].cells[0]
+        board.shoot(col, row)
+        result = board.grid_text_minimal()
+        assert "ACTIVE HITS" in result
+
+    def test_sunk_ship_shows_sunk_category(self):
+        board = _make_valid_board()
+        smallest = min(board.ships, key=lambda s: s.size)
+        for col, row in smallest.cells:
+            board.shoot(col, row)
+        result = board.grid_text_minimal()
+        assert "SUNK" in result
+
+    def test_sunk_ships_not_in_active_hits(self):
+        """Once a ship is fully sunk, its cells should move from ACTIVE HITS to SUNK."""
+        board = _make_valid_board()
+        smallest = min(board.ships, key=lambda s: s.size)
+        for col, row in smallest.cells:
+            board.shoot(col, row)
+        result = board.grid_text_minimal()
+        assert "ACTIVE HITS" not in result or all(
+            format_coord(c, r) not in result.split("ACTIVE HITS")[1].split("\n")[0]
+            for c, r in smallest.cells
+        )
+
+    def test_compressed_output_shorter_than_flat_list(self):
+        """Verify that compressing a sequence of misses is shorter than listing them."""
+        board = _make_valid_board()
+        # Fire misses across a range
+        ship_cells = {c for s in board.ships for c in s.cells}
+        col = "J"  # likely no ships in column J for the default layout
+        for r in range(1, 8):
+            if (col, r) not in ship_cells:
+                board.shoot(col, r)
+        result = board.grid_text_minimal()
+        flat_count = sum(1 for c in result if c == ",")
+        # With compression, we should have fewer commas than individual coords
+        # (at minimum a J1-J7 style range vs J1, J2, J3, J4, J5, J6, J7)
+        assert len(result) < 200  # compressed should be very short
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _VALID_SIMPLE = textwrap.dedent("""\

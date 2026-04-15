@@ -122,7 +122,7 @@ def _build_history(move_log, last_n: int = 10) -> list[MoveHistoryEntry]:
 def run_match(
     config_a: AgentConfig,
     config_b: AgentConfig,
-    llm_client: LLMClient,
+    llm_client: LLMClient | dict[str, LLMClient],
     visual: bool = True,
     ui_sleep: float = 1.0,
     board_size: int = 10,
@@ -145,6 +145,12 @@ def run_match(
     dashboard = GameDashboard(config_a.name, config_b.name) if visual else None
     agent_mds = {config_a.name: agent_md_a, config_b.name: agent_md_b}
     wasted: dict[str, int] = {config_a.name: 0, config_b.name: 0}
+
+    # Support mixed models: single client or per-team dict
+    if isinstance(llm_client, dict):
+        llm_clients = llm_client
+    else:
+        llm_clients = {config_a.name: llm_client, config_b.name: llm_client}
 
     log_file = Path("logs/match_turns.log")
     if log_file.exists():
@@ -225,15 +231,16 @@ def run_match(
             target_board = game.agents[current]   # board being attacked
 
             # Ask the LLM for a move
+            active_client = llm_clients[current]
             board_text = (
                 target_board.grid_text_minimal()
-                if llm_client.quick_mode
+                if active_client.quick_mode
                 else target_board.grid_text(reveal_ships=False)
             )
             forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
 
             try:
-                move: AgentMove = llm_client.get_move(
+                move: AgentMove = active_client.get_move(
                     agent_md=agent_mds[current],
                     opponent_board_text=board_text,
                     move_history=_build_history(game.move_log),

@@ -249,17 +249,10 @@ class LLMClient:
             range_text=range_text
         )
 
-        # Build explicit forbidden list for the prompt
-        if forbidden_coords:
-            forbidden_text = ", ".join(sorted(forbidden_coords)) if forbidden_coords else "(none)"
-        else:
-            forbidden_text = "(none)"
-
         user_content = prompts.USER_PROMPT_TEMPLATE.format(
             warning_text=warning_text,
             opponent_board_text=opponent_board_text,
             history_text=history_text,
-            forbidden_text=forbidden_text,
             range_text=range_text,
         )
 

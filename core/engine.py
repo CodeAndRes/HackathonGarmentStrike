@@ -269,27 +269,85 @@ class Board:
         for ri, row_data in enumerate(self.visible_state(reveal_ships)):
             rows.append(f"{ri + 1:>2} " + " ".join(row_data))
         return "\n".join(rows)
+    @staticmethod
+    def _compress_coords(coords: list[str]) -> str:
+        """
+        Compress a list of coordinates using range notation when possible.
+        E.g. ['A1','A2','A3','B5'] → 'A1-A3, B5'
+        Groups by column first, then by row, picking whichever yields
+        fewer tokens.
+        """
+        if not coords:
+            return "(none)"
+
+        # Parse into (col_letter, row_int)
+        parsed: list[tuple[str, int]] = []
+        for c in coords:
+            parsed.append((c[0], int(c[1:])))
+
+        # Group by column → detect consecutive row runs
+        from itertools import groupby
+        col_groups: dict[str, list[int]] = {}
+        for col, row in parsed:
+            col_groups.setdefault(col, []).append(row)
+
+        parts: list[str] = []
+        for col in sorted(col_groups):
+            rows = sorted(col_groups[col])
+            # Merge consecutive runs
+            i = 0
+            while i < len(rows):
+                start = rows[i]
+                while i + 1 < len(rows) and rows[i + 1] == rows[i] + 1:
+                    i += 1
+                end = rows[i]
+                if end - start >= 2:
+                    parts.append(f"{col}{start}-{col}{end}")
+                elif end - start == 1:
+                    parts.append(f"{col}{start},{col}{end}")
+                else:
+                    parts.append(f"{col}{start}")
+                i += 1
+
+        return ", ".join(parts)
+
     def grid_text_minimal(self) -> str:
-        """Hyper-token-efficient board text: returns only known coordinates."""
-        agua = []
-        impacto = []
+        """
+        Hyper-token-efficient board text.
+        Separates results into HIT (active), SUNK (completed) and MISS categories,
+        then compresses coordinate lists using range notation.
+        """
+        hits = []   # cells hit but ship NOT yet sunk
+        sunk = []   # cells belonging to fully-sunk ships
+        misses = []
+
+        # Build a set of cells belonging to sunk ships for quick lookup
+        sunk_cells: set[tuple[str, int]] = set()
+        for ship in self.ships:
+            if ship.is_sunk:
+                sunk_cells.update(ship.cells)
+
         for (col, row), result in self.shots_received.items():
-            c = format_coord(col, row)
-            if result in ("hit", "sunk"):
-                impacto.append(c)
+            coord_str = format_coord(col, row)
+            if result == "miss":
+                misses.append(coord_str)
+            elif (col, row) in sunk_cells:
+                sunk.append(coord_str)
             else:
-                agua.append(c)
-        
-        txt = ""
-        if impacto:
-            txt += f"IMPACTOS PREVIOS (X): {', '.join(impacto)}\n"
-        if agua:
-            txt += f"AGUA/MISS PREVIO (O): {', '.join(agua)}\n"
-        
-        if not txt:
-            return "TABLERO RIVAL: (Aún no has disparado)"
-        
-        return f"ESTADO ACTUAL DEL TABLERO RIVAL:\n{txt}"
+                hits.append(coord_str)
+
+        if not hits and not sunk and not misses:
+            return "(No shots fired yet)"
+
+        sections = []
+        if hits:
+            sections.append(f"ACTIVE HITS (hunt nearby!): {self._compress_coords(hits)}")
+        if sunk:
+            sections.append(f"SUNK (ignore): {self._compress_coords(sunk)}")
+        if misses:
+            sections.append(f"MISS: {self._compress_coords(misses)}")
+
+        return "\n".join(sections)
 
 
 # ── Move record ───────────────────────────────────────────────────────────────

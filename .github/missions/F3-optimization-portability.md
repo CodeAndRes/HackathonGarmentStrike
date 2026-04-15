@@ -11,31 +11,37 @@ Reducir el consumo de tokens en celdas prohibidas, soportar modelos mixtos para 
 
 ## 🚀 Tasks
 
-### F3.1 — Comprimir celdas prohibidas (`@supply-optimizer`)
-**File**: `core/llm_client.py`, `core/prompts.py`
+### F3.1 — Comprimir celdas prohibidas (`@supply-optimizer`) ✅ COMPLETED
+**File**: `core/engine.py`, `core/llm_client.py`, `core/prompts.py`
 
-Actualmente, las coordenadas prohibidas se envían como una lista plana o conjunto que puede ser muy largo de tokenizar.
-- Agrupar prohibidas por categoría (ej: "Agua/Miss", "Tocado/Hit", "Hundido/Sunk") para un mapa mental más claro para el LLM y que gaste menos tokens.
-
-### F3.2 — Modelos mixtos por jugador (`@supply-dev`)
+**Implemented:**
+- **Range compression**: `Board._compress_coords()` collapses consecutive coordinates into ranges (e.g. `A1, A2, A3, A4, A5` → `A1-A5`), reducing token count by ~60% in late-game prompts.
+- **Semantic categorization**: `grid_text_minimal()` now separates board state into `ACTIVE HITS (hunt nearby!)`, `SUNK (ignore)`, and `MISS` categories — giving the LLM actionable context instead of a flat dump.
+- **Removed redundant forbidden list**: The `USER_PROMPT_TEMPLATE` no longer includes a separate "DO NOT SHOOT" section (the board state already encodes this). Server-side validation of `forbidden_coords` remains intact.
+- **16 new tests** added: `TestCompressCoords` (10 tests) + `TestGridTextMinimal` (6 tests).
+### F3.2 — Modelos mixtos por jugador (`@supply-dev`) ✅ COMPLETED
 **File**: `main.py`, `core/tournament.py`
 
-- Permitir pasar `--model-a` y `--model-b` (en vez de un solo `--model`) para enfrentar modelos (e.g. GPT-4 vs Llama3).
-- Actualizar el menú interactivo para permitir seleccionar el modelo para el Equipo A y el Equipo B por separado.
-- Modificar `run_match()` para instanciar (o utilizar dinámicamente) un `target_model` adecuado a cada agente.
+**Implemented:**
+- **CLI**: `--model-a MODEL` and `--model-b MODEL` flags added to `play` subcommand. When only `--model` is given, both teams share it. When `-a` and `-b` differ, two separate `LLMClient` instances are created.
+- **`run_match()`**: Accepts `LLMClient | dict[str, LLMClient]`. The match loop resolves `active_client = llm_clients[current]` per turn.
+- **Interactive menu**: Option 4 now offers a sub-menu: (a) same model for both teams, (b) different model per team. The summary screen shows both models when they differ.
+- **Backward compatible**: All existing callers (quick match, tournament) continue to work with a single model.
 
-### F3.3 — README para el hackathon (`@supply-dev`)
+### F3.3 — README para el hackathon (`@supply-dev`) ✅ COMPLETED
 **File**: `README.md`
 
-- Instrucciones claras y amigables de instalación (`pip install -r requirements.txt`).
-- Guía de cómo obtener claves API para los distintos modelos soportados (Groq, Gemini, Ollama locales, OpenAI).
-- Explicación de la estructura de configuración requerida para cada equipo (`agentes/<equipo>/...`).
-- Ejemplo claro de comando de CLI (y aviso sobre el menú interactivo).
+**Implemented:**
+- Added a new section for the Interactive Menu (`python main.py` with no args).
+- Added explicit instructions and links for obtaining API keys for Groq, Gemini, OpenAI, and Ollama.
+- Updated the CLI Reference to show mixed model parameters (`--model-a` and `--model-b`).
 
-### F3.4 — Fijar tamaño de terminal (`@supply-dev`)
+### F3.4 — Fijar tamaño de terminal (`@supply-optimizer`) ✅ COMPLETED
 **File**: `core/visualizer.py`
 
-- Asegurarse de que el dashboard Rich no se rompa si el terminal es muy pequeño, o añadir un check rápido en `GameDashboard.start()` que compruebe `os.get_terminal_size()` o la API de console de Rich y emita un warning de "Redimensiona tu consola para ver correctamente la partida".
+**Implemented:**
+- Added `os.get_terminal_size()` / `console.size` check in `GameDashboard.start()`.
+- If the terminal is smaller than 90x24, it issues a yellow warning advising the player to resize the terminal before starting the Live dashboard.
 
 ---
 

@@ -262,7 +262,7 @@ class TestBuildPrompt:
             forbidden_coords=set(),
         )
         content = str(messages)
-        assert "(none)" in content.lower()
+        assert "(None)" in content  # empty history placeholder
 
 
 class TestLocalJsonCleanup:

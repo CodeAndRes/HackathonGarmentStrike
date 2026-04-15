@@ -67,12 +67,36 @@ def cmd_play(args: argparse.Namespace) -> None:
         almacen_path=Path(args.almacen_b),
     )
 
-    llm_client = LLMClient(
-        model=args.model,
-        api_sleep=args.sleep,
-        max_tokens=args.max_tokens,
-        board_size=args.board_size,
-    )
+    # Resolve per-team models (F3.2: mixed models)
+    model_a = getattr(args, 'model_a', None) or args.model
+    model_b = getattr(args, 'model_b', None) or args.model
+
+    if model_a == model_b:
+        # Same model → single client (saves memory)
+        llm_client = LLMClient(
+            model=model_a,
+            api_sleep=args.sleep,
+            max_tokens=args.max_tokens,
+            board_size=args.board_size,
+        )
+    else:
+        # Different models → per-team clients
+        console.print(f"[bold cyan]⚔ Modo mixto:[/bold cyan] {model_a} vs {model_b}")
+        llm_client = {
+            args.team_a: LLMClient(
+                model=model_a,
+                api_sleep=args.sleep,
+                max_tokens=args.max_tokens,
+                board_size=args.board_size,
+            ),
+            args.team_b: LLMClient(
+                model=model_b,
+                api_sleep=args.sleep,
+                max_tokens=args.max_tokens,
+                board_size=args.board_size,
+            ),
+        }
+
     match = run_match(
         config_a, config_b, llm_client, visual=not args.no_visual, 
         ui_sleep=args.ui_sleep, board_size=args.board_size,
@@ -141,6 +165,8 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             args.team_b = "Beta"
             args.agent_b = "agentes/ejemplo/agent.md"
             args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            args.model_a = None
+            args.model_b = None
             cmd_play(args)
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
 
@@ -152,7 +178,9 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             custom_board = 10
             custom_ships = [5, 4, 3, 3, 2]
             custom_turns = 50
-            custom_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
+            default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
+            custom_model_a = default_model
+            custom_model_b = default_model
             
             agents_list = discover_agents("agentes")
             team_a_idx = 0
@@ -164,7 +192,10 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                 console.print(f"1. Tamaño del tablero \[6-10] (actual: {custom_board})")
                 console.print(f"2. Configuración de cajas (actual: {custom_ships})")
                 console.print(f"3. Máximo de turnos (actual: {custom_turns})")
-                console.print(f"4. Modelo de IA (actual: {custom_model})")
+                if custom_model_a == custom_model_b:
+                    console.print(f"4. Modelo de IA (actual: {custom_model_a})")
+                else:
+                    console.print(f"4. Modelos de IA (A: {custom_model_a} | B: {custom_model_b})")
                 
                 team_a_name = agents_list[team_a_idx].name if agents_list else "Ninguno"
                 team_b_name = agents_list[team_b_idx].name if agents_list else "Ninguno"
@@ -186,7 +217,16 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                 elif sub_choice == "3":
                     custom_turns = IntPrompt.ask("Máximo de turnos", default=custom_turns)
                 elif sub_choice == "4":
-                    custom_model = Prompt.ask("Modelo de IA", default=custom_model)
+                    console.print("\n  [bold]a.[/bold] Mismo modelo para ambos equipos")
+                    console.print("  [bold]b.[/bold] Modelo diferente por equipo")
+                    model_choice = Prompt.ask("  Elige", choices=["a", "b"], default="a")
+                    if model_choice == "a":
+                        m = Prompt.ask("Modelo de IA (ambos equipos)", default=custom_model_a)
+                        custom_model_a = m
+                        custom_model_b = m
+                    else:
+                        custom_model_a = Prompt.ask("Modelo equipo A", default=custom_model_a)
+                        custom_model_b = Prompt.ask("Modelo equipo B", default=custom_model_b)
                 elif sub_choice == "5":
                     if not agents_list:
                         console.print("[red]No se encontraron agentes en la carpeta 'agentes/'.[/red]")
@@ -224,13 +264,19 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                     console.print(f"Tablero: {custom_board}x{custom_board}")
                     console.print(f"Cajas: {custom_ships}")
                     console.print(f"Turnos: {custom_turns}")
-                    console.print(f"Modelo: {custom_model}")
+                    if custom_model_a == custom_model_b:
+                        console.print(f"Modelo: {custom_model_a}")
+                    else:
+                        console.print(f"Modelo A: {custom_model_a}")
+                        console.print(f"Modelo B: {custom_model_b}")
                     console.print(f"Enfrentamiento: {agents_list[team_a_idx].name} vs {agents_list[team_b_idx].name}")
                     
                     confirm = Prompt.ask("\n¿Iniciar partida?", choices=["s", "n"], default="s")
                     if confirm.lower() == "s":
                         args.command = "play"
-                        args.model = custom_model
+                        args.model = custom_model_a  # fallback default
+                        args.model_a = custom_model_a
+                        args.model_b = custom_model_b
                         args.board_size = custom_board
                         args.ship_sizes = custom_ships
                         args.max_turns = custom_turns
@@ -335,6 +381,10 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--team-b", required=True, metavar="NAME", help="Nombre del equipo B.")
     play.add_argument("--agent-b", required=True, metavar="PATH", help="Ruta al agent.md del equipo B.")
     play.add_argument("--almacen-b", required=True, metavar="PATH", help="Ruta al almacen_*.md del equipo B.")
+    play.add_argument("--model-a", metavar="MODEL", default=None,
+                      help="LLM model for team A (overrides --model). Enables mixed-model matches.")
+    play.add_argument("--model-b", metavar="MODEL", default=None,
+                      help="LLM model for team B (overrides --model). Enables mixed-model matches.")
 
     # -- tournament ------------------------------------------------------------
     tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
