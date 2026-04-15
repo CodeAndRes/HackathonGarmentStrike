@@ -98,6 +98,6 @@ def validate_game_config(board_size: int, ship_sizes: list[int]) -> None:
 - Eliminar la rama después del merge.
 
 ---
-**Status**: [IN_PROGRESS]  
+**Status**: [COMPLETED]  
 **Assigned to**: @supply-dev  
 **Approval Required**: No (Auto-integrate on test success)

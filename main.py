@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 import yaml
 from pathlib import Path
 from dotenv import load_dotenv
@@ -144,39 +145,112 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
 
         elif choice == "3":
-            console.print("\n[bold cyan]-- Configuración de Partida Personalizada --[/bold cyan]")
-            # Note: This is a simplified interactive setup. 
-            # Could be expanded to list folders in agentes/
-            args.command = "play"
-            args.team_a = Prompt.ask("Nombre Equipo A", default="Equipo_A")
-            args.team_b = Prompt.ask("Nombre Equipo B", default="Equipo_B")
+            from core.engine import validate_game_config
+            from core.tournament import discover_agents
             
-            models = [
-                "gemini/gemini-1.5-pro",
-                "gemini/gemini-3-flash-preview",
-                "ollama/llama3:latest",
-                "ollama/gemma4:e4b",
-                "ollama/phi3:mini",
-                "ollama/qwen3.5:0.8b"
-            ]
-            console.print("\nModelos sugeridos:")
-            for i, m in enumerate(models, 1):
-                console.print(f"{i}. {m}")
+            # Defaults
+            custom_board = 10
+            custom_ships = [5, 4, 3, 3, 2]
+            custom_turns = 50
+            custom_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
             
-            m_idx = IntPrompt.ask("Selecciona un modelo (o introduce nombre manual)", default=1)
-            if 1 <= m_idx <= len(models):
-                args.model = models[m_idx-1]
-            else:
-                args.model = Prompt.ask("Nombre del modelo (LiteLLM format)")
+            agents_list = discover_agents("agentes")
+            team_a_idx = 0
+            team_b_idx = min(1, len(agents_list) - 1) if agents_list else 0
             
-            # Simple path defaults for now
-            args.agent_a = "agentes/ejemplo/agent.md"
-            args.almacen_a = "agentes/ejemplo/almacen_equipo_ejemplo.md"
-            args.agent_b = "agentes/ejemplo/agent.md"
-            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
-            
-            cmd_play(args)
-            Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
+            while True:
+                console.clear()
+                console.print("\n[bold cyan]-- Configuración de Partida Personalizada --[/bold cyan]")
+                console.print(f"1. Tamaño del tablero \[6-10] (actual: {custom_board})")
+                console.print(f"2. Configuración de cajas (actual: {custom_ships})")
+                console.print(f"3. Máximo de turnos (actual: {custom_turns})")
+                console.print(f"4. Modelo de IA (actual: {custom_model})")
+                
+                team_a_name = agents_list[team_a_idx].name if agents_list else "Ninguno"
+                team_b_name = agents_list[team_b_idx].name if agents_list else "Ninguno"
+                console.print(f"5. Seleccionar equipos (actual: {team_a_name} vs {team_b_name})")
+                console.print("6. ▶ INICIAR PARTIDA")
+                console.print("7. [red]Cancelar[/red]")
+                
+                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7"], default="6")
+                
+                if sub_choice == "1":
+                    custom_board = IntPrompt.ask("Tamaño del tablero (6-10)", default=custom_board)
+                elif sub_choice == "2":
+                    ships_str = Prompt.ask("Tamaños de cajas separados por comas (ej: 3,2,2)", default=",".join(map(str, custom_ships)))
+                    try:
+                        custom_ships = [int(s.strip()) for s in ships_str.split(",")]
+                    except ValueError:
+                        console.print("[red]Formato inválido. Usa números separados por comas.[/red]")
+                        time.sleep(1)
+                elif sub_choice == "3":
+                    custom_turns = IntPrompt.ask("Máximo de turnos", default=custom_turns)
+                elif sub_choice == "4":
+                    custom_model = Prompt.ask("Modelo de IA", default=custom_model)
+                elif sub_choice == "5":
+                    if not agents_list:
+                        console.print("[red]No se encontraron agentes en la carpeta 'agentes/'.[/red]")
+                        time.sleep(1.5)
+                        continue
+                    console.print("\n[bold]Equipos disponibles:[/bold]")
+                    for i, ag in enumerate(agents_list, 1):
+                        console.print(f"{i}. {ag.name}")
+                    idx_a = IntPrompt.ask("Selecciona el equipo A (número)", default=team_a_idx + 1)
+                    idx_b = IntPrompt.ask("Selecciona el equipo B (número)", default=team_b_idx + 1)
+                    
+                    if 1 <= idx_a <= len(agents_list) and 1 <= idx_b <= len(agents_list):
+                        team_a_idx = idx_a - 1
+                        team_b_idx = idx_b - 1
+                    else:
+                        console.print("[red]Selección inválida.[/red]")
+                        time.sleep(1.5)
+                elif sub_choice == "6":
+                    # Validate before starting
+                    try:
+                        validate_game_config(custom_board, custom_ships)
+                    except ValueError as e:
+                        console.print(f"\n[bold red]Error de Configuración:[/bold red] {e}")
+                        Prompt.ask("Presiona Enter para continuar")
+                        continue
+                    
+                    if not agents_list:
+                        console.print("\n[bold red]No hay equipos seleccionados o disponibles.[/bold red]")
+                        Prompt.ask("Presiona Enter para continuar")
+                        continue
+                        
+                    # Show summary
+                    console.clear()
+                    console.print("[bold green]-- Resumen de Configuración --[/bold green]")
+                    console.print(f"Tablero: {custom_board}x{custom_board}")
+                    console.print(f"Cajas: {custom_ships}")
+                    console.print(f"Turnos: {custom_turns}")
+                    console.print(f"Modelo: {custom_model}")
+                    console.print(f"Enfrentamiento: {agents_list[team_a_idx].name} vs {agents_list[team_b_idx].name}")
+                    
+                    confirm = Prompt.ask("\n¿Iniciar partida?", choices=["s", "n"], default="s")
+                    if confirm.lower() == "s":
+                        args.command = "play"
+                        args.model = custom_model
+                        args.board_size = custom_board
+                        args.ship_sizes = custom_ships
+                        args.max_turns = custom_turns
+                        
+                        agent_a = agents_list[team_a_idx]
+                        agent_b = agents_list[team_b_idx]
+                        
+                        args.team_a = agent_a.name
+                        args.agent_a = str(agent_a.agent_md_path)
+                        args.almacen_a = str(agent_a.almacen_path)
+                        
+                        args.team_b = agent_b.name
+                        args.agent_b = str(agent_b.agent_md_path)
+                        args.almacen_b = str(agent_b.almacen_path)
+                        
+                        cmd_play(args)
+                        Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
+                        break
+                elif sub_choice == "7":
+                    break
 
         elif choice == "4":
             console.print("[yellow]Saliendo...[/yellow]")

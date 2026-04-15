@@ -249,6 +249,12 @@ def run_match(
                 )
                 col = move.coordenada[0]
                 row = int(move.coordenada[1:])
+                
+                valid_cols = set(target_board.cols)
+                valid_rows = set(target_board.rows)
+                if col not in valid_cols or row not in valid_rows:
+                    raise ValueError(f"Coordenada {move.coordenada} fuera del tablero {board_size}x{board_size}")
+                
                 razon = move.razonamiento
                 estrategia = move.estrategia_aplicada
                 lat = move.latency_ms

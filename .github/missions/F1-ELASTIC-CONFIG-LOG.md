@@ -40,9 +40,19 @@ Validates:
 112 passed, 2 skipped in 3.10s
 ```
 
+### ✅ F1.1 — Validación Pydantic dinámica
+**Status**: COMPLETED
+- Added boundary validation check logic out-of-bounds coords in `tournament.py` (after parsing). This cleanly catches any hallucination slipping through Pydantic (e.g. valid format but outside board limits) and safely redirects to the fallback logic.
+
+### ✅ F1.3 — Pantalla de Configuración de Partida
+**Status**: COMPLETED
+- Refactored `main.py` Option 3 entirely.
+- Includes dynamic selection of `agentes/` folders.
+- Displays summary of board size, selected ships, AI model, and turn limits.
+- Integrates `validate_game_config()` before allowing match creation to ensure game integrity.
+
 ### Remaining Tasks
-- [ ] F1.1 — Validación Pydantic dinámica (coordinate range check at consumption point)
-- [ ] F1.3 — Pantalla de Configuración de Partida (interactive menu refactor)
+- Ninguna. Misión Completada.
 
 ### Branch
 `feature/elastic-config-menu` created from `main`
