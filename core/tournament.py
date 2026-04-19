@@ -176,6 +176,9 @@ def run_match(
             last_strategy="Iniciando...",
             last_reasoning="Estableciendo conexión con el LLM para el primer turno...",
         )
+    
+    if export_json:
+        _write_game_state(game)
 
     timeout_winner = None
     try:

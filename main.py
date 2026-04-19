@@ -168,6 +168,13 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
             args.model_a = None
             args.model_b = None
+            
+            console.print("\n[bold]Modo de Visualización:[/bold]")
+            console.print("1. Clásica (Terminal)")
+            console.print("2. Táctica (Web Dashboard)")
+            v = Prompt.ask("Elige", choices=["1", "2"], default="1")
+            args.tactical = (v == "2")
+            
             cmd_play(args)
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
 
