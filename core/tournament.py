@@ -128,6 +128,7 @@ def run_match(
     board_size: int = 10,
     max_turns: int = 50,
     ship_sizes: list[int] | None = None,
+    export_json: bool = False,
 ) -> MatchRecord:
     """
     Play one full match.
@@ -142,7 +143,12 @@ def run_match(
     agent_md_b = config_b.load_agent_md()
 
     game = Game(config_a.name, board_a, config_b.name, board_b)
-    dashboard = GameDashboard(config_a.name, config_b.name) if visual else None
+    
+    # If exporting JSON, we might want to disable visual dashboard if specified
+    # but the prompt says "Visualización Táctica suprime log visual del tablero ascii"
+    # dashboard = GameDashboard(...) if visual else None
+    
+    dashboard = GameDashboard(config_a.name, config_b.name) if (visual and not export_json) else None
     agent_mds = {config_a.name: agent_md_a, config_b.name: agent_md_b}
     wasted: dict[str, int] = {config_a.name: 0, config_b.name: 0}
 
@@ -280,6 +286,9 @@ def run_match(
 
             result = game.apply_move(col, row, razon, estrategia)
 
+            if export_json:
+                _write_game_state(game)
+
             if result == "already_shot":
                 wasted[current] += 1
 
@@ -333,6 +342,70 @@ def run_match(
         already_shot_a=wasted[config_a.name],
         already_shot_b=wasted[config_b.name],
     )
+
+
+def serialize_game_state(game: Game) -> dict:
+    """
+    Export current game state into the schema required by the external tactical dashboard.
+    """
+    def _serialize_team(name: str) -> dict:
+        board = game.boards[name]
+        fleet = {}
+        for ship in board.ships:
+            for col, row in ship.cells:
+                # Convert to indices (F,C)
+                ri = row - 1
+                ci = board.cols.index(col)
+                fleet[f"{ri},{ci}"] = ship.order_id
+        
+        return {
+            "name": name,
+            "pedidos_encajados": sum(1 for s in board.ships if s.is_sunk),
+            "total_pedidos": len(board.ships),
+            "prendas_encajadas": sum(1 for res in board.shots_received.values() if res in ("hit", "sunk")),
+            "fleet": fleet,
+            "board": board.visible_state(reveal_ships=True)
+        }
+
+    # Identify last moves for telemetry
+    move_a = next((m for m in reversed(game.move_log) if m.agent_name == game.names[0]), None)
+    move_b = next((m for m in reversed(game.move_log) if m.agent_name == game.names[1]), None)
+
+    state = {
+        "turn": game.turn_count,
+        "team_a": _serialize_team(game.names[0]),
+        "team_b": _serialize_team(game.names[1]),
+        "comms": [
+            {
+                "turn": m.turn,
+                "agent": "A" if m.agent_name == game.names[0] else "B",
+                "coord": m.coordinate,
+                "result": m.result.upper(),
+                "icon": "📦" if m.result in ("hit", "sunk") else "🌊",
+                "reasoning": m.razonamiento
+            } for m in game.move_log
+        ],
+        "telemetry": {
+            "team_a": {
+                "strategy": move_a.estrategia_aplicada if move_a else "Iniciando...",
+                "reasoning": move_a.razonamiento if move_a else "A la espera..."
+            },
+            "team_b": {
+                "strategy": move_b.estrategia_aplicada if move_b else "Iniciando...",
+                "reasoning": move_b.razonamiento if move_b else "A la espera..."
+            }
+        }
+    }
+    return state
+
+
+def _write_game_state(game: Game) -> None:
+    """Helper to write game_state.json into logs/ folder."""
+    state = serialize_game_state(game)
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    with open(log_dir / "game_state.json", "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=4, ensure_ascii=False)
 
 
 # ── Agent discovery ───────────────────────────────────────────────────────────

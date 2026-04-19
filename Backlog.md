@@ -51,3 +51,4 @@
 - [x] Tamaño de tablero dinámico (`board_size`) completamente propagado en la clase Board y parseadores.
 - [x] Configuración de barcos (pedidos) variables propagada por completo.
 - [x] Asegurar la portabilidad con instrucciones claras de instalación, requerimientos y cómo obtener claves API de los distintos modelos soportados.
+- [x] Modo Táctico: Exportación `game_state.json` en tiempo real para Dashboard externo.

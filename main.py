@@ -101,7 +101,8 @@ def cmd_play(args: argparse.Namespace) -> None:
         config_a, config_b, llm_client, visual=not args.no_visual, 
         ui_sleep=args.ui_sleep, board_size=args.board_size,
         max_turns=args.max_turns,
-        ship_sizes=args.ship_sizes
+        ship_sizes=args.ship_sizes,
+        export_json=getattr(args, 'tactical', False)
     )
 
     winner_str = match.winner if match.winner else "EMPATE"
@@ -181,6 +182,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
             custom_model_a = default_model
             custom_model_b = default_model
+            custom_viz = "1" # 1: Clásica, 2: Táctica
             
             agents_list = discover_agents("agentes")
             team_a_idx = 0
@@ -189,7 +191,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             while True:
                 console.clear()
                 console.print("\n[bold cyan]-- Configuración de Partida Personalizada --[/bold cyan]")
-                console.print(f"1. Tamaño del tablero \[6-10] (actual: {custom_board})")
+                console.print(f"1. Tamaño del tablero [6-10] (actual: {custom_board})")
                 console.print(f"2. Configuración de cajas (actual: {custom_ships})")
                 console.print(f"3. Máximo de turnos (actual: {custom_turns})")
                 if custom_model_a == custom_model_b:
@@ -200,10 +202,12 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                 team_a_name = agents_list[team_a_idx].name if agents_list else "Ninguno"
                 team_b_name = agents_list[team_b_idx].name if agents_list else "Ninguno"
                 console.print(f"5. Seleccionar equipos (actual: {team_a_name} vs {team_b_name})")
-                console.print("6. ▶ INICIAR PARTIDA")
-                console.print("7. [red]Cancelar[/red]")
+                viz_str = "Clásica (Terminal)" if custom_viz == "1" else "Táctica (Web Dashboard JSON)"
+                console.print(f"6. Modo de Visualización (actual: {viz_str})")
+                console.print("7. ▶ INICIAR PARTIDA")
+                console.print("8. [red]Cancelar[/red]")
                 
-                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7"], default="6")
+                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7", "8"], default="7")
                 
                 if sub_choice == "1":
                     custom_board = IntPrompt.ask("Tamaño del tablero (6-10)", default=custom_board)
@@ -245,6 +249,11 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                         console.print("[red]Selección inválida.[/red]")
                         time.sleep(1.5)
                 elif sub_choice == "6":
+                    console.print("\n[bold]Configuración de Visualización:[/bold]")
+                    console.print("1. Clásica (Panel ASCII en Terminal)")
+                    console.print("2. Táctica (Exportación JSON para Dashboard Web)")
+                    custom_viz = Prompt.ask("Selecciona modo", choices=["1", "2"], default=custom_viz)
+                elif sub_choice == "7":
                     # Validate before starting
                     try:
                         validate_game_config(custom_board, custom_ships)
@@ -280,6 +289,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                         args.board_size = custom_board
                         args.ship_sizes = custom_ships
                         args.max_turns = custom_turns
+                        args.tactical = (custom_viz == "2")
                         
                         agent_a = agents_list[team_a_idx]
                         agent_b = agents_list[team_b_idx]
@@ -385,6 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
                       help="LLM model for team A (overrides --model). Enables mixed-model matches.")
     play.add_argument("--model-b", metavar="MODEL", default=None,
                       help="LLM model for team B (overrides --model). Enables mixed-model matches.")
+    play.add_argument("--tactical", action="store_true", help="Modo táctico: genera game_state.json para dashboard web.")
 
     # -- tournament ------------------------------------------------------------
     tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
