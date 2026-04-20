@@ -171,8 +171,8 @@ Tras las pruebas de rendimiento, hemos aplicado una capa de optimización críti
 
 ### 3. Personalización Logística (Branding)
 Mapeo visual completo de términos militares a logística:
-*   `HIT` ➔ 📦 **Prenda Encajada**
-*   `SUNK` ➔ 🔥 **Pedido Encajado**
+*   `HIT` ➔ 👕 **Prenda Encajada**
+*   `SUNK` ➔ 📦 **Pedido Encajado**
 *   `MISS` ➔ ❔ **Prenda Perdida**
 
 ### 4. Soporte Local Optimizado

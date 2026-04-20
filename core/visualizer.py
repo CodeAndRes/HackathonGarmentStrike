@@ -40,8 +40,8 @@ _RESULT_STYLE: dict[str, str] = {
 }
 
 _RESULT_ICON: dict[str, str] = {
-    "hit": f"📦 {LOGISTICS_MAP['hit'].upper()}",
-    "sunk": f"🔥 {LOGISTICS_MAP['sunk'].upper()}",
+    "hit": f"👕 {LOGISTICS_MAP['hit'].upper()}",
+    "sunk": f"📦 {LOGISTICS_MAP['sunk'].upper()}",
     "miss": f"❔ {LOGISTICS_MAP['miss'].upper()}",
     "already_shot": f"⚠️ {LOGISTICS_MAP['already_shot'].upper()}",
 }
