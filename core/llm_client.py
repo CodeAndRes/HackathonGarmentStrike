@@ -293,9 +293,12 @@ class LLMClient:
                     "model": self.model,
                     "messages": messages,
                     "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
                     "timeout": 60,
                 }
+                # We avoid passing max_tokens/num_predict by default for Gemini/Ollama
+                # because they often interpret it as a character limit or truncate early.
+                if not (self.is_local_model or "gemini" in self.model.lower()):
+                    request_kwargs["max_tokens"] = self.max_tokens
 
                 # We avoid passing max_tokens/num_predict by default because 
                 # some providers (Gemini, Ollama) misinterpret it as a character limit 
@@ -337,6 +340,13 @@ class LLMClient:
                     time.sleep(2)  # Small pause before retry
 
             except Exception as exc:
+                # Handle transient API errors (Service Unavailable, Rate Limit)
+                if LITELLM_AVAILABLE and attempt < self.max_retries:
+                    if "ServiceUnavailableError" in str(type(exc)) or "RateLimitError" in str(type(exc)):
+                        last_error = exc
+                        time.sleep(5)  # Wait longer for server recovery
+                        continue
+
                 # Re-raise unexpected errors (network, auth, quota) immediately
                 raise RuntimeError(
                     f"LLM call failed (model={self.model!r}): {exc}"

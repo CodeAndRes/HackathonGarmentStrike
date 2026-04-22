@@ -26,6 +26,9 @@
 - [ ] Podríamos ver el razonamiento de ambos jugadores
 - [ ] Hacer mas grande el log de la partida en el frontend, el texto se corta 
 - [ ] Web para el campeonato 
+- [ ] Resaltar que agente esta pensando y jugando cada vez 
+- [ ] Añadir sonidos
+- [ ] Como el fin de la partida en web
 - [ ] Error visible al cancelar la partida con Ctrl+C. 
     ```
        C:\Projects\BT-Supply-Impulse\core\engine.py:395: RuntimeWarning: [AlmacenParser] Formato inválido en 'agentes\\ejemplo\\almacen_equipo_ejemplo.md': Configuración de pedidos incorrecta. Esperado [3, 3, 2], recibido [5, 4, 3, 3, 2].. Usando layout aleatorio legal.

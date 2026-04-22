@@ -196,7 +196,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             args.almacen_a = "agentes/ejemplo/almacen_equipo_ejemplo.md"
             args.team_b = "Beta"
             args.agent_b = "agentes/ejemplo/agent.md"
-            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo2.md"
             
             # Use catalog for Example Match too
             default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
