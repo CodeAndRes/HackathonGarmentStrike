@@ -25,6 +25,7 @@
 - [ ] En la ventana de razonaminto se ve como el modelos habla en terminos de barcos y hundir etc...
 - [ ] Podríamos ver el razonamiento de ambos jugadores
 - [ ] Hacer mas grande el log de la partida en el frontend, el texto se corta 
+- [ ] Web para el campeonato 
 - [ ] Error visible al cancelar la partida con Ctrl+C. 
     ```
        C:\Projects\BT-Supply-Impulse\core\engine.py:395: RuntimeWarning: [AlmacenParser] Formato inválido en 'agentes\\ejemplo\\almacen_equipo_ejemplo.md': Configuración de pedidos incorrecta. Esperado [3, 3, 2], recibido [5, 4, 3, 3, 2].. Usando layout aleatorio legal.
@@ -51,4 +52,4 @@
 - [x] Tamaño de tablero dinámico (`board_size`) completamente propagado en la clase Board y parseadores.
 - [x] Configuración de barcos (pedidos) variables propagada por completo.
 - [x] Asegurar la portabilidad con instrucciones claras de instalación, requerimientos y cómo obtener claves API de los distintos modelos soportados.
-- [x] Modo Táctico: Exportación `game_state.json` en tiempo real para Dashboard externo.
+- [x] Modo Táctico: Exportación `game_state.json` en tiempo real para Dashboard externo.

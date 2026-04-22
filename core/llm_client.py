@@ -232,7 +232,7 @@ class LLMClient:
         if my_history and my_history[-1].razonamiento:
             if "SISTEMA: Fallback" in my_history[-1].razonamiento:
                 warning_text = (
-                    "⚠️ CRITICAL: Your previous response was invalid or repeated a cell. \n"
+                    "CRITICAL: Your previous response was invalid or repeated a cell. \n"
                     "The system had to force a random shot. \n"
                     "RE-FOCUS: Check THE BOARD (X and O) carefully. Do NOT shoot there.\n\n"
                 )

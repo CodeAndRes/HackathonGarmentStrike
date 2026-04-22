@@ -36,16 +36,18 @@ load_dotenv()
 
 # Load settings.yaml if present
 SETTINGS_PATH = Path("settings.yaml")
+FULL_SETTINGS = {}
 if SETTINGS_PATH.exists():
     try:
         with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
-            full_settings = yaml.safe_load(f) or {}
-            SETTINGS = full_settings.get("engine", {})
+            FULL_SETTINGS = yaml.safe_load(f) or {}
+            SETTINGS = FULL_SETTINGS.get("engine", {})
     except Exception as e:
         console.print(f"[yellow]Aviso: No se pudo leer settings.yaml ({e}). Usando defaults.[/yellow]")
         SETTINGS = {}
 else:
     SETTINGS = {}
+MODELS_CATALOG = FULL_SETTINGS.get("models_catalog", {})
 
 
 # ── Sub-command handlers ──────────────────────────────────────────────────────
@@ -131,6 +133,35 @@ def cmd_tournament(args: argparse.Namespace) -> None:
     )
 
 
+# ── Interactive Menu Helpers ──────────────────────────────────────────────────
+
+
+def pick_model_from_catalog(current_model: str) -> str:
+    """Helper to pick a model from the recommended catalog in settings.yaml."""
+    if not MODELS_CATALOG:
+        return Prompt.ask("Modelo de IA", default=current_model)
+    
+    console.print("\n[bold cyan]-- Catálogo de Modelos Recomendados --[/bold cyan]")
+    providers = list(MODELS_CATALOG.keys())
+    for i, provider in enumerate(providers, 1):
+        console.print(f"{i}. [bold]{provider.upper()}[/bold]")
+    console.print(f"{len(providers)+1}. [dim]Otro (Manual)[/dim]")
+    
+    p_idx = IntPrompt.ask("Selecciona proveedor", default=1)
+    if 1 <= p_idx <= len(providers):
+        provider = providers[p_idx-1]
+        models = MODELS_CATALOG[provider]
+        console.print(f"\n[bold]{provider.upper()} - Modelos:[/bold]")
+        for j, model in enumerate(models, 1):
+            console.print(f"  {j}. {model}")
+        
+        m_idx = IntPrompt.ask("Selecciona modelo", default=1)
+        if 1 <= m_idx <= len(models):
+            return models[m_idx-1]
+    
+    return Prompt.ask("Introduce el nombre del modelo manualmente", default=current_model)
+
+
 def run_interactive_menu(args: argparse.Namespace) -> None:
     """Interactively ask the user what they want to do."""
     while True:
@@ -166,6 +197,11 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             args.team_b = "Beta"
             args.agent_b = "agentes/ejemplo/agent.md"
             args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            
+            # Use catalog for Example Match too
+            default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
+            selected_model = pick_model_from_catalog(default_model)
+            args.model = selected_model
             args.model_a = None
             args.model_b = None
             
@@ -232,12 +268,13 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                     console.print("  [bold]b.[/bold] Modelo diferente por equipo")
                     model_choice = Prompt.ask("  Elige", choices=["a", "b"], default="a")
                     if model_choice == "a":
-                        m = Prompt.ask("Modelo de IA (ambos equipos)", default=custom_model_a)
-                        custom_model_a = m
-                        custom_model_b = m
+                        custom_model_a = pick_model_from_catalog(custom_model_a)
+                        custom_model_b = custom_model_a
                     else:
-                        custom_model_a = Prompt.ask("Modelo equipo A", default=custom_model_a)
-                        custom_model_b = Prompt.ask("Modelo equipo B", default=custom_model_b)
+                        console.print("\n[bold]Configuración Equipo A:[/bold]")
+                        custom_model_a = pick_model_from_catalog(custom_model_a)
+                        console.print("\n[bold]Configuración Equipo B:[/bold]")
+                        custom_model_b = pick_model_from_catalog(custom_model_b)
                 elif sub_choice == "5":
                     if not agents_list:
                         console.print("[red]No se encontraron agentes en la carpeta 'agentes/'.[/red]")

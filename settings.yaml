@@ -12,3 +12,24 @@ engine:
   max_turns: 50
   ship_sizes: [4, 3, 3, 2]
 #ship_sizes: [5, 4, 3, 3, 2]
+
+models_catalog:
+  groq:
+    - "groq/llama-3.1-8b-instant"
+    - "groq/llama-3.3-70b-versatile"
+    - "groq/mixtral-8x7b-32768"
+  gemini:
+    - "gemini/gemini-3-flash-preview"
+    - "gemini/gemini-3.1-flash-lite-preview"
+    - "gemini/gemini-2.5-flash"
+    - "gemini/gemini-1.5-flash"
+    - "gemini/gemini-1.5-pro"
+  openai:
+    - "openai/gpt-4o"
+    - "openai/gpt-4o-mini"
+  ollama:
+    - "ollama/qwen2.5:1.5b"
+    - "ollama/llama3.2:1b"
+    - "ollama/qwen3.5:0.8b"
+    - "ollama/phi3:mini"
+    - "ollama/llama3:latest"
