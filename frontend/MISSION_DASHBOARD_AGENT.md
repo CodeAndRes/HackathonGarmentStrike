@@ -49,10 +49,12 @@ Cualquier cambio en el frontend debe respetar el mapeo de símbolos del **Logist
 - [x] **Advanced Visuals**: Unified ships, smart tape, closed flaps, and internal volume effects.
 - [x] **Config-First Architecture**: Unified settings in `UI_CONFIG`.
 
-### Phase B: Core Integration (CURRENT 📍)
-- [ ] Replace `get_game_state()` mock function with real-time file/socket listener.
-- [ ] Implement dynamic board updates without full page refresh (if possible in Streamlit).
-- [ ] Add interactive triggers (e.g., "Sincronizar Procesamiento" button connecting to Core API).
+### Phase B: Core Integration & Visibility (CURRENT 📍)
+- [ ] **[MISIÓN UX-01]**: Centrar y ampliar el panel de resultados actual. Debe ser el foco central y verse mucho más grande.
+- [ ] **[MISIÓN VIS-01]**: Aumentar el contraste de las "prendas perdidas" (Misses). Usar un color más vibrante y visible.
+- [ ] **[MISIÓN PANEL-01]**: Crear un panel de "Acción en Tiempo Real" que muestre: Jugador Actual, Coordenada del disparo y Resultado inmediato.
+- [ ] **[MISIÓN FOCUS-01]**: Implementar el "Highlight Táctico": El tablero que recibe el disparo en el turno actual debe iluminarse o resaltarse para guiar la vista del público.
+- [ ] **[MISIÓN ANIM-01]**: Tantear e integrar animaciones/transiciones para impactos y cambios de turno.
 
 ### Phase C: Polish & SFX
 - [ ] Subtle animations for HIT/MISS events.
@@ -60,5 +62,7 @@ Cualquier cambio en el frontend debe respetar el mapeo de símbolos del **Logist
 
 ---
 
-## 📝 Persistence Note
-*Este archivo debe ser consultado al inicio de cada sesión para mantener la continuidad del "hilo" de desarrollo del 19 de abril de 2026. Al resumir, priorizar la configuración maquetada en UI_CONFIG.*
+## 📝 Persistence & Workflow Note
+- **Ramas Individuales**: Cada misión (`UX-01`, `VIS-01`, etc.) debe desarrollarse en su propia rama de Git (ej: `feat-dashboard-ux-01`).
+- **Commits Granulares**: Realizar commits frecuentes para cada cambio significativo.
+- **Consultar al inicio**: Este archivo debe ser consultado al inicio de cada sesión para mantener la continuidad del "hilo" de desarrollo del 19 de abril de 2026. Al resumir, priorizar la configuración maquetada en UI_CONFIG.
