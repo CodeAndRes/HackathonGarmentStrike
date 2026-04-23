@@ -21,6 +21,12 @@
 
 ---
 
+## 🖥️ Dashboard Táctico (Web)
+
+El proyecto incluye una visualización web en tiempo real construida con Streamlit. Consulta las [Instrucciones del Frontend](frontend/README.md) para arrancarlo.
+
+---
+
 ## 📂 Project Structure
 
 ```

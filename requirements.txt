@@ -16,3 +16,10 @@ python-dotenv>=1.0.1
 # Testing
 pytest>=8.2.0
 pytest-mock>=3.14.0
+
+# Dashboard Web Frontend
+streamlit==1.56.0
+pandas==3.0.2
+altair==6.0.0
+numpy==2.4.4
+Pillow==12.2.0

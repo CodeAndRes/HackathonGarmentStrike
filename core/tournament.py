@@ -63,8 +63,20 @@ class MatchRecord:
     total_turns: int
     shots_a: int
     shots_b: int
+    hits_a: int = 0
+    hits_b: int = 0
     already_shot_a: int = 0   # wasted shots by A
     already_shot_b: int = 0   # wasted shots by B
+    avg_latency_a: float = 0.0
+    avg_latency_b: float = 0.0
+    prompt_tokens_a: int = 0
+    completion_tokens_a: int = 0
+    prompt_tokens_b: int = 0
+    completion_tokens_b: int = 0
+    errors_a: int = 0
+    errors_b: int = 0
+    win_reason: str = "Aniquilación"
+
 
 
 @dataclass
@@ -79,7 +91,13 @@ class TournamentReport:
                 "losses": 0,
                 "draws": 0,
                 "total_shots": 0,
+                "total_hits": 0,
                 "wasted_shots": 0,
+                "total_latency": 0.0,
+                "latency_count": 0,
+                "total_prompt_tokens": 0,
+                "total_completion_tokens": 0,
+                "total_errors": 0,
             }
 
     def update_standings(self, match: MatchRecord) -> None:
@@ -94,10 +112,24 @@ class TournamentReport:
         else:
             self.standings[match.agent_a]["draws"] += 1
             self.standings[match.agent_b]["draws"] += 1
-        self.standings[match.agent_a]["total_shots"] += match.shots_a
-        self.standings[match.agent_b]["total_shots"] += match.shots_b
-        self.standings[match.agent_a]["wasted_shots"] += match.already_shot_a
-        self.standings[match.agent_b]["wasted_shots"] += match.already_shot_b
+            
+        # Aggregate shots and hits
+        for agent, shots, hits, wasted, lat, pt, ct, err in [
+            (match.agent_a, match.shots_a, match.hits_a, match.already_shot_a, 
+             match.avg_latency_a, match.prompt_tokens_a, match.completion_tokens_a, match.errors_a),
+            (match.agent_b, match.shots_b, match.hits_b, match.already_shot_b, 
+             match.avg_latency_b, match.prompt_tokens_b, match.completion_tokens_b, match.errors_b),
+        ]:
+            s = self.standings[agent]
+            s["total_shots"] += shots
+            s["total_hits"] += hits
+            s["wasted_shots"] += wasted
+            s["total_prompt_tokens"] += pt
+            s["total_completion_tokens"] += ct
+            s["total_errors"] += err
+            if lat > 0:
+                s["total_latency"] += lat
+                s["latency_count"] += 1
 
 
 # ── History helpers ───────────────────────────────────────────────────────────
@@ -151,6 +183,13 @@ def run_match(
     dashboard = GameDashboard(config_a.name, config_b.name) if (visual and not export_json) else None
     agent_mds = {config_a.name: agent_md_a, config_b.name: agent_md_b}
     wasted: dict[str, int] = {config_a.name: 0, config_b.name: 0}
+    hits_count: dict[str, int] = {config_a.name: 0, config_b.name: 0}
+    lats: dict[str, list[float]] = {config_a.name: [], config_b.name: []}
+    tokens: dict[str, dict] = {
+        config_a.name: {"p": 0, "c": 0},
+        config_b.name: {"p": 0, "c": 0}
+    }
+    api_errors: dict[str, int] = {config_a.name: 0, config_b.name: 0}
 
     # Support mixed models: single client or per-team dict
     if isinstance(llm_client, dict):
@@ -158,7 +197,9 @@ def run_match(
     else:
         llm_clients = {config_a.name: llm_client, config_b.name: llm_client}
 
-    log_file = Path("logs/match_turns.log")
+    # Use a unique log file for this match in the reports folder
+    Path("reports").mkdir(exist_ok=True)
+    log_file = Path(f"reports/turns_{config_a.name}_vs_{config_b.name}.log")
     if log_file.exists():
         log_file.unlink()
 
@@ -181,6 +222,7 @@ def run_match(
         _write_game_state(game)
 
     timeout_winner = None
+    final_reason = "Aniquilación"
     try:
         while True:
             finished, winner = game.is_over()
@@ -230,9 +272,11 @@ def run_match(
                 if timeout_winner:
                    with log_file.open("a", encoding="utf-8") as f:
                        f.write(f"[SISTEMA] Victoria concedida a {timeout_winner} por {reason}.\n")
+                   final_reason = f"Límite de turnos ({reason})"
                 else:
                    with log_file.open("a", encoding="utf-8") as f:
                        f.write(f"[SISTEMA] {reason}: Nadie consigue ventaja.\n")
+                   final_reason = f"Límite de turnos ({reason})"
                 break
 
             current = game.current_agent
@@ -268,8 +312,13 @@ def run_match(
                 razon = move.razonamiento
                 estrategia = move.estrategia_aplicada
                 lat = move.latency_ms
+                
+                # Accumulate tokens
+                tokens[current]["p"] += move.prompt_tokens
+                tokens[current]["c"] += move.completion_tokens
             except Exception as e:
                 # El modelo falló (error de red, cuota, auth, etc.) o alucinó repetidamente.
+                api_errors[current] += 1
                 # Reportamos el error real antes del fallback.
                 error_msg = f"LLM Error: {str(e)}"
                 
@@ -287,7 +336,12 @@ def run_match(
                 estrategia = "EMERGENCY FALLBACK"
                 lat = 0.0
 
+            if lat > 0:
+                lats[current].append(lat)
+
             result = game.apply_move(col, row, razon, estrategia)
+            if result in ("hit", "sunk"):
+                hits_count[current] += 1
 
             if export_json:
                 _write_game_state(game)
@@ -335,6 +389,8 @@ def run_match(
     if dashboard:
         dashboard.print_winner(winner, game.turn_count)
 
+    def _avg(lst): return sum(lst)/len(lst) if lst else 0.0
+
     return MatchRecord(
         agent_a=config_a.name,
         agent_b=config_b.name,
@@ -342,8 +398,19 @@ def run_match(
         total_turns=game.turn_count,
         shots_a=game.shots_fired[config_a.name],
         shots_b=game.shots_fired[config_b.name],
+        hits_a=hits_count[config_a.name],
+        hits_b=hits_count[config_b.name],
         already_shot_a=wasted[config_a.name],
         already_shot_b=wasted[config_b.name],
+        avg_latency_a=_avg(lats[config_a.name]),
+        avg_latency_b=_avg(lats[config_b.name]),
+        prompt_tokens_a=tokens[config_a.name]["p"],
+        completion_tokens_a=tokens[config_a.name]["c"],
+        prompt_tokens_b=tokens[config_b.name]["p"],
+        completion_tokens_b=tokens[config_b.name]["c"],
+        errors_a=api_errors[config_a.name],
+        errors_b=api_errors[config_b.name],
+        win_reason=final_reason,
     )
 
 
@@ -436,12 +503,12 @@ def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
 
         if not agent_md.exists():
             console.print(
-                f"[yellow]⚠  {team_dir.name}: agent.md no encontrado – omitido.[/yellow]"
+                f"[yellow][!] {team_dir.name}: agent.md no encontrado - omitido.[/yellow]"
             )
             continue
         if not almacen_files:
             console.print(
-                f"[yellow]⚠  {team_dir.name}: almacen_*.md no encontrado – omitido.[/yellow]"
+                f"[yellow][!] {team_dir.name}: almacen_*.md no encontrado - omitido.[/yellow]"
             )
             continue
 
@@ -452,12 +519,12 @@ def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
                 almacen_path=almacen_files[0],
             )
         )
-        console.print(f"[green]✓  Agente cargado: {team_dir.name}[/green]")
+        console.print(f"[green][OK] Agente cargado: {team_dir.name}[/green]")
 
     return configs
 
 
-# ── Tournament runner ─────────────────────────────────────────────────────────
+# -- Tournament runner ---------------------------------------------------------
 
 
 def run_tournament(
@@ -491,10 +558,9 @@ def run_tournament(
     )
     report = TournamentReport()
     pairs = list(combinations(agents, 2))
+    num_matches = len(pairs)
 
-    console.print(
-        Rule(f"[bold]Torneo Round Robin – {len(agents)} equipos, {len(pairs)} partidas[/bold]")
-    )
+    console.print(Rule(f"[bold]Torneo Round Robin - {len(agents)} equipos, {num_matches} partidas[/bold]"))
 
     for config_a, config_b in track(pairs, description="Jugando partidas..."):
         console.print(Rule(f"[cyan]{config_a.name}  vs  {config_b.name}[/cyan]"))
@@ -538,6 +604,16 @@ def _save_results(report: TournamentReport, output_file: str) -> None:
                 "turnos_totales": m.total_turns,
                 "disparos_a": m.shots_a,
                 "disparos_b": m.shots_b,
+                "hits_a": m.hits_a,
+                "hits_b": m.hits_b,
+                "latencia_media_a": round(m.avg_latency_a / 1000.0, 3),
+                "latencia_media_b": round(m.avg_latency_b / 1000.0, 3),
+                "prompt_tokens_a": m.prompt_tokens_a,
+                "completion_tokens_a": m.completion_tokens_a,
+                "prompt_tokens_b": m.prompt_tokens_b,
+                "completion_tokens_b": m.completion_tokens_b,
+                "errores_api_a": m.errors_a,
+                "errores_api_b": m.errors_b,
                 "disparos_invalidos_a": m.already_shot_a,
                 "disparos_invalidos_b": m.already_shot_b,
             }
@@ -547,33 +623,116 @@ def _save_results(report: TournamentReport, output_file: str) -> None:
             name: stats
             for name, stats in sorted(
                 report.standings.items(),
-                key=lambda x: (-x[1]["wins"], x[1]["total_shots"]),
+                key=lambda x: (-x[1]["wins"], -x[1]["draws"], x[1]["total_shots"]),
             )
         },
     }
+    # Ensure reports folder
+    report_dir = Path("reports")
+    report_dir.mkdir(exist_ok=True)
+    
+    # Ensure filename is inside reports/ if it's a relative path
+    target_path = Path(output_file)
+    
+    # Append timestamp to avoid overwriting
+    timestamp_str = time.strftime("%Y%m%d_%H%M%S")
+    new_stem = f"{target_path.stem}_{timestamp_str}"
+    target_path = target_path.with_name(f"{new_stem}{target_path.suffix}")
+
+    if not target_path.is_absolute():
+        target_path = report_dir / target_path.name
+        
+    output_file = str(target_path)
+
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
-    console.print(f"\n[bold green]Resultados guardados en: {output_file}[/bold green]")
+    
+    # Also save as Markdown
+    md_file = str(target_path.with_suffix(".md"))
+    _save_markdown_report(report, md_file)
+    
+    console.print(f"\n[bold green]Resultados guardados en la carpeta 'reports/':[/bold green]")
+    console.print(f" - JSON: [cyan]{output_file}[/cyan]")
+    console.print(f" - Markdown: [cyan]{md_file}[/cyan]")
+
+
+def _save_markdown_report(report: TournamentReport, md_file: str) -> None:
+    """Generates a human-readable markdown report with tables and analytics."""
+    lines = [
+        "# [TOURNAMENT] Garment Strike - Informe de Torneo",
+        f"\n*Fecha: {time.strftime('%Y-%m-%d %H:%M:%S')}*",
+        "\n## Clasificacion Final",
+        "\n| Equipo | V | D | E | Precision | Latencia | Errores | Tokens (P/C) |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |"
+    ]
+    
+    for name, s in sorted(
+        report.standings.items(), key=lambda x: (-x[1]["wins"], -x[1]["draws"], x[1]["total_shots"])
+    ):
+        acc = (s["total_hits"] / s["total_shots"] * 100) if s["total_shots"] > 0 else 0
+        lat = (s["total_latency"] / s["latency_count"] / 1000.0) if s["latency_count"] > 0 else 0
+        tokens_str = f"{s['total_prompt_tokens']}/{s['total_completion_tokens']}"
+        lines.append(
+            f"| **{name}** | {s['wins']} | {s['losses']} | {s['draws']} | {acc:.1f}% | {lat:.2f}s | {s['total_errors']} | {tokens_str} |"
+        )
+        
+    lines.append("\n## Detalle de Partidas")
+    for i, m in enumerate(report.matches, 1):
+        win_text = f"WINNER: {m.winner} ({m.win_reason})" if m.winner else f"DRAW ({m.win_reason})"
+        acc_a = (m.hits_a / m.shots_a * 100) if m.shots_a > 0 else 0
+        acc_b = (m.hits_b / m.shots_b * 100) if m.shots_b > 0 else 0
+        
+        lines.append(f"\n### Partida {i}: {m.agent_a} vs {m.agent_b}")
+        lines.append(f"- **Resultado**: {win_text}")
+        lines.append(f"- **Duración**: {m.total_turns} turnos")
+        lines.append(f"- **Estadísticas {m.agent_a}**:")
+        lines.append(f"  - Precision: {acc_a:.1f}% | Latencia: {m.avg_latency_a/1000.0:.2f}s | Errores: {m.errors_a}")
+        lines.append(f"  - Tokens: {m.prompt_tokens_a} (P) / {m.completion_tokens_a} (C)")
+        lines.append(f"- **Estadísticas {m.agent_b}**:")
+        lines.append(f"  - Precision: {acc_b:.1f}% | Latencia: {m.avg_latency_b/1000.0:.2f}s | Errores: {m.errors_b}")
+        lines.append(f"  - Tokens: {m.prompt_tokens_b} (P) / {m.completion_tokens_b} (C)")
+        
+    lines.append("\n## Leyenda")
+    lines.append("- **V**: Victorias")
+    lines.append("- **D**: Derrotas")
+    lines.append("- **E**: Empates")
+    lines.append("- **Precision**: Porcentaje de disparos que aciertan (Prendas encajadas / Disparos totales)")
+    lines.append("- **Latencia**: Tiempo medio de respuesta del modelo de IA por turno (en segundos)")
+    lines.append("- **Errores**: Fallos de comunicación con la API (Timeouts, Alucinaciones, etc.)")
+    lines.append("- **Tokens (P/C)**: Consumo de Tokens (P = Prompt / Entrada, C = Completion / Salida)")
+        
+    lines.append("\n\n---\n*Generado por Garment Strike Engine*")
+    
+    with open(md_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
 
 
 def _print_standings(report: TournamentReport) -> None:
-    tbl = Table(title="[bold]🏆  Clasificación Final[/bold]", box=None, show_lines=True)
+    tbl = Table(title="[bold]CLASIFICACION FINAL[/bold]", box=None, show_lines=True)
     tbl.add_column("Equipo", style="bold white")
     tbl.add_column("V", justify="center", style="green")
     tbl.add_column("D", justify="center", style="red")
     tbl.add_column("E", justify="center", style="yellow")
-    tbl.add_column("Disparos", justify="right", style="cyan")
-    tbl.add_column("Inválidos", justify="right", style="dim")
+    tbl.add_column("Precision", justify="right", style="magenta")
+    tbl.add_column("Latencia", justify="right", style="blue")
+    tbl.add_column("Errores", justify="right", style="red")
+    tbl.add_column("Tokens (P/C)", justify="right", style="cyan")
 
     for name, stats in sorted(
-        report.standings.items(), key=lambda x: (-x[1]["wins"], x[1]["total_shots"])
+        report.standings.items(), key=lambda x: (-x[1]["wins"], -x[1]["draws"], x[1]["total_shots"])
     ):
+        acc = (stats["total_hits"] / stats["total_shots"] * 100) if stats["total_shots"] > 0 else 0
+        lat = (stats["total_latency"] / stats["latency_count"] / 1000.0) if stats["latency_count"] > 0 else 0
+        tokens_str = f"{stats['total_prompt_tokens']}/{stats['total_completion_tokens']}"
+        
         tbl.add_row(
             name,
             str(stats["wins"]),
             str(stats["losses"]),
             str(stats["draws"]),
-            str(stats["total_shots"]),
-            str(stats["wasted_shots"]),
+            f"{acc:.1f}%",
+            f"{lat:.2f}s",
+            str(stats["total_errors"]),
+            tokens_str,
         )
     console.print(tbl)

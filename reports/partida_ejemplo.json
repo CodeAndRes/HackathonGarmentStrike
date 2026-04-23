@@ -1,0 +1,52 @@
+{
+  "partidas": [
+    {
+      "agente_a": "Alpha",
+      "agente_b": "Beta",
+      "ganador": "Alpha",
+      "turnos_totales": 33,
+      "disparos_a": 20,
+      "disparos_b": 13,
+      "hits_a": 12,
+      "hits_b": 5,
+      "latencia_media_a": 14.021,
+      "latencia_media_b": 20.846,
+      "prompt_tokens_a": 4722,
+      "completion_tokens_a": 18795,
+      "prompt_tokens_b": 2985,
+      "completion_tokens_b": 11630,
+      "errores_api_a": 2,
+      "errores_api_b": 1,
+      "disparos_invalidos_a": 0,
+      "disparos_invalidos_b": 0
+    }
+  ],
+  "clasificacion": {
+    "Alpha": {
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "total_shots": 20,
+      "total_hits": 12,
+      "wasted_shots": 0,
+      "total_latency": 14020.78108333343,
+      "latency_count": 1,
+      "total_prompt_tokens": 4722,
+      "total_completion_tokens": 18795,
+      "total_errors": 2
+    },
+    "Beta": {
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_shots": 13,
+      "total_hits": 5,
+      "wasted_shots": 0,
+      "total_latency": 20846.10778333293,
+      "latency_count": 1,
+      "total_prompt_tokens": 2985,
+      "total_completion_tokens": 11630,
+      "total_errors": 1
+    }
+  }
+}

@@ -36,3 +36,7 @@ tournament_results.json
 # Logs
 logs/
 *.log
+
+# Frontend
+frontend/.venv/
+frontend/__pycache__/

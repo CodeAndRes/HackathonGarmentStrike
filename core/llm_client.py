@@ -50,6 +50,8 @@ class AgentMove(BaseModel):
     razonamiento: str
     estrategia_aplicada: str
     latency_ms: Optional[float] = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
 
     @field_validator("coordenada")
     @classmethod
@@ -326,6 +328,12 @@ class LLMClient:
                 # Parse with multi-stage fallback (handles fences + truncation)
                 data = self._parse_response(raw)
                 data["latency_ms"] = (time.perf_counter() - start_time) * 1000.0
+                
+                # Extract token usage from litellm response
+                usage = getattr(response, "usage", None)
+                data["prompt_tokens"] = getattr(usage, "prompt_tokens", 0) or 0
+                data["completion_tokens"] = getattr(usage, "completion_tokens", 0) or 0
+                
                 move = AgentMove.model_validate(data, context={"board_size": self.board_size})
 
                 if forbidden_coords and move.coordenada in forbidden_coords:

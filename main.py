@@ -32,22 +32,25 @@ from rich.prompt import Prompt, IntPrompt
 from rich.rule import Rule
 
 console = Console()
-load_dotenv()
-
-# Load settings.yaml if present
 SETTINGS_PATH = Path("settings.yaml")
-FULL_SETTINGS = {}
-if SETTINGS_PATH.exists():
-    try:
-        with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
-            FULL_SETTINGS = yaml.safe_load(f) or {}
-            SETTINGS = FULL_SETTINGS.get("engine", {})
-    except Exception as e:
-        console.print(f"[yellow]Aviso: No se pudo leer settings.yaml ({e}). Usando defaults.[/yellow]")
+
+def reload_configurations():
+    """Reloads .env and settings.yaml into memory."""
+    global SETTINGS, MODELS_CATALOG, FULL_SETTINGS
+    load_dotenv(override=True)
+    if SETTINGS_PATH.exists():
+        try:
+            with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+                FULL_SETTINGS = yaml.safe_load(f) or {}
+                SETTINGS = FULL_SETTINGS.get("engine", {})
+        except Exception as e:
+            SETTINGS = {}
+    else:
         SETTINGS = {}
-else:
-    SETTINGS = {}
-MODELS_CATALOG = FULL_SETTINGS.get("models_catalog", {})
+    MODELS_CATALOG = FULL_SETTINGS.get("models_catalog", {})
+
+# Initial load
+reload_configurations()
 
 
 # ── Sub-command handlers ──────────────────────────────────────────────────────
@@ -55,6 +58,7 @@ MODELS_CATALOG = FULL_SETTINGS.get("models_catalog", {})
 
 def cmd_play(args: argparse.Namespace) -> None:
     """Run a single match between two agent configs."""
+    reload_configurations()
     from core.llm_client import LLMClient
     from core.tournament import AgentConfig, run_match
 
@@ -110,14 +114,36 @@ def cmd_play(args: argparse.Namespace) -> None:
     winner_str = match.winner if match.winner else "EMPATE"
     console.print(f"\n[bold]Ganador:[/bold] {winner_str}")
     console.print(f"[bold]Turnos totales:[/bold] {match.total_turns}")
+    
+    acc_a = (match.hits_a / match.shots_a * 100) if match.shots_a > 0 else 0
+    acc_b = (match.hits_b / match.shots_b * 100) if match.shots_b > 0 else 0
+
     console.print(
-        f"[bold]Disparos:[/bold] {args.team_a}={match.shots_a}  |  {args.team_b}={match.shots_b}"
+        f"[bold]Disparos:[/bold]  {args.team_a}={match.shots_a} ({acc_a:.1f}% hit) | {args.team_b}={match.shots_b} ({acc_b:.1f}% hit)"
     )
+    console.print(
+        f"[bold]Latencia:[/bold]  {args.team_a}={match.avg_latency_a/1000.0:.2f}s | {args.team_b}={match.avg_latency_b/1000.0:.2f}s"
+    )
+    console.print(
+        f"[bold]Tokens (P/C):[/bold] {args.team_a}={match.prompt_tokens_a}/{match.completion_tokens_a} | {args.team_b}={match.prompt_tokens_b}/{match.completion_tokens_b}"
+    )
+    if match.errors_a > 0 or match.errors_b > 0:
+        console.print(
+            f"[bold red]Errores API:[/bold red] {args.team_a}={match.errors_a} | {args.team_b}={match.errors_b}"
+        )
+
+    if getattr(args, 'output', None):
+        from core.tournament import TournamentReport, _save_results
+        report = TournamentReport()
+        report.matches.append(match)
+        report.update_standings(match)
+        _save_results(report, args.output)
 
 
 def cmd_tournament(args: argparse.Namespace) -> None:
     """Run a Round-Robin tournament."""
-    from core.tournament import run_tournament
+    reload_configurations()
+    from core.tournament import run_tournament, discover_agents
 
     run_tournament(
         agents_dir=args.agents_dir,
@@ -165,6 +191,7 @@ def pick_model_from_catalog(current_model: str) -> str:
 def run_interactive_menu(args: argparse.Namespace) -> None:
     """Interactively ask the user what they want to do."""
     while True:
+        reload_configurations()
         console.clear()
         console.print(
             Panel(
@@ -177,9 +204,10 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
         console.print("1. [green]Ejecutar Pruebas (Tests)[/green]")
         console.print("2. [yellow]Partida de Ejemplo (Alpha vs Beta)[/yellow]")
         console.print("3. [magenta]Partida Personalizada[/magenta]")
-        console.print("4. [red]Salir[/red]")
+        console.print("4. [blue]Abrir Dashboard Táctico (Web)[/blue]")
+        console.print("5. [red]Salir[/red]")
 
-        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4"], default="4")
+        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5"], default="5")
 
         if choice == "1":
             import subprocess
@@ -211,8 +239,39 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             v = Prompt.ask("Elige", choices=["1", "2"], default="1")
             args.tactical = (v == "2")
             
+            if Prompt.ask("\n¿Deseas guardar el informe detallado (JSON/Markdown) en la carpeta 'reports/'?", choices=["s", "n"], default="n") == "s":
+                args.output = "partida_ejemplo.json"
+            else:
+                args.output = None
+
             cmd_play(args)
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
+
+        elif choice == "4":
+            import subprocess
+            import webbrowser
+            
+            console.print("\n[bold blue]Iniciando Dashboard Táctico...[/bold blue]")
+            # Launch streamlit in the background using the current python environment
+            cmd = [sys.executable, "-m", "streamlit", "run", "Interface.py"]
+            
+            try:
+                # Use Popen to run in background without blocking the menu
+                subprocess.Popen(
+                    cmd, 
+                    cwd="frontend", 
+                    stdout=subprocess.DEVNULL, 
+                    stderr=subprocess.DEVNULL,
+                    shell=(os.name == 'nt') # Necessary on Windows for some envs
+                )
+                console.print("[green](OK) Servidor Streamlit lanzado en segundo plano.[/green]")
+                console.print("[dim]Abriendo navegador en http://localhost:8501...[/dim]")
+                time.sleep(2)
+                webbrowser.open("http://localhost:8501")
+            except Exception as e:
+                console.print(f"[red]Error al lanzar el dashboard: {e}[/red]")
+            
+            Prompt.ask("\nPresiona Enter para volver al menú")
 
         elif choice == "3":
             from core.engine import validate_game_config
@@ -226,6 +285,8 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             custom_model_a = default_model
             custom_model_b = default_model
             custom_viz = "1" # 1: Clásica, 2: Táctica
+            custom_save_file = None
+            custom_save_label = "No"
             
             agents_list = discover_agents("agentes")
             team_a_idx = 0
@@ -247,10 +308,11 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                 console.print(f"5. Seleccionar equipos (actual: {team_a_name} vs {team_b_name})")
                 viz_str = "Clásica (Terminal)" if custom_viz == "1" else "Táctica (Web Dashboard JSON)"
                 console.print(f"6. Modo de Visualización (actual: {viz_str})")
-                console.print("7. ▶ INICIAR PARTIDA")
-                console.print("8. [red]Cancelar[/red]")
+                console.print(f"7. Guardar informe (actual: {custom_save_label})")
+                console.print("8. [bold green]▶ INICIAR PARTIDA[/bold green]")
+                console.print("9. [red]Cancelar[/red]")
                 
-                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7", "8"], default="7")
+                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7", "8", "9"], default="8")
                 
                 if sub_choice == "1":
                     custom_board = IntPrompt.ask("Tamaño del tablero (6-10)", default=custom_board)
@@ -293,11 +355,18 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                         console.print("[red]Selección inválida.[/red]")
                         time.sleep(1.5)
                 elif sub_choice == "6":
-                    console.print("\n[bold]Configuración de Visualización:[/bold]")
-                    console.print("1. Clásica (Panel ASCII en Terminal)")
                     console.print("2. Táctica (Exportación JSON para Dashboard Web)")
                     custom_viz = Prompt.ask("Selecciona modo", choices=["1", "2"], default=custom_viz)
                 elif sub_choice == "7":
+                    save_name = Prompt.ask("Nombre del archivo (ej: mi_partida.json) o 'no'", default="no")
+                    if save_name.lower() != "no":
+                        if not save_name.endswith(".json"): save_name += ".json"
+                        custom_save_file = save_name
+                        custom_save_label = save_name
+                    else:
+                        custom_save_file = None
+                        custom_save_label = "No"
+                elif sub_choice == "8":
                     # Validate before starting
                     try:
                         validate_game_config(custom_board, custom_ships)
@@ -345,6 +414,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                         args.team_b = agent_b.name
                         args.agent_b = str(agent_b.agent_md_path)
                         args.almacen_b = str(agent_b.almacen_path)
+                        args.output = custom_save_file
                         
                         cmd_play(args)
                         Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
@@ -440,6 +510,7 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--model-b", metavar="MODEL", default=None,
                       help="LLM model for team B (overrides --model). Enables mixed-model matches.")
     play.add_argument("--tactical", action="store_true", help="Modo táctico: genera game_state.json para dashboard web.")
+    play.add_argument("--output", metavar="FILE", help="Si se especifica, guarda el informe en reports/ (ej: partida1.json)")
 
     # -- tournament ------------------------------------------------------------
     tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
@@ -480,7 +551,7 @@ def main() -> None:
         console.print(f"[red]Archivo no encontrado: {exc}[/red]")
         sys.exit(1)
     except ValueError as exc:
-        console.print(f"[red]Error de configuración: {exc}[/red]")
+        console.print(f"[red]Error de configuracion: {exc}[/red]")
         sys.exit(1)
     except Exception as exc:
         console.print(f"[red]Error inesperado: {exc}[/red]")
