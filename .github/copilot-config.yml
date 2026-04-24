@@ -53,6 +53,32 @@ agents:
       - path: "core/llm_client.py"
       - path: "settings.yaml"
 
+  - id: supply-frontend
+    name: "Tactical UI Specialist"
+    description: "Specialized in Streamlit dashboard development, high-fidelity SVG renderers, and real-time game state visualization."
+    
+    skills:
+      - id: ui-architect
+        type: task-automation
+        description: "Designs and implements premium holographic interfaces and CSS systems"
+        allowed_paths:
+          - "frontend/*.py"
+          - "frontend/src/**/*.py"
+          - "frontend/src/**/*.css"
+      
+      - id: viz-integrator
+        type: task-automation
+        description: "Integrates core engine telemetry into the tactical dashboard"
+        allowed_paths:
+          - "frontend/Interface.py"
+          - "frontend/src/data/bridge.py"
+
+    context:
+      - path: "frontend/Interface.py"
+      - path: "frontend/src/styles/design_system.py"
+      - path: "frontend/src/renderers/holographics.py"
+      - path: "core/engine.py"
+
 # ── Governance ───────────────────────────────────────────────────────────────
 policies:
   autonomous_merge:

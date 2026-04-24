@@ -105,37 +105,50 @@ def render_tactical_board(title, color_class, team_data, secondary_stat=""):
     st.markdown(grid_html, unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 5. Dashboard UI (Cabecera Optimizada)
+# 5. Dashboard UI (Header & Layout)
 # ──────────────────────────────────────────────────────────────────────────────
 header_html = f"""
-<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 60px; gap: 15px;">
-    <h3 style="font-family: Orbitron; font-weight: 900; letter-spacing: 5px; color: white; margin: 0; padding: 0; flex-shrink: 0;">⚡ GARMENT STRIKE</h3>
-    <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 3px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #e6edf3; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; border-right: 1px solid #333; padding-right: 12px; gap: 6px;">
-            <span class="led-red"></span><span style="color:#ff4b4b; font-family:Orbitron; font-weight:bold; font-size:0.65rem;">LIVE</span>
-        </div>
-        <div style="border-right: 1px solid #333; padding-right: 12px;">
-            TURNO: <b style="color:#00d4ff;">#{state['turn']}</b>
-        </div>
-        <div style="border-right: 1px solid #333; padding-right: 12px;">
-            <span class="alpha-text">{state['team_a']['name']}</span>: <b>{state['team_a']['pedidos_encajados']}/{state['team_a']['total_pedidos']}</b>
-        </div>
-        <div>
-            <span class="beta-text">{state['team_b']['name']}</span>: <b>{state['team_b']['pedidos_encajados']}/{state['team_b']['total_pedidos']}</b>
-        </div>
+<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 25px;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <span class="led-red"></span>
+        <h3 style="font-family: Orbitron; font-weight: 900; letter-spacing: 5px; color: white; margin: 0; padding: 0;">GARMENT STRIKE</h3>
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #666; letter-spacing: 1px;">
+        TACTICAL OPERATIONS DASHBOARD
     </div>
 </div>""".strip()
 
 st.markdown(header_html, unsafe_allow_html=True)
 
 # Layout Principal (Boards)
-# 32% Tablero A - 36% Logs - 32% Tablero B
-col_a, col_mid, col_b = st.columns([32, 36, 32])
+# 30% Tablero A - 40% Logs/Score - 30% Tablero B
+col_a, col_mid, col_b = st.columns([30, 40, 30])
 
 with col_a:
     render_tactical_board(f"{state['team_a']['name']} (PROPIO)", "alpha-text", state['team_a'], f"Prendas encajadas: {state['team_a']['prendas_encajadas']}")
 
 with col_mid:
+    # ── NUEVO PANEL DE RESULTADOS (SCOREBOARD CENTRAL) ──
+    scoreboard_html = f"""
+    <div class="central-scoreboard">
+        <div class="turn-badge">TURNO {state['turn']}</div>
+        <div style="display: flex; justify-content: space-evenly; align-items: center;">
+            <div style="text-align: right; width: 40%;">
+                <div style="color: var(--accent-alpha); font-family: Orbitron; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 5px;">{state['team_a']['name']}</div>
+                <div class="score-number" style="color: var(--accent-alpha); text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);">{state['team_a']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
+            </div>
+            <div class="score-divider">VS</div>
+            <div style="text-align: left; width: 40%;">
+                <div style="color: var(--accent-beta); font-family: Orbitron; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 5px;">{state['team_b']['name']}</div>
+                <div class="score-number" style="color: var(--accent-beta); text-shadow: 0 0 20px rgba(255, 75, 75, 0.4);">{state['team_b']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(scoreboard_html, unsafe_allow_html=True)
+
     st.markdown('<div class="log-title"><i class="fa-solid fa-terminal" style="margin-right:10px;"></i>MOVIMIENTOS</div>', unsafe_allow_html=True)
     
     logs_html = '<div class="log-scroll-area">'

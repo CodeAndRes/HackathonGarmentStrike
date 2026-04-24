@@ -368,7 +368,7 @@ def inject_styles():
         letter-spacing: 2px;
         color: #e6edf3;
         margin-bottom: 10px;
-        margin-top: 42px;
+        margin-top: 10px; /* Reducido de 42px para hacer espacio al scoreboard */
         border-bottom: 1px solid #1f2428;
         text-shadow: 0 0 8px rgba(255, 255, 255, 0.15); /* Neón tenue */
     }
@@ -377,6 +377,50 @@ def inject_styles():
         overflow: hidden;
         padding-right: 0px;
         font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Scoreboard Central (UX-01) */
+    .central-scoreboard {
+        background: linear-gradient(180deg, rgba(13, 17, 23, 0.8) 0%, rgba(5, 10, 14, 0.9) 100%);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 25px 15px 15px 15px;
+        text-align: center;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,255,255,0.02);
+        position: relative;
+    }
+    
+    .score-number {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 3rem;
+        line-height: 1;
+        letter-spacing: -2px;
+    }
+    
+    .score-divider {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.2rem;
+        color: rgba(255,255,255,0.2);
+        font-weight: 900;
+        padding: 0 15px;
+    }
+
+    .turn-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #00d4ff;
+        color: #000;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 0.85rem;
+        padding: 3px 15px;
+        border-radius: 20px;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        letter-spacing: 3px;
     }
 </style>
     """, unsafe_allow_html=True)
