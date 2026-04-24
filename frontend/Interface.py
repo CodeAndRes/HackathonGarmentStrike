@@ -62,14 +62,22 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
             
             cell_class = "cell holo-cell"
             content = ""
-            team_color = "#00ff88" if "alpha" in color_class.lower() else "#ff4b4b"
+            
+            board_color = "#00ff88" if "alpha" in color_class.lower() else "#ff4b4b"
+            attacker_color = "#ff4b4b" if "alpha" in color_class.lower() else "#00ff88"
             
             # Conexiones inteligentes (Soportando nuevos iconos logísticos)
             ship_syms = ["#", "X", "👕", "📦"]
             is_ship = sym in ship_syms
             
+            # Si es un impacto o una caja hundida, lo pintamos del color del atacante
+            if sym in ["X", "👕", "📦"]:
+                cell_color = attacker_color
+            else:
+                cell_color = board_color
+            
             # Inyectar color de neón dinámico para el equipo
-            cell_style = f"--team-neon: {team_color};"
+            cell_style = f"--team-neon: {cell_color};"
             if is_ship: cell_style += " border: none !important;"
             
             if last_coord:
@@ -104,9 +112,9 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
                             break
 
             if sym == "#": 
-                content = get_holo_box_svg("IDLE", team_color, conn)
+                content = get_holo_box_svg("IDLE", cell_color, conn)
             elif sym in ["X", "👕", "📦"]: 
-                content = get_holo_box_svg("LOAD", team_color, conn, sealed)
+                content = get_holo_box_svg("LOAD", cell_color, conn, sealed)
             elif sym in ["O", "❔"]: 
                 content = get_holo_miss_svg()
             
