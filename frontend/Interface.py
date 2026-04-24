@@ -63,22 +63,13 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
             cell_class = "cell holo-cell"
             content = ""
             
+            # Colores base
             board_color = "#00ff88" if "alpha" in color_class.lower() else "#ff4b4b"
             attacker_color = "#ff4b4b" if "alpha" in color_class.lower() else "#00ff88"
             
             # Conexiones inteligentes (Soportando nuevos iconos logísticos)
             ship_syms = ["#", "X", "👕", "📦"]
             is_ship = sym in ship_syms
-            
-            # Si es un impacto o una caja hundida, lo pintamos del color del atacante
-            if sym in ["X", "👕", "📦"]:
-                cell_color = attacker_color
-            else:
-                cell_color = board_color
-            
-            # Inyectar color de neón dinámico para el equipo
-            cell_style = f"--team-neon: {cell_color};"
-            if is_ship: cell_style += " border: none !important;"
             
             if last_coord:
                 let = last_coord[0].upper()
@@ -111,10 +102,28 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
                             sealed = False
                             break
 
+            # ── LÓGICA DE COLOR SELECTIVA (NUEVA REGLA) ──
+            if sym in ["X", "👕", "📦"]:
+                if sealed:
+                    # Pedido completado: Todo del color del atacante
+                    box_color = attacker_color
+                    garment_color = attacker_color
+                else:
+                    # Pedido parcial: Caja del tablero, prenda del atacante
+                    box_color = board_color
+                    garment_color = attacker_color
+            else:
+                box_color = board_color
+                garment_color = board_color
+
+            # Inyectar color de neón dinámico (Borde de celda)
+            cell_style = f"--team-neon: {box_color};"
+            if is_ship: cell_style += " border: none !important;"
+
             if sym == "#": 
-                content = get_holo_box_svg("IDLE", cell_color, conn)
+                content = get_holo_box_svg("IDLE", box_color, conn)
             elif sym in ["X", "👕", "📦"]: 
-                content = get_holo_box_svg("LOAD", cell_color, conn, sealed)
+                content = get_holo_box_svg("LOAD", box_color, conn, sealed, garment_color=garment_color)
             elif sym in ["O", "❔"]: 
                 content = get_holo_miss_svg()
             

@@ -1,6 +1,6 @@
 from src.styles.design_system import UI_CONFIG
 
-def get_holo_box_svg(status="IDLE", team_color="#00ff88", connections=None, is_sealed=False):
+def get_holo_box_svg(status="IDLE", team_color="#00ff88", connections=None, is_sealed=False, garment_color=None):
     """Genera un contenedor holográfico 3D avanzado basado en los sketches de diseño."""
     if connections is None: connections = {"top": False, "bottom": False, "left": False, "right": False}
     
@@ -8,6 +8,7 @@ def get_holo_box_svg(status="IDLE", team_color="#00ff88", connections=None, is_s
     # CONFIGURACIÓN VISUAL (Fácil de editar)
     # ──────────────────────────────────────────────────────────
     anim_class = "master-holo-box" if is_sealed else ""
+    if garment_color is None: garment_color = team_color
     
     # Extraer valores desde la configuración unificada UI_CONFIG
     perim_opacity = UI_CONFIG["perim_opacity_sealed"] if is_sealed else UI_CONFIG["perim_opacity_open"]
@@ -145,7 +146,7 @@ def get_holo_box_svg(status="IDLE", team_color="#00ff88", connections=None, is_s
         icon_anim = "master-holo-box" if not is_sealed else "" 
         # Icono Detallado (Unificado) centrando el viewBox de ~20x22
         svg_elements.append(f'<g transform="translate(50,50) scale({l_sc * 0.8}) translate(-10,-11)">')
-        svg_elements.append(f'  <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" class="{icon_anim}" fill="none" stroke="{team_color}" stroke-width="{l_sw}" stroke-opacity="{l_op}"/>')
+        svg_elements.append(f'  <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" class="{icon_anim}" fill="none" stroke="{garment_color}" stroke-width="{l_sw}" stroke-opacity="{l_op}"/>')
         svg_elements.append(f'</g>')
 
     # 4. RENDER: SOLAPAS (FLAPS)
