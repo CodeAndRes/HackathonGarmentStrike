@@ -119,7 +119,7 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
 # 5. Dashboard UI (Header & Layout)
 # ──────────────────────────────────────────────────────────────────────────────
 header_html = f"""
-<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 50px;">
+<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 80px;">
     <div style="display: flex; align-items: center; gap: 15px;">
         <span class="led-red"></span>
         <h3 style="font-family: Orbitron; font-weight: 900; letter-spacing: 5px; color: white; margin: 0; padding: 0;">GARMENT STRIKE</h3>
@@ -159,14 +159,14 @@ with col_mid:
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
             <div style="text-align: right; flex: 1;">
                 <div style="color: var(--accent-alpha); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_a']['name']}</div>
-                <div class="score-number" style="color: var(--accent-alpha); text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);">{state['team_a']['pedidos_encajados']}</div>
-                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
+                <div class="score-number" style="color: var(--accent-alpha); text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);">{state['team_b']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
             </div>
             <div class="score-divider" style="margin: 0 15px;">VS</div>
             <div style="text-align: left; flex: 1;">
                 <div style="color: var(--accent-beta); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_b']['name']}</div>
-                <div class="score-number" style="color: var(--accent-beta); text-shadow: 0 0 20px rgba(255, 75, 75, 0.4);">{state['team_b']['pedidos_encajados']}</div>
-                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
+                <div class="score-number" style="color: var(--accent-beta); text-shadow: 0 0 20px rgba(255, 75, 75, 0.4);">{state['team_a']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
             </div>
         </div>
     </div>
