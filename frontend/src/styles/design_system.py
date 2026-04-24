@@ -25,9 +25,9 @@ UI_CONFIG = {
     # La prenda que cae fuera (agua)
     "miss_container_scale": 1.5,   # Escala general del símbolo de agua
     "miss_icon_scale": 1.3,        # Escala de la prenda en sí misma
-    "miss_icon_stroke": 1.5,       # Grosor de línea de la prenda perdida
-    "miss_icon_opacity": 0.2,      # Transparencia total
-    "miss_color": "#9badc9",       # Color (rojo por defecto) #ff4b4b
+    "miss_icon_stroke": 1.8,       # Grosor de línea de la prenda perdida (Aumentado para VIS-01)
+    "miss_icon_opacity": 0.6,      # Transparencia total (Aumentado de 0.2 para VIS-01)
+    "miss_color": "#00d4ff",       # Color cyan vibrante (Cambiado de #9badc9 para VIS-01)
     
     # --- 🏗️ DIMENSIONES ESTRUCTURALES 3D ---
     "box_margin_x": 7,             # Margen exterior lateral
@@ -168,6 +168,28 @@ def inject_styles():
     .board-beta { 
         border: 1px solid var(--accent-beta); 
         box-shadow: 0 0 15px rgba(255, 75, 75, 0.2), inset 0 0 10px rgba(255, 75, 75, 0.1); 
+    }
+    
+    /* Highlight Táctico (FOCUS-01) */
+    @keyframes targetPulseAlpha {
+        0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.2), inset 0 0 10px rgba(0, 255, 136, 0.1); border-color: var(--accent-alpha); }
+        50% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.8), inset 0 0 30px rgba(0, 255, 136, 0.4); border-color: #ffffff; }
+    }
+    @keyframes targetPulseBeta {
+        0%, 100% { box-shadow: 0 0 15px rgba(255, 75, 75, 0.2), inset 0 0 10px rgba(255, 75, 75, 0.1); border-color: var(--accent-beta); }
+        50% { box-shadow: 0 0 40px rgba(255, 75, 75, 0.8), inset 0 0 30px rgba(255, 75, 75, 0.4); border-color: #ffffff; }
+    }
+    .board-alpha.target-highlight { animation: targetPulseAlpha 1.5s infinite ease-in-out; }
+    .board-beta.target-highlight { animation: targetPulseBeta 1.5s infinite ease-in-out; }
+
+    /* Animación de Impacto/Nuevo Movimiento (ANIM-01) */
+    @keyframes newActionImpact {
+        0% { transform: scale(1.4); filter: brightness(2) drop-shadow(0 0 20px #ffffff); z-index: 10; }
+        50% { transform: scale(0.9); filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.5)); z-index: 10; }
+        100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 transparent); z-index: 1; }
+    }
+    .new-action-anim {
+        animation: newActionImpact 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .cell {

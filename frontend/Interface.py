@@ -25,7 +25,7 @@ state = get_game_state()
 
 # 4. Renderizadores
 # ──────────────────────────────────────────────────────────────────────────────
-def render_tactical_board(title, color_class, team_data, secondary_stat=""):
+def render_tactical_board(title, color_class, team_data, secondary_stat="", is_target=False, last_coord=None):
     stat_html = f"<small style='color:#666; font-family: \"JetBrains Mono\", monospace; font-weight: 400; text-transform:none; letter-spacing:0;'>{secondary_stat}</small>" if secondary_stat else ""
     st.markdown(f'<div class="tactical-header {color_class}"><span>{title}</span>{stat_html}</div>', unsafe_allow_html=True)
     
@@ -38,6 +38,8 @@ def render_tactical_board(title, color_class, team_data, secondary_stat=""):
     # Determinar clase de etiqueta según el equipo
     label_team_class = "label-alpha" if "alpha" in color_class.lower() else "label-beta"
     board_glow_class = "board-alpha" if "alpha" in color_class.lower() else "board-beta"
+    if is_target:
+        board_glow_class += " target-highlight"
     
     grid_html = f'<div class="tactical-grid {board_glow_class}" style="grid-template-columns: var(--coord-num-width) repeat({max_cols}, 1fr); grid-template-rows: var(--coord-let-height) repeat({max_rows}, 1fr);">'
     
@@ -69,6 +71,15 @@ def render_tactical_board(title, color_class, team_data, secondary_stat=""):
             # Inyectar color de neón dinámico para el equipo
             cell_style = f"--team-neon: {team_color};"
             if is_ship: cell_style += " border: none !important;"
+            
+            if last_coord:
+                let = last_coord[0].upper()
+                try:
+                    num = int(last_coord[1:]) - 1
+                    if col == ord(let) - ord('A') and row == num:
+                        cell_class += " new-action-anim"
+                except ValueError:
+                    pass
             
             conn = {"top": False, "bottom": False, "left": False, "right": False}
             sealed = False
@@ -108,7 +119,7 @@ def render_tactical_board(title, color_class, team_data, secondary_stat=""):
 # 5. Dashboard UI (Header & Layout)
 # ──────────────────────────────────────────────────────────────────────────────
 header_html = f"""
-<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 25px;">
+<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 50px;">
     <div style="display: flex; align-items: center; gap: 15px;">
         <span class="led-red"></span>
         <h3 style="font-family: Orbitron; font-weight: 900; letter-spacing: 5px; color: white; margin: 0; padding: 0;">GARMENT STRIKE</h3>
@@ -124,23 +135,36 @@ st.markdown(header_html, unsafe_allow_html=True)
 # 30% Tablero A - 40% Logs/Score - 30% Tablero B
 col_a, col_mid, col_b = st.columns([30, 40, 30])
 
+# Lógica de Highlight Táctico (FOCUS-01) y Animación (ANIM-01)
+is_alpha_target = False
+is_beta_target = False
+last_coord = None
+if state.get('comms'):
+    last_move = state['comms'][-1]
+    last_agent = last_move['agent'].upper()
+    last_coord = last_move['coord']
+    if "ALPHA" in last_agent or last_agent == "A":
+        is_beta_target = True  # Alpha dispara a Beta
+    else:
+        is_alpha_target = True # Beta dispara a Alpha
+
 with col_a:
-    render_tactical_board(f"{state['team_a']['name']} (PROPIO)", "alpha-text", state['team_a'], f"Prendas encajadas: {state['team_a']['prendas_encajadas']}")
+    render_tactical_board(f"{state['team_a']['name']} (PROPIO)", "alpha-text", state['team_a'], f"Prendas encajadas: {state['team_a']['prendas_encajadas']}", is_target=is_alpha_target, last_coord=last_coord if is_alpha_target else None)
 
 with col_mid:
     # ── NUEVO PANEL DE RESULTADOS (SCOREBOARD CENTRAL) ──
     scoreboard_html = f"""
     <div class="central-scoreboard">
         <div class="turn-badge">TURNO {state['turn']}</div>
-        <div style="display: flex; justify-content: space-evenly; align-items: center;">
-            <div style="text-align: right; width: 40%;">
-                <div style="color: var(--accent-alpha); font-family: Orbitron; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 5px;">{state['team_a']['name']}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
+            <div style="text-align: right; flex: 1;">
+                <div style="color: var(--accent-alpha); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_a']['name']}</div>
                 <div class="score-number" style="color: var(--accent-alpha); text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);">{state['team_a']['pedidos_encajados']}</div>
                 <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
             </div>
-            <div class="score-divider">VS</div>
-            <div style="text-align: left; width: 40%;">
-                <div style="color: var(--accent-beta); font-family: Orbitron; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 5px;">{state['team_b']['name']}</div>
+            <div class="score-divider" style="margin: 0 15px;">VS</div>
+            <div style="text-align: left; flex: 1;">
+                <div style="color: var(--accent-beta); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_b']['name']}</div>
                 <div class="score-number" style="color: var(--accent-beta); text-shadow: 0 0 20px rgba(255, 75, 75, 0.4);">{state['team_b']['pedidos_encajados']}</div>
                 <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
             </div>
@@ -149,11 +173,43 @@ with col_mid:
     """
     st.markdown(scoreboard_html, unsafe_allow_html=True)
 
+    # ── PANEL-01: ACCIÓN EN TIEMPO REAL ──
+    if state['comms']:
+        last_move = state['comms'][-1]
+        is_alpha_move = "ALPHA" in last_move['agent'].upper() or "A" == last_move['agent'].upper()
+        action_color = "var(--accent-alpha)" if is_alpha_move else "var(--accent-beta)"
+        action_team = state['team_a']['name'] if is_alpha_move else state['team_b']['name']
+        
+        icon = last_move['icon']
+        if icon == "📦":
+            result_text = "PEDIDO ENCAJADO"
+            result_color = "#00ff88"
+        elif icon in ["👕", "X"]:
+            result_text = "PRENDA ENCAJADA"
+            result_color = "#ff8c00"
+        else:
+            result_text = "PRENDA PERDIDA"
+            result_color = "#00d4ff"
+
+        action_html = f"""
+        <div style="background: rgba(255,255,255,0.03); border-left: 3px solid {action_color}; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+            <div>
+                <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">ÚLTIMA ACCIÓN</div>
+                <div style="color: {action_color}; font-weight: bold; font-family: 'JetBrains Mono'; font-size: 0.9rem;">{action_team} <span style="color: #fff; font-size: 0.8rem; margin: 0 5px;">→</span> {last_move['coord']}</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">RESULTADO</div>
+                <div style="color: {result_color}; font-weight: bold; font-family: Orbitron; font-size: 0.8rem; letter-spacing: 1px;">{result_text}</div>
+            </div>
+        </div>
+        """
+        st.markdown(action_html, unsafe_allow_html=True)
+
     st.markdown('<div class="log-title"><i class="fa-solid fa-terminal" style="margin-right:10px;"></i>MOVIMIENTOS</div>', unsafe_allow_html=True)
     
     logs_html = '<div class="log-scroll-area">'
-    # Mostramos los últimos 15 movimientos
-    for move in state['comms'][-15:]:
+    # Mostramos los últimos 10 movimientos para mantener Zero-Scroll
+    for move in state['comms'][-10:]:
         color_agent = "var(--accent-alpha)" if "ALPHA" in move['agent'] or "A" == move['agent'] else "var(--accent-beta)"
         # Formato ultra-compacto: [T14] G7 📦- Detec...
         log_entry = (
@@ -170,7 +226,7 @@ with col_mid:
     st.markdown(logs_html, unsafe_allow_html=True)
 
 with col_b:
-    render_tactical_board(f"{state['team_b']['name']} (PROPIO)", "beta-text", state['team_b'], f"Prendas encajadas: {state['team_b']['prendas_encajadas']}")
+    render_tactical_board(f"{state['team_b']['name']} (PROPIO)", "beta-text", state['team_b'], f"Prendas encajadas: {state['team_b']['prendas_encajadas']}", is_target=is_beta_target, last_coord=last_coord if is_beta_target else None)
 
 st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
 
