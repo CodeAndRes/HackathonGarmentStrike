@@ -84,6 +84,60 @@ class MoveHistoryEntry(BaseModel):
     razonamiento: Optional[str] = None
 
 
+# ── Offline Client (for testing without tokens) ───────────────────────────
+
+class OfflineLLMClient:
+    """
+    Mock client that returns random valid moves and mock reasoning.
+    Used for local testing without API calls.
+    """
+    def __init__(
+        self,
+        model: str = "offline",
+        board_size: int = 10,
+        **kwargs
+    ) -> None:
+        self.model = model
+        self.board_size = board_size
+        self.quick_mode = True
+        self.api_sleep = 0
+
+    def get_move(
+        self,
+        agent_md: str,
+        opponent_board_text: str,
+        move_history: list[MoveHistoryEntry],
+        my_name: str,
+        opponent_name: str,
+        forbidden_coords: set[str] = None,
+    ) -> AgentMove:
+        import random
+        import time
+        
+        cols = "ABCDEFGHIJ"[:self.board_size]
+        rows = range(1, self.board_size + 1)
+        
+        valid_coords = []
+        for c in cols:
+            for r in rows:
+                coord = f"{c}{r}"
+                if forbidden_coords is None or coord not in forbidden_coords:
+                    valid_coords.append(coord)
+        
+        chosen = random.choice(valid_coords) if valid_coords else "A1"
+        
+        # Simular latencia táctica para que los razonamientos sean legibles
+        time.sleep(1.2)
+        
+        return AgentMove(
+            coordenada=chosen,
+            razonamiento=f"MODO OFFLINE: Disparando a {chosen} para pruebas de interfaz y tiempos.",
+            estrategia_aplicada="BASIC OFFLINE TACTIC",
+            latency_ms=500.0,
+            prompt_tokens=0,
+            completion_tokens=0
+        )
+
 # ── System prompt (fixed, injected once per session) ─────────────────────────
 
 # _SYSTEM_PROMPT is now generated dynamically per-request.

@@ -219,7 +219,8 @@ def run_match(
         )
     
     if export_json:
-        _write_game_state(game)
+        # Reset inicial para que la web limpie la pantalla de victoria anterior
+        _write_game_state(game, finished=False)
 
     timeout_winner = None
     final_reason = "Aniquilación"
@@ -285,12 +286,33 @@ def run_match(
 
             # Ask the LLM for a move
             active_client = llm_clients[current]
+
+            # Feedback visual de "Pensando..." en el Dashboard
+            if dashboard:
+                # Inyectamos un registro temporal de pensamiento para la telemetría
+                thinking_record = MoveRecord(
+                    turn=game.turn_count + 1,
+                    agent_name=current,
+                    coordinate="??",
+                    result="thinking",
+                    razonamiento="Analizando vulnerabilidades en la cadena de suministro...",
+                    estrategia_aplicada="PROCESANDO..."
+                )
+                game.move_log.append(thinking_record)
+                _write_game_state(game)
+                game.move_log.pop() # Limpiamos para no ensuciar el log real
+
             board_text = (
                 target_board.grid_text_minimal()
                 if active_client.quick_mode
                 else target_board.grid_text(reveal_ships=False)
             )
             forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
+
+            # -- ESCENA 0: RESET Y FOCO (Borrar textos del equipo actual para el inicio del turno) --
+            if export_json:
+                _write_game_state(game, override_telemetry={current: {"strategy": "", "reasoning": "", "cursor": None}})
+            time.sleep(1.0) # 2 ciclos de polling
 
             try:
                 move: AgentMove = active_client.get_move(
@@ -304,11 +326,6 @@ def run_match(
                 col = move.coordenada[0]
                 row = int(move.coordenada[1:])
                 
-                valid_cols = set(target_board.cols)
-                valid_rows = set(target_board.rows)
-                if col not in valid_cols or row not in valid_rows:
-                    raise ValueError(f"Coordenada {move.coordenada} fuera del tablero {board_size}x{board_size}")
-                
                 razon = move.razonamiento
                 estrategia = move.estrategia_aplicada
                 lat = move.latency_ms
@@ -316,13 +333,20 @@ def run_match(
                 # Accumulate tokens
                 tokens[current]["p"] += move.prompt_tokens
                 tokens[current]["c"] += move.completion_tokens
+
+                # -- ESCENA 1: ESTRATEGIA (Aparece estrategia con cursor) --
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": "", "cursor": "strategy"}})
+                time.sleep(1.5) # 3 ciclos de polling
+
+                # -- ESCENA 2: RAZONAMIENTO (Aparece razonamiento con cursor) --
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": razon, "cursor": "reasoning"}})
+                time.sleep(2.5) # 5 ciclos de polling
+
             except Exception as e:
-                # El modelo falló (error de red, cuota, auth, etc.) o alucinó repetidamente.
                 api_errors[current] += 1
-                # Reportamos el error real antes del fallback.
                 error_msg = f"LLM Error: {str(e)}"
-                
-                # Elegimos una celda libre ALEATORIA para no crashear y continuar la partida.
                 libres = []
                 for c in target_board.cols:
                     for r in target_board.rows:
@@ -339,6 +363,7 @@ def run_match(
             if lat > 0:
                 lats[current].append(lat)
 
+            # -- ESCENA 3: IMPACTO (Se ejecuta el movimiento, desaparece el cursor) --
             result = game.apply_move(col, row, razon, estrategia)
             if result in ("hit", "sunk"):
                 hits_count[current] += 1
@@ -353,7 +378,7 @@ def run_match(
                 lat_str = f" {lat/1000.0:.2f}s" if lat else ""
                 log_res = LOGISTICS_MAP.get(result, result.upper())
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                model_name = getattr(llm_client, "model", "unknown")
+                model_name = getattr(active_client, "model", "unknown")
                 f.write(f"[{timestamp}] [{model_name}] [T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {log_res:<16} | lat:{lat_str}\n")
                 if "SISTEMA" in razon:
                     f.write(f"           ↳ (AVISO: El LLM falló. Se usó tiro forzado para continuar)\n")
@@ -372,20 +397,34 @@ def run_match(
                 )
                 time.sleep(ui_sleep)
 
-            # ── GOLDEN RULE ────────────────────────────────────────────────────
-            # HIT or SUNK  → same agent shoots again (do NOT switch).
-            # MISS or ALREADY_SHOT → pass the turn to the other agent.
-            # ──────────────────────────────────────────────────────────────────
             if result not in ("hit", "sunk"):
                 game.switch_turn()
     finally:
+        # Determine winner (Natural or Tiebreaker)
+        finished, natural_winner = game.is_over()
+        
+        hits_a = hits_count[config_a.name]
+        hits_b = hits_count[config_b.name]
+        if hits_a > hits_b:
+            timeout_winner = config_a.name
+            final_reason = "Mayor número de aciertos (timeout)"
+        elif hits_b > hits_a:
+            timeout_winner = config_b.name
+            final_reason = "Mayor número de aciertos (timeout)"
+        else:
+            timeout_winner = "EMPATE"
+            final_reason = "Igualdad de aciertos (timeout)"
+
+        winner = natural_winner if finished else timeout_winner
+        if finished:
+            final_reason = f"Victoria por eliminación"
+
         if dashboard:
             dashboard.stop()
-
-    # Natural end (all ships sunk) takes priority; otherwise use timeout tiebreaker
-    finished, natural_winner = game.is_over()
-    winner = natural_winner if finished else timeout_winner
-
+        if export_json:
+            # Final write to ensure the dashboard sees the 'finished' state
+            _write_game_state(game, finished=True, winner=winner)
+            
     if dashboard:
         dashboard.print_winner(winner, game.turn_count)
 
@@ -414,7 +453,7 @@ def run_match(
     )
 
 
-def serialize_game_state(game: Game) -> dict:
+def serialize_game_state(game: Game, finished: bool = None, winner: str = None, override_telemetry: dict = None) -> dict:
     """
     Export current game state into the schema required by the external tactical dashboard.
     """
@@ -438,8 +477,28 @@ def serialize_game_state(game: Game) -> dict:
         }
 
     # Identify last moves for telemetry
-    move_a = next((m for m in reversed(game.move_log) if m.agent_name == game.names[0]), None)
-    move_b = next((m for m in reversed(game.move_log) if m.agent_name == game.names[1]), None)
+    move_a = next((m for m in reversed(game.move_log) if m.result != "pending" and m.agent_name == game.names[0]), None)
+    move_b = next((m for m in reversed(game.move_log) if m.result != "pending" and m.agent_name == game.names[1]), None)
+
+    telemetry = {
+        "team_a": {
+            "strategy": move_a.estrategia_aplicada if move_a else "Iniciando...",
+            "reasoning": move_a.razonamiento if move_a else "A la espera...",
+            "cursor": None
+        },
+        "team_b": {
+            "strategy": move_b.estrategia_aplicada if move_b else "Iniciando...",
+            "reasoning": move_b.razonamiento if move_b else "A la espera...",
+            "cursor": None
+        }
+    }
+
+    # Apply granular overrides for tactical writing sequence
+    if override_telemetry:
+        if game.names[0] in override_telemetry:
+            telemetry["team_a"].update(override_telemetry[game.names[0]])
+        if game.names[1] in override_telemetry:
+            telemetry["team_b"].update(override_telemetry[game.names[1]])
 
     state = {
         "turn": game.turn_count,
@@ -453,25 +512,18 @@ def serialize_game_state(game: Game) -> dict:
                 "result": m.result.upper(),
                 "icon": "📦" if m.result == "sunk" else ("👕" if m.result == "hit" else "❔"),
                 "reasoning": m.razonamiento
-            } for m in game.move_log
+            } for m in game.move_log if m.result != "pending"
         ],
-        "telemetry": {
-            "team_a": {
-                "strategy": move_a.estrategia_aplicada if move_a else "Iniciando...",
-                "reasoning": move_a.razonamiento if move_a else "A la espera..."
-            },
-            "team_b": {
-                "strategy": move_b.estrategia_aplicada if move_b else "Iniciando...",
-                "reasoning": move_b.razonamiento if move_b else "A la espera..."
-            }
-        }
+        "telemetry": telemetry,
+        "finished": finished if finished is not None else game.is_over()[0],
+        "winner": winner if winner is not None else game.is_over()[1]
     }
     return state
 
 
-def _write_game_state(game: Game) -> None:
+def _write_game_state(game: Game, finished: bool = None, winner: str = None, override_telemetry: dict = None) -> None:
     """Helper to write game_state.json into logs/ folder."""
-    state = serialize_game_state(game)
+    state = serialize_game_state(game, finished=finished, winner=winner, override_telemetry=override_telemetry)
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     with open(log_dir / "game_state.json", "w", encoding="utf-8") as f:

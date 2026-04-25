@@ -199,7 +199,6 @@ def inject_styles():
         align-items: center;
         justify-content: center;
         font-size: 0.75rem;
-        transition: all 0.2s;
     }
 
     /* Estilo de las etiquetas de coordenadas sincronizado con el equipo */

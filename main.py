@@ -77,30 +77,26 @@ def cmd_play(args: argparse.Namespace) -> None:
     model_a = getattr(args, 'model_a', None) or args.model
     model_b = getattr(args, 'model_b', None) or args.model
 
-    if model_a == model_b:
-        # Same model → single client (saves memory)
-        llm_client = LLMClient(
-            model=model_a,
+    def _get_client(m):
+        if m == "offline":
+            from core.llm_client import OfflineLLMClient
+            return OfflineLLMClient(board_size=args.board_size)
+        return LLMClient(
+            model=m,
             api_sleep=args.sleep,
             max_tokens=args.max_tokens,
             board_size=args.board_size,
         )
+
+    if model_a == model_b:
+        # Same model → single client (saves memory)
+        llm_client = _get_client(model_a)
     else:
         # Different models → per-team clients
         console.print(f"[bold cyan]⚔ Modo mixto:[/bold cyan] {model_a} vs {model_b}")
         llm_client = {
-            args.team_a: LLMClient(
-                model=model_a,
-                api_sleep=args.sleep,
-                max_tokens=args.max_tokens,
-                board_size=args.board_size,
-            ),
-            args.team_b: LLMClient(
-                model=model_b,
-                api_sleep=args.sleep,
-                max_tokens=args.max_tokens,
-                board_size=args.board_size,
-            ),
+            args.team_a: _get_client(model_a),
+            args.team_b: _get_client(model_b),
         }
 
     match = run_match(

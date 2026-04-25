@@ -11,18 +11,19 @@
 
 ## 📋 Tareas Pendientes (Próximos Pasos)
 
-### Frontend & UI (En progreso por Agente Frontend)
-- [ ] **Visibilidad del Panel de Resultados**: Centrar y ampliar el panel de puntuación actual.
-- [ ] **Resaltar Turno Actual**: Crear un panel que muestre qué jugador está jugando, la coordenada y el resultado inmediato.
-- [ ] **Highlight Táctico**: Resaltar el tablero que recibe el disparo en cada turno para guiar al espectador.
+### Frontend & UI (En progreso)
+- [x] **Visibilidad del Panel de Resultados**: Centrado y rediseño táctico del marcador (MOC-V1).
+- [x] **Resaltar Turno Actual**: Panel de "Última Acción" con nombres en minúscula y glow dinámico.
+- [x] **Highlight Táctico**: Animación de impacto en celdas y sistema de foco en IA activa.
+- [x] **Zero-Scroll en Logs**: Orden inverso y altura dinámica basada en resolución (vh).
 - [ ] **Fin de Partida en Web**: Crear una pantalla clara de victoria/derrota cuando termina el torneo.
-- [ ] **Sonidos y Animaciones**: Añadir SFX (impactos, hundimientos) y animaciones visuales (Miss/Hit).
-- [ ] **Crear una segunda pantalla para el torneo**: 8 jugadores, 4 partidas en primera fase, 2 en segunda fase y 1 en la final.
+- [ ] **Sonidos y Animaciones**: Añadir SFX (impactos, hundimientos).
+- [ ] **Crear una segunda pantalla para el torneo**: Visualización de brackets para 8 jugadores (Fase 1, Semis, Final).
  
 ### Backend & Core
-- [ ] **Tiempos de latencia**: El sleep de 5 segundos se puede volver dinámico o aplicar un 'Exponential Backoff' basado en los códigos de error de la API (ej. HTTP 429).
-- [ ] **Agentes Híbridos / Fallback Automático**: Si el LLM falla por completo tras N reintentos, implementar un algoritmo simple en Python (ej. tiro en cruz o damero) para que el agente siga jugando en vez de fallar o tirar aleatoriamente.
-- [ ] **Manejo de Errores Vistoso**: Ocultar el traceback feo al cancelar la partida con `Ctrl+C` y mostrar un mensaje limpio de "Partida interrumpida".
+- [x] **Agentes Híbridos / Fallback Automático**: Extracción por regex y visualización de razonamiento parcial.
+- [ ] **Tiempos de latencia**: El sleep de 5 segundos se puede volver dinámico o aplicar un 'Exponential Backoff'.
+- [ ] **Manejo de Errores Vistoso**: Ocultar el traceback al cancelar con `Ctrl+C`.
 
 ---
 
@@ -47,4 +48,6 @@
 - [x] Compresión de la información de celdas prohibidas/anteriores para ahorrar tokens.
 - [x] Parametrización de pruebas unitarias (más de 170 tests activos).
 - [x] Exportación `game_state.json` en tiempo real para Dashboard externo.
+- [x] **Visualización de Razonamiento Parcial**: Rescate de texto de IAs cuando el JSON falla.
+- [x] **Nombres y Estética Premium**: Nombres en mayúsculas, iconos vectoriales y LED de estatus LIVE.
 
