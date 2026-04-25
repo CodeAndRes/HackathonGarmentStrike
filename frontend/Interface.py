@@ -136,10 +136,12 @@ def render_tactical_board(title, color_class, team_data, secondary_stat="", is_t
 # 5. Dashboard UI (Header & Layout)
 # ──────────────────────────────────────────────────────────────────────────────
 header_html = f"""
-<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 80px;">
+<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 25px;">
     <div style="display: flex; align-items: center; gap: 15px;">
-        <span class="led-red"></span>
-        <h3 style="font-family: Orbitron; font-weight: 900; letter-spacing: 5px; color: white; margin: 0; padding: 0;">GARMENT STRIKE</h3>
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:white; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));">
+            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/>
+        </svg>
+        <h3 style="font-family: Orbitron; font-weight: 900; font-size: 2.2rem; letter-spacing: 7px; color: white; margin: 0; padding: 0; text-shadow: 0 0 20px rgba(255,255,255,0.1);">GARMENT STRIKE</h3>
     </div>
     <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #666; letter-spacing: 1px;">
         TACTICAL OPERATIONS DASHBOARD
@@ -166,28 +168,36 @@ if state.get('comms'):
         is_alpha_target = True # Beta dispara a Alpha
 
 with col_a:
-    render_tactical_board(f"{state['team_a']['name']} (PROPIO)", "alpha-text", state['team_a'], f"Prendas encajadas: {state['team_a']['prendas_encajadas']}", is_target=is_alpha_target, last_coord=last_coord if is_alpha_target else None)
+    st.markdown('<div style="margin-top: 60px;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align: right; color: #666; font-family: \'JetBrains Mono\'; font-size: 0.65rem; margin-bottom: 2px; letter-spacing: 1px;">PRENDAS ENCAJADAS: {state["team_a"]["prendas_encajadas"]}</div>', unsafe_allow_html=True)
+    
+    # Glow condicional si es el equipo activo
+    alpha_glow = "text-shadow: 0 0 20px var(--accent-alpha), 0 0 40px rgba(0, 255, 136, 0.4);" if is_alpha_target else ""
+    st.markdown(f'<div style="text-align: right; color: var(--accent-alpha); font-family: Orbitron; font-weight: 900; font-size: 2.2rem; letter-spacing: 3px; margin-bottom: -5px; line-height: 1; {alpha_glow}">{state["team_a"]["name"].upper()}</div>', unsafe_allow_html=True)
+    
+    # Quitamos is_target del tablero
+    render_tactical_board("", "alpha-text", state['team_a'], "", is_target=False, last_coord=last_coord if is_alpha_target else None)
 
 with col_mid:
     # ── NUEVO PANEL DE RESULTADOS (SCOREBOARD CENTRAL) ──
-    scoreboard_html = f"""
-    <div class="central-scoreboard">
-        <div class="turn-badge">TURNO {state['turn']}</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
-            <div style="text-align: right; flex: 1;">
-                <div style="color: var(--accent-alpha); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_a']['name']}</div>
-                <div class="score-number" style="color: var(--accent-alpha); text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);">{state['team_b']['pedidos_encajados']}</div>
-                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
+    scoreboard_html = f"""<div class="central-scoreboard" style="padding: 15px 10px 5px 10px; margin-bottom: 10px; position: relative;">
+        <div style="position: absolute; top: 8px; left: 12px; display: flex; align-items: center; gap: 6px;">
+            <div class="led-red"></div>
+            <span style="color: #ff4b4b; font-family: Orbitron; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px;">LIVE</span>
+        </div>
+        <div class="turn-badge" style="top: -12px; font-size: 0.75rem; background: #00d4ff; color: #000; padding: 2px 15px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);">TURNO {state['turn']}</div>
+        <div style="display: flex; justify-content: center; align-items: baseline; gap: 25px;">
+            <div style="text-align: center;">
+                <div class="score-number" style="color: var(--accent-alpha); font-size: 4.5rem; text-shadow: 0 0 30px rgba(0, 255, 136, 0.5); line-height: 1;">{state['team_b']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.6rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: -5px;">DE {state['team_b']['total_pedidos']} PEDIDOS</div>
             </div>
-            <div class="score-divider" style="margin: 0 15px;">VS</div>
-            <div style="text-align: left; flex: 1;">
-                <div style="color: var(--accent-beta); font-family: Orbitron; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{state['team_b']['name']}</div>
-                <div class="score-number" style="color: var(--accent-beta); text-shadow: 0 0 20px rgba(255, 75, 75, 0.4);">{state['team_a']['pedidos_encajados']}</div>
-                <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #666; margin-top: 5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
+            <div style="font-family: 'Orbitron'; font-size: 1rem; color: rgba(255,255,255,0.2); font-weight: 900; align-self: center; margin-bottom: 15px;">vs</div>
+            <div style="text-align: center;">
+                <div class="score-number" style="color: var(--accent-beta); font-size: 4.5rem; text-shadow: 0 0 30px rgba(255, 75, 75, 0.5); line-height: 1;">{state['team_a']['pedidos_encajados']}</div>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.6rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: -5px;">DE {state['team_a']['total_pedidos']} PEDIDOS</div>
             </div>
         </div>
-    </div>
-    """
+    </div>"""
     st.markdown(scoreboard_html, unsafe_allow_html=True)
 
     # ── PANEL-01: ACCIÓN EN TIEMPO REAL ──
@@ -209,34 +219,46 @@ with col_mid:
             result_text = "PRENDA PERDIDA"
             result_color = "#00d4ff"
 
-        action_html = f"""
-        <div style="background: rgba(255,255,255,0.03); border-left: 3px solid {action_color}; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-            <div>
-                <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">ÚLTIMA ACCIÓN</div>
-                <div style="color: {action_color}; font-weight: bold; font-family: 'JetBrains Mono'; font-size: 0.9rem;">{action_team} <span style="color: #fff; font-size: 0.8rem; margin: 0 5px;">→</span> <span style="color: {target_color};">{last_move['coord']}</span></div>
+        is_sunk = icon == "📦"
+        bg_tint = "rgba(0, 255, 136, 0.08)" if is_alpha_move else "rgba(255, 75, 75, 0.08)"
+        box_shadow = f"0 0 15px {action_color}" if is_sunk else "0 4px 6px rgba(0,0,0,0.3)"
+        border_width = "4px" if is_sunk else "2px"
+
+        action_html = f"""<div style="background: {bg_tint}; border-left: {border_width} solid {action_color}; padding: 8px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: {box_shadow}; margin-top: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="color: {action_color}; font-weight: 700; font-family: 'JetBrains Mono'; font-size: 0.9rem;">{action_team.lower()} <span style="color: #fff; font-size: 0.8rem; margin: 0 5px;">→</span> <span style="color: {target_color};">{last_move['coord']}</span></div>
             </div>
             <div style="text-align: right;">
-                <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">RESULTADO</div>
-                <div style="color: {result_color}; font-weight: bold; font-family: Orbitron; font-size: 0.8rem; letter-spacing: 1px;">{result_text}</div>
+                <div style="color: {result_color}; font-weight: 800; font-family: Orbitron; font-size: 0.75rem; letter-spacing: 1px;">{result_text}</div>
             </div>
         </div>
         """
         st.markdown(action_html, unsafe_allow_html=True)
 
-    st.markdown('<div class="log-title"><i class="fa-solid fa-terminal" style="margin-right:10px;"></i>MOVIMIENTOS</div>', unsafe_allow_html=True)
+    # st.markdown('<div class="log-title"><i class="fa-solid fa-terminal" style="margin-right:10px;"></i>MOVIMIENTOS</div>', unsafe_allow_html=True)
     
-    logs_html = '<div class="log-scroll-area">'
-    # Mostramos los últimos 10 movimientos para mantener Zero-Scroll
-    for move in state['comms'][-10:]:
+    logs_html = '<div class="log-scroll-area" style="max-height: 42vh; overflow: hidden;">'
+    # Mostramos los movimientos previos (hasta 50 para aprovechar pantallas grandes, excluyendo el más reciente)
+    prev_moves = state['comms'][-51:-1] if len(state['comms']) > 1 else []
+    for move in reversed(prev_moves):
+        is_sunk = move['icon'] == "📦"
         color_agent = "var(--accent-alpha)" if "ALPHA" in move['agent'] or "A" == move['agent'] else "var(--accent-beta)"
-        # Formato ultra-compacto: [T14] G7 📦- Detec...
+        
+        # Highlight si es un pedido encajado (HUNDIDO)
+        bg_style = "rgba(0, 255, 136, 0.15)" if is_sunk and color_agent == "var(--accent-alpha)" else \
+                   "rgba(255, 75, 75, 0.15)" if is_sunk and color_agent == "var(--accent-beta)" else \
+                   "rgba(255,255,255,0.02)"
+        
+        border_style = f"3px solid {color_agent}" if is_sunk else f"2px solid {color_agent}"
+        font_weight = "800" if is_sunk else "400"
+        
         log_entry = (
-            f'<div style="border-left: 2px solid {color_agent}; margin-bottom: 2px; background: rgba(255,255,255,0.02); '
-            f'padding: 2px 8px; border-radius: 2px; display: flex; align-items: center; gap: 6px; overflow: hidden; line-height: 1;">'
-            f'<span style="color:#666; font-size:0.7rem; flex-shrink: 0; font-family: \'JetBrains Mono\', monospace;">[T{move["turn"]}]</span>'
-            f'<span style="color:#ccc; font-size:0.75rem; flex-shrink: 0; font-family: \'JetBrains Mono\', monospace; font-weight: 700; letter-spacing: 0px;">{move["coord"]}</span>'
-            f'<span style="flex-shrink: 0; font-size: 0.8rem;">{move["icon"]}</span>'
-            f'<span style="color:#999; font-size:0.7rem; font-family: \'JetBrains Mono\', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.8;">- {move["reasoning"]}</span>'
+            f'<div style="border-left: {border_style}; margin-bottom: 2px; background: {bg_style}; '
+            f'padding: 4px 8px; border-radius: 2px; display: flex; align-items: center; gap: 6px; overflow: hidden; line-height: 1;">'
+            f'<span style="color:#666; font-size:0.8rem; flex-shrink: 0; font-family: \'JetBrains Mono\', monospace;">[T{move["turn"]}]</span>'
+            f'<span style="color:#ccc; font-size:0.85rem; flex-shrink: 0; font-family: \'JetBrains Mono\', monospace; font-weight: {font_weight}; letter-spacing: 0px;">{move["coord"]}</span>'
+            f'<span style="flex-shrink: 0; font-size: 0.95rem;">{move["icon"]}</span>'
+            f'<span style="color:#aaa; font-size:0.8rem; font-family: \'JetBrains Mono\', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.9;">- {move["reasoning"]}</span>'
             f'</div>'
         )
         logs_html += log_entry
@@ -244,7 +266,15 @@ with col_mid:
     st.markdown(logs_html, unsafe_allow_html=True)
 
 with col_b:
-    render_tactical_board(f"{state['team_b']['name']} (PROPIO)", "beta-text", state['team_b'], f"Prendas encajadas: {state['team_b']['prendas_encajadas']}", is_target=is_beta_target, last_coord=last_coord if is_beta_target else None)
+    st.markdown('<div style="margin-top: 60px;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align: left; color: #666; font-family: \'JetBrains Mono\'; font-size: 0.65rem; margin-bottom: 2px; letter-spacing: 1px;">PRENDAS ENCAJADAS: {state["team_b"]["prendas_encajadas"]}</div>', unsafe_allow_html=True)
+    
+    # Glow condicional si es el equipo activo
+    beta_glow = "text-shadow: 0 0 20px var(--accent-beta), 0 0 40px rgba(255, 75, 75, 0.4);" if is_beta_target else ""
+    st.markdown(f'<div style="text-align: left; color: var(--accent-beta); font-family: Orbitron; font-weight: 900; font-size: 2.2rem; letter-spacing: 3px; margin-bottom: -5px; line-height: 1; {beta_glow}">{state["team_b"]["name"].upper()}</div>', unsafe_allow_html=True)
+    
+    # Quitamos is_target del tablero
+    render_tactical_board("", "beta-text", state['team_b'], "", is_target=False, last_coord=last_coord if is_beta_target else None)
 
 st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
 
@@ -254,62 +284,40 @@ st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
 # 6. Telemetría Dual (Razonamiento de IA por Equipo - Ultra Stacked)
 # ──────────────────────────────────────────────────────────────────────────────
 # Telemetría ALPHA
+alpha_box_glow = f"box-shadow: 0 0 25px rgba(0, 255, 136, 0.3); border: 1px solid var(--accent-alpha);" if is_alpha_target else "border: 1px solid rgba(255,255,255,0.05);"
 st.markdown(f"""
-    <div class="telemetry-box" style="border-left-color: var(--accent-alpha); background: rgba(0, 255, 136, 0.03); margin-bottom: 8px; margin-top:0; padding: 6px 12px;">
-        <table style="width:100%; border-collapse: collapse;">
-            <tr>
-                <td style="width:25%; vertical-align: top; border-right: 1px solid rgba(0, 255, 136, 0.1); padding-right: 12px;">
-                    <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.8rem; font-family:Orbitron; margin-bottom:4px; display:flex; align-items:center;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
-                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-                            <path d="M9 13a4.5 4.5 0 0 0 3-4"/>
-                            <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/>
-                            <path d="M3.477 10.896a4 4 0 0 1 .556-6.588"/>
-                            <path d="M16 13a3 3 0 1 0 5.997-.125 4 4 0 0 0 2.526-5.77 4 4 0 0 0-.556-6.588A4 4 0 1 0 12 5"/>
-                            <path d="M15 13a4.5 4.5 0 0 1-3-4"/>
-                            <path d="M17.997 5.125A3 3 0 0 1 17.599 6.5"/>
-                            <path d="M20.523 10.896a4 4 0 0 0-.556-6.588"/>
-                        </svg>
-                        STRATEGY | {state["team_a"]["name"]}
-                    </div>
-                    <div style="color:#fff; font-size:0.85rem; font-family: 'JetBrains Mono', monospace;">{state['telemetry']['team_a']['strategy']}</div>
-                </td>
-                <td style="width:75%; vertical-align: top; padding-left: 15px;">
-                    <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:4px; opacity:0.8;">RATIONALE</div>
-                    <div style="color:#ddd; font-size:0.95rem; line-height:1.4; font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0;">{state['telemetry']['team_a']['reasoning']}</div>
-                </td>
-            </tr>
-        </table>
+    <div class="telemetry-box" style="border-left: 4px solid var(--accent-alpha); {alpha_box_glow} background: rgba(0, 255, 136, 0.04); margin-bottom: 8px; margin-top:0; padding: 10px 15px; border-radius: 4px;">
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="flex: 0 0 25%; border-right: 1px solid rgba(0, 255, 136, 0.1); padding-right: 15px;">
+                <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:6px; display:flex; align-items:center; text-transform: uppercase; letter-spacing: 1px;">
+                    <span style="margin-right:8px;">🚀</span>STRATEGY | {state["team_a"]["name"].lower()}
+                </div>
+                <div style="color:#fff; font-size:0.8rem; font-family: 'JetBrains Mono', monospace; font-weight: 400;">{state['telemetry']['team_a']['strategy']}</div>
+            </div>
+            <div style="flex: 1;">
+                <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.7rem; font-family:Orbitron; margin-bottom:6px; opacity:0.6; text-transform: uppercase; letter-spacing: 1px;">RATIONALE</div>
+                <div style="color:#ccc; font-size:0.85rem; line-height:1.4; font-family: 'JetBrains Mono', monospace;">{state['telemetry']['team_a']['reasoning']}</div>
+            </div>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
 # Telemetría BETA
+beta_box_glow = f"box-shadow: 0 0 25px rgba(255, 75, 75, 0.3); border: 1px solid var(--accent-beta);" if is_beta_target else "border: 1px solid rgba(255,255,255,0.05);"
 st.markdown(f"""
-    <div class="telemetry-box" style="border-left-color: var(--accent-beta); background: rgba(255, 75, 75, 0.03); margin-bottom: 12px; margin-top:0; padding: 6px 12px;">
-        <table style="width:100%; border-collapse: collapse;">
-            <tr>
-                <td style="width:25%; vertical-align: top; border-right: 1px solid rgba(255, 75, 75, 0.1); padding-right: 12px;">
-                    <div style="color:var(--accent-beta); font-weight:bold; font-size:0.8rem; font-family:Orbitron; margin-bottom:4px; display:flex; align-items:center;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
-                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-                            <path d="M9 13a4.5 4.5 0 0 0 3-4"/>
-                            <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/>
-                            <path d="M3.477 10.896a4 4 0 0 1 .556-6.588"/>
-                            <path d="M16 13a3 3 0 1 0 5.997-.125 4 4 0 0 0 2.526-5.77 4 4 0 0 0-.556-6.588A4 4 0 1 0 12 5"/>
-                            <path d="M15 13a4.5 4.5 0 0 1-3-4"/>
-                            <path d="M17.997 5.125A3 3 0 0 1 17.599 6.5"/>
-                            <path d="M20.523 10.896a4 4 0 0 0-.556-6.588"/>
-                        </svg>
-                        STRATEGY | {state["team_b"]["name"]}
-                    </div>
-                    <div style="color:#fff; font-size:0.85rem; font-family: 'JetBrains Mono', monospace;">{state['telemetry']['team_b']['strategy']}</div>
-                </td>
-                <td style="width:75%; vertical-align: top; padding-left: 15px;">
-                    <div style="color:var(--accent-beta); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:4px; opacity:0.8;">RATIONALE</div>
-                    <div style="color:#ddd; font-size:0.95rem; line-height:1.4; font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0;">{state['telemetry']['team_b']['reasoning']}</div>
-                </td>
-            </tr>
-        </table>
+    <div class="telemetry-box" style="border-left: 4px solid var(--accent-beta); {beta_box_glow} background: rgba(255, 75, 75, 0.04); margin-bottom: 15px; margin-top:0; padding: 10px 15px; border-radius: 4px;">
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="flex: 0 0 25%; border-right: 1px solid rgba(255, 75, 75, 0.1); padding-right: 15px;">
+                <div style="color:var(--accent-beta); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:6px; display:flex; align-items:center; text-transform: uppercase; letter-spacing: 1px;">
+                    <span style="margin-right:8px;">🎯</span>STRATEGY | {state["team_b"]["name"].lower()}
+                </div>
+                <div style="color:#fff; font-size:0.8rem; font-family: 'JetBrains Mono', monospace; font-weight: 400;">{state['telemetry']['team_b']['strategy']}</div>
+            </div>
+            <div style="flex: 1;">
+                <div style="color:var(--accent-beta); font-weight:bold; font-size:0.7rem; font-family:Orbitron; margin-bottom:6px; opacity:0.6; text-transform: uppercase; letter-spacing: 1px;">RATIONALE</div>
+                <div style="color:#ccc; font-size:0.85rem; line-height:1.4; font-family: 'JetBrains Mono', monospace;">{state['telemetry']['team_b']['reasoning']}</div>
+            </div>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 

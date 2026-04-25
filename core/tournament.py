@@ -451,7 +451,7 @@ def serialize_game_state(game: Game) -> dict:
                 "agent": "A" if m.agent_name == game.names[0] else "B",
                 "coord": m.coordinate,
                 "result": m.result.upper(),
-                "icon": "📦" if m.result in ("hit", "sunk") else "❔",
+                "icon": "📦" if m.result == "sunk" else ("👕" if m.result == "hit" else "❔"),
                 "reasoning": m.razonamiento
             } for m in game.move_log
         ],

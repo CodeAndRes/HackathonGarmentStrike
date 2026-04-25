@@ -429,6 +429,21 @@ def inject_styles():
         padding: 0 15px;
     }
 
+    /* Indicador LIVE con parpadeo */
+    @keyframes pulse-red {
+        0% { opacity: 0.4; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.1); }
+        100% { opacity: 0.4; transform: scale(0.8); }
+    }
+    .led-red {
+        width: 7px;
+        height: 7px;
+        background-color: #ff4b4b;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #ff4b4b;
+        animation: pulse-red 1s infinite ease-in-out;
+    }
+
     .turn-badge {
         position: absolute;
         top: -12px;

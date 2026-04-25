@@ -197,9 +197,19 @@ class LLMClient:
         # Stage 4: Truncated JSON fallback - extract coordinate with regex
         coord = self._extract_coord_fallback(raw)
         if coord:
+            # Intentar rescatar lo que haya en 'razonamiento' aunque el JSON esté roto
+            razon_match = re.search(r'"razonamiento":\s*"([^"]*)', raw)
+            partial_razon = razon_match.group(1) if razon_match else ""
+            
+            if not partial_razon:
+                # Si no hay campo 'razonamiento', limpiar el raw quitando el JSON si es posible
+                partial_razon = raw.replace("{", "").replace("}", "").replace('"', "").strip()
+                if len(partial_razon) > 120:
+                    partial_razon = partial_razon[:117] + "..."
+            
             return {
                 "coordenada": coord,
-                "razonamiento": "Respuesta parcial del LLM (auto-recuperada)",
+                "razonamiento": partial_razon or "Respuesta parcial (auto-recuperada)",
                 "estrategia_aplicada": "Auto-recovery",
             }
         
