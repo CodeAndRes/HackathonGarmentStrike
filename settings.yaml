@@ -19,9 +19,9 @@ models_catalog:
     - "groq/llama-3.3-70b-versatile"
     - "groq/mixtral-8x7b-32768"
   gemini:
-    - "gemini/gemini-3-flash-preview"
-    - "gemini/gemini-3.1-flash-lite-preview"
     - "gemini/gemini-2.5-flash"
+    - "gemini/gemini-2.0-flash"
+    - "gemini/gemini-1.5-flash"
   openai:
     - "openai/gpt-4o"
     - "openai/gpt-4o-mini"
@@ -31,3 +31,8 @@ models_catalog:
     - "ollama/qwen3.5:0.8b"
     - "ollama/phi3:mini"
     - "ollama/llama3:latest"
+  deepseek:
+    - "deepseek/deepseek-chat"
+    - "deepseek/deepseek-reasoner"
+    - "deepseek/deepseek-v4-flash"
+    - "deepseek/deepseek-v4-pro"

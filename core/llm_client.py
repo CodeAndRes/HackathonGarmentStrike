@@ -345,17 +345,38 @@ class LLMClient:
             except (json.JSONDecodeError, KeyError, ValueError) as exc:
                 last_error = exc
                 if attempt < self.max_retries:
-                    time.sleep(2)  # Small pause before retry
+                    wait_time = 2 * attempt  # 2s, 4s, 6s...
+                    with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
+                        debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por error de formato/lógica. Esperando {wait_time}s...\n")
+                    time.sleep(wait_time)
 
             except Exception as exc:
+                exc_str = str(exc).lower()
+                # --- DEBUG ERROR ---
+                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
+                    debug_f.write(f"ERROR API: {type(exc).__name__}: {str(exc)}\n")
+
+                # DETECCIÓN DE CUOTA AGOTADA (No es un rate limit temporal, es el límite diario/total)
+                if "quota" in exc_str and "exceeded" in exc_str and "rate" not in exc_str:
+                    raise RuntimeError(
+                        f"CUOTA AGOTADA (Límite diario): El modelo {self.model} ha agotado su cuota total. "
+                        "Por favor, cambia de modelo o usa otra API Key."
+                    ) from exc
+
                 # Handle transient API errors (Service Unavailable, Rate Limit)
                 if LITELLM_AVAILABLE and attempt < self.max_retries:
-                    if "ServiceUnavailableError" in str(type(exc)) or "RateLimitError" in str(type(exc)):
+                    is_rate_limit = "ratelimit" in exc_str or "rate limit" in exc_str or "429" in exc_str
+                    is_unavailable = "unavailable" in exc_str or "503" in exc_str
+                    
+                    if is_rate_limit or is_unavailable:
                         last_error = exc
-                        time.sleep(5)  # Wait longer for server recovery
+                        wait_time = 5 * (2 ** (attempt - 1))  # 5s, 10s, 20s...
+                        with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
+                            debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por Saturación/RateLimit. Esperando {wait_time}s...\n")
+                        time.sleep(wait_time)
                         continue
 
-                # Re-raise unexpected errors (network, auth, quota) immediately
+                # Re-raise unexpected errors (network, auth, config) immediately
                 raise RuntimeError(
                     f"LLM call failed (model={self.model!r}): {exc}"
                 ) from exc

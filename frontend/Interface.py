@@ -196,6 +196,7 @@ with col_mid:
         is_alpha_move = "ALPHA" in last_move['agent'].upper() or "A" == last_move['agent'].upper()
         action_color = "var(--accent-alpha)" if is_alpha_move else "var(--accent-beta)"
         action_team = state['team_a']['name'] if is_alpha_move else state['team_b']['name']
+        target_color = "var(--accent-beta)" if is_alpha_move else "var(--accent-alpha)"
         
         icon = last_move['icon']
         if icon == "📦":
@@ -212,7 +213,7 @@ with col_mid:
         <div style="background: rgba(255,255,255,0.03); border-left: 3px solid {action_color}; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
             <div>
                 <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">ÚLTIMA ACCIÓN</div>
-                <div style="color: {action_color}; font-weight: bold; font-family: 'JetBrains Mono'; font-size: 0.9rem;">{action_team} <span style="color: #fff; font-size: 0.8rem; margin: 0 5px;">→</span> {last_move['coord']}</div>
+                <div style="color: {action_color}; font-weight: bold; font-family: 'JetBrains Mono'; font-size: 0.9rem;">{action_team} <span style="color: #fff; font-size: 0.8rem; margin: 0 5px;">→</span> <span style="color: {target_color};">{last_move['coord']}</span></div>
             </div>
             <div style="text-align: right;">
                 <div style="font-family: Orbitron; font-size: 0.65rem; color: #888; margin-bottom: 3px; letter-spacing: 1px;">RESULTADO</div>
