@@ -101,6 +101,7 @@ class OfflineLLMClient:
         self.board_size = board_size
         self.quick_mode = True
         self.api_sleep = 0
+        self.history = set() # Memoria para no repetir disparos
 
     def get_move(
         self,
@@ -117,22 +118,27 @@ class OfflineLLMClient:
         cols = "ABCDEFGHIJ"[:self.board_size]
         rows = range(1, self.board_size + 1)
         
+        # Combinar forbidden_coords con nuestra memoria interna
+        all_forbidden = set(forbidden_coords) if forbidden_coords else set()
+        all_forbidden.update(self.history)
+        
         valid_coords = []
         for c in cols:
             for r in rows:
                 coord = f"{c}{r}"
-                if forbidden_coords is None or coord not in forbidden_coords:
+                if coord not in all_forbidden:
                     valid_coords.append(coord)
         
         chosen = random.choice(valid_coords) if valid_coords else "A1"
+        self.history.add(chosen) # Guardar en memoria
         
-        # Simular latencia táctica para que los razonamientos sean legibles
-        time.sleep(1.2)
+        # Reducir latencia para que sea más fluido
+        time.sleep(0.5)
         
         return AgentMove(
             coordenada=chosen,
-            razonamiento=f"MODO OFFLINE: Disparando a {chosen} para pruebas de interfaz y tiempos.",
-            estrategia_aplicada="BASIC OFFLINE TACTIC",
+            razonamiento=f"Simulación offline en {chosen}. Analizando cuadrante para optimizar logística.",
+            estrategia_aplicada="Detección de Patrones (Offline)",
             latency_ms=500.0,
             prompt_tokens=0,
             completion_tokens=0

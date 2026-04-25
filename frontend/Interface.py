@@ -17,8 +17,8 @@ from src.data.bridge import get_game_state
 from TacticalBridge import tactical_telemetry_bridge
 from streamlit_autorefresh import st_autorefresh
 
-# Polling transparente cada 2 segundos
-st_autorefresh(interval=2000, limit=None, key="data_polling")
+# Polling manejado internamente por el panel táctico
+# st_autorefresh(interval=5000, limit=None, key="data_polling")
 
 inject_styles()
 state = get_game_state()
@@ -111,7 +111,7 @@ with col_mid:
     logs_html += "</div>"
     st.markdown(logs_html, unsafe_allow_html=True)
 with col_b: render_tactical_board(f"{state['team_b']['name']} (PROPIO)", "beta-text", state['team_b'], f"Prendas encajadas: {state['team_b'].get('prendas_encajadas', 0)}")
-st.markdown("<div style='height: 60px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 20px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 20px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 10px;'></div>", unsafe_allow_html=True)
 tactical_telemetry_bridge(state)
 st.markdown("<div style='border-top: 1px solid #1f2428; margin-top: 0px; margin-bottom: 5px;'></div>", unsafe_allow_html=True)
 st.caption(f"Status: Playing - {state['team_a']['name']} vs {state['team_b']['name']} | Operational Dashboard v2.0")

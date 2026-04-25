@@ -335,15 +335,31 @@ def run_match(
                 tokens[current]["p"] += move.prompt_tokens
                 tokens[current]["c"] += move.completion_tokens
 
-                # -- ESCENA 1: ESTRATEGIA (Aparece estrategia con cursor) --
+                # -- FASE 0: RESET --
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {"strategy": "", "reasoning": "", "cursor": "focus"}})
+                time.sleep(0.5) 
+
+                # -- FASE 1: OBJETIVO --
                 if export_json:
                     _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": "", "cursor": "strategy"}})
-                time.sleep(1.5) # 3 ciclos de polling
+                time.sleep(1.5) 
 
-                # -- ESCENA 2: RAZONAMIENTO (Aparece razonamiento con cursor) --
+                # -- FASE 2: ANÁLISIS --
                 if export_json:
                     _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": razon, "cursor": "reasoning"}})
-                time.sleep(2.5) # 5 ciclos de polling
+                time.sleep(3.0)
+
+                # -- FASE 3: IMPACTO --
+                result = game.apply_move(col, row, razon, estrategia)
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": razon, "cursor": "impact"}})
+                time.sleep(1.0)
+
+                # -- FASE 4: RESULTADO FINAL --
+                if export_json:
+                    _write_game_state(game) 
+                time.sleep(3.0) 
 
             except Exception as e:
                 api_errors[current] += 1
@@ -512,7 +528,7 @@ def serialize_game_state(game: Game, finished: bool = None, winner: str = None, 
                 "agent": "A" if m.agent_name == game.names[0] else "B",
                 "coord": m.coordinate,
                 "result": m.result.upper(),
-                "icon": "📦" if m.result == "sunk" else ("👕" if m.result == "hit" else "❔"),
+                "icon": "📦" if m.result == "sunk" else ("🎯" if m.result == "hit" else ("🚫" if m.result == "already_shot" else "💦")),
                 "reasoning": m.razonamiento
             } for m in game.move_log if m.result != "pending"
         ],

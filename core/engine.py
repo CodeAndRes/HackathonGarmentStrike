@@ -37,7 +37,7 @@ LOGISTICS_MAP = {
     "hit": "Prenda encajada",
     "miss": "Prenda perdida",
     "sunk": "Pedido ENCAJADO",
-    "already_shot": "Celda duplicada"
+    "already_shot": "🚫 REPETIDO"
 }
 
 # Regex genérica para validar coordenadas dinámicas
