@@ -1,0 +1,52 @@
+{
+  "partidas": [
+    {
+      "agente_a": "as_logistica",
+      "agente_b": "ejemplo",
+      "ganador": "as_logistica",
+      "turnos_totales": 50,
+      "disparos_a": 27,
+      "disparos_b": 23,
+      "hits_a": 9,
+      "hits_b": 6,
+      "latencia_media_a": 2.53,
+      "latencia_media_b": 2.209,
+      "prompt_tokens_a": 11868,
+      "completion_tokens_a": 3168,
+      "prompt_tokens_b": 6004,
+      "completion_tokens_b": 2329,
+      "errores_api_a": 0,
+      "errores_api_b": 0,
+      "disparos_invalidos_a": 0,
+      "disparos_invalidos_b": 0
+    }
+  ],
+  "clasificacion": {
+    "as_logistica": {
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "total_shots": 27,
+      "total_hits": 9,
+      "wasted_shots": 0,
+      "total_latency": 2530.181862963016,
+      "latency_count": 1,
+      "total_prompt_tokens": 11868,
+      "total_completion_tokens": 3168,
+      "total_errors": 0
+    },
+    "ejemplo": {
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_shots": 23,
+      "total_hits": 6,
+      "wasted_shots": 0,
+      "total_latency": 2209.4514043480517,
+      "latency_count": 1,
+      "total_prompt_tokens": 6004,
+      "total_completion_tokens": 2329,
+      "total_errors": 0
+    }
+  }
+}
