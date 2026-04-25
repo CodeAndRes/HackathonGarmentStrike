@@ -368,7 +368,7 @@ def inject_styles():
         letter-spacing: 2px;
         color: #e6edf3;
         margin-bottom: 10px;
-        margin-top: 42px;
+        margin-top: 10px; /* Reducido para hacer espacio al scoreboard */
         border-bottom: 1px solid #1f2428;
         text-shadow: 0 0 8px rgba(255, 255, 255, 0.15); /* Neón tenue */
     }
@@ -377,6 +377,96 @@ def inject_styles():
         overflow: hidden;
         padding-right: 0px;
         font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Scoreboard Central (UX-01) */
+    .central-scoreboard {
+        background: linear-gradient(180deg, rgba(13, 17, 23, 0.8) 0%, rgba(5, 10, 14, 0.9) 100%);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 25px 15px 15px 15px;
+        text-align: center;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,255,255,0.02);
+        position: relative;
+    }
+    
+    .score-number {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 3.5rem;
+        line-height: 1;
+        letter-spacing: -2px;
+        text-shadow: 0 0 15px var(--team-neon);
+    }
+    
+    .score-divider {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.2rem;
+        color: rgba(255,255,255,0.2);
+        font-weight: 900;
+        padding: 0 15px;
+    }
+
+    /* Indicador LIVE con parpadeo */
+    @keyframes pulse-red {
+        0% { opacity: 0.4; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.1); }
+        100% { opacity: 0.4; transform: scale(0.8); }
+    }
+    .led-red {
+        width: 7px;
+        height: 7px;
+        background-color: #ff4b4b;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #ff4b4b;
+        animation: pulse-red 1s infinite ease-in-out;
+    }
+
+    .turn-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #00d4ff;
+        color: #000;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 0.85rem;
+        padding: 3px 15px;
+        border-radius: 20px;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        letter-spacing: 3px;
+    }
+
+    /* Efecto de escaneo/trama digital */
+    .holo-wireframe {
+        background-image: 
+            linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+        background-size: 8px 8px;
+    }
+    /* Efecto de escritura y cursor */
+    @keyframes blink-caret {
+        from, to { border-color: transparent }
+        50% { border-color: var(--team-neon); }
+    }
+    .typing-cursor {
+        border-right: .15em solid var(--team-neon);
+        animation: blink-caret .75s step-end infinite;
+        display: inline-block;
+        height: 1.1em;
+        vertical-align: middle;
+        margin-left: 2px;
+    }
+    .typewriter-text {
+        display: inline;
+        overflow: hidden;
+        animation: typewriter-reveal 0.4s ease-out;
+    }
+    @keyframes typewriter-reveal {
+        from { opacity: 0; transform: translateY(3px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
     """, unsafe_allow_html=True)

@@ -2,84 +2,116 @@ import streamlit as st
 import streamlit.components.v1 as components
 import json
 
-def _json_cleaner(obj):
-    if isinstance(obj, dict):
-        return {str(k): _json_cleaner(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_json_cleaner(i) for i in obj]
-    return obj
-
 def tactical_telemetry_bridge(game_state: dict):
-    """
-    Telemetría dual con estilo original (border-left, table layout).
-    Integra WebSocket para actualizaciones en tiempo real.
-    """
-    tel = game_state.get("telemetry", {})
-    tel_a = tel.get("team_a", {})
-    tel_b = tel.get("team_b", {})
+    """Telemetría Pro con motor de renderizado JS Nativo e inteligencia de persistencia."""
+    
+    state_json = json.dumps({
+        "turn": game_state.get("turn"),
+        "turn_agent": game_state.get("turn_agent"),
+        "comms": game_state.get("comms", []),
+        "telemetry": game_state.get("telemetry", {}),
+        "team_a": {"name": game_state.get("team_a", {}).get("name")},
+        "team_b": {"name": game_state.get("team_b", {}).get("name")}
+    })
 
-    # Telemetría ALPHA (Estilo original con tabla)
-    brain_svg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M9 13a4.5 4.5 0 0 0 3-4"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .556-6.588"/><path d="M16 13a3 3 0 1 0 5.997-.125 4 4 0 0 0 2.526-5.77 4 4 0 0 0-.556-6.588A4 4 0 1 0 12 5"/><path d="M15 13a4.5 4.5 0 0 1-3-4"/><path d="M17.997 5.125A3 3 0 0 1 17.599 6.5"/><path d="M20.523 10.896a4 4 0 0 0-.556-6.588"/></svg>'
-
-    st.markdown(f"""
-    <div class="telemetry-box" style="border-left-color: var(--accent-alpha); background: rgba(0, 255, 136, 0.03); margin-bottom: 8px; margin-top:0; padding: 6px 12px;">
-        <table style="width:100%; border-collapse: collapse;">
-            <tr>
-                <td style="width:25%; vertical-align: top; border-right: 1px solid rgba(0, 255, 136, 0.1); padding-right: 12px;">
-                    <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.8rem; font-family:Orbitron; margin-bottom:4px; display:flex; align-items:center;">
-                        {brain_svg}
-                        STRATEGY | {game_state["team_a"]["name"]}
-                    </div>
-                    <div style="color:#fff; font-size:0.85rem; font-family: 'JetBrains Mono', monospace;">{tel_a.get('strategy', 'Procesando...')}</div>
-                </td>
-                <td style="width:75%; vertical-align: top; padding-left: 15px;">
-                    <div style="color:var(--accent-alpha); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:4px; opacity:0.8;">RATIONALE</div>
-                    <div style="color:#ddd; font-size:0.95rem; line-height:1.4; font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0;">{tel_a.get('reasoning', 'Esperando datos...')}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Telemetría BETA
-    st.markdown(f"""
-    <div class="telemetry-box" style="border-left-color: var(--accent-beta); background: rgba(255, 75, 75, 0.03); margin-bottom: 12px; margin-top:0; padding: 6px 12px;">
-        <table style="width:100%; border-collapse: collapse;">
-            <tr>
-                <td style="width:25%; vertical-align: top; border-right: 1px solid rgba(255, 75, 75, 0.1); padding-right: 12px;">
-                    <div style="color:var(--accent-beta); font-weight:bold; font-size:0.8rem; font-family:Orbitron; margin-bottom:4px; display:flex; align-items:center;">
-                        {brain_svg}
-                        STRATEGY | {game_state["team_b"]["name"]}
-                    </div>
-                    <div style="color:#fff; font-size:0.85rem; font-family: 'JetBrains Mono', monospace;">{tel_b.get('strategy', 'Procesando...')}</div>
-                </td>
-                <td style="width:75%; vertical-align: top; padding-left: 15px;">
-                    <div style="color:var(--accent-beta); font-weight:bold; font-size:0.75rem; font-family:Orbitron; margin-bottom:4px; opacity:0.8;">RATIONALE</div>
-                    <div style="color:#ddd; font-size:0.95rem; line-height:1.4; font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0;">{tel_b.get('reasoning', 'Esperando datos...')}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # WebSocket bridge invisible para refrescos automáticos
-    ws_html = f"""
+    html_content = f"""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        :root {{ --accent-alpha: #00ff88; --accent-beta: #ff4b4b; }}
+        body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; color: #fff; font-family: 'JetBrains Mono', monospace; }}
+        .telemetry-container {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+        .panel {{ background: rgba(13, 17, 23, 0.95); border-radius: 12px; padding: 15px; transition: all 0.5s ease; height: 210px; display: flex; flex-direction: column; overflow: hidden; }}
+        .panel.active {{ box-shadow: 0 0 25px rgba(255,255,255,0.05); }}
+        .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700; }}
+        .label {{ color: rgba(255,255,255,0.3); font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 3px; font-family: 'Orbitron'; }}
+        .content {{ color: #fff; font-size: 0.78rem; line-height: 1.3; margin-bottom: 8px; min-height: 2.6em; }}
+        .action-box {{ background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; margin-top: auto; }}
+        .typing-cursor {{ border-right: 2px solid currentColor; animation: blink 0.7s infinite; margin-left: 2px; }}
+        @keyframes blink {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0; }} }}
+        .active-badge {{ font-size: 0.5rem; padding: 2px 6px; border-radius: 3px; background: currentColor; color: #000; font-weight: 900; }}
+    </style>
+    <div class="telemetry-container" id="container"></div>
     <script>
-        let currentTurn = {game_state.get('turn', 0)};
-        function connectWS() {{
-            try {{
-                const socket = new WebSocket('ws://' + window.location.hostname + ':8000/ws/tactical');
-                socket.onmessage = (event) => {{
-                    const newState = JSON.parse(event.data);
-                    if (newState.turn !== currentTurn) {{
-                        currentTurn = newState.turn;
-                        window.parent.postMessage({{type: 'streamlit:setComponentValue', value: newState}}, '*');
+        const state = {state_json};
+        const container = document.getElementById('container');
+        
+        // Memoria de sesión para evitar repetir animaciones
+        const storageKey = 'gs_telemetry_last';
+        const lastData = JSON.parse(sessionStorage.getItem(storageKey) || '{{}}');
+
+        function renderPanel(teamKey, color) {{
+            const tel = state.telemetry[teamKey] || {{}};
+            const isActive = state.turn_agent === teamKey;
+            
+            let lastMove = "---";
+            const agentId = teamKey === "team_a" ? "A" : "B";
+            for (let i = state.comms.length - 1; i >= 0; i--) {{
+                if (state.comms[i].agent === agentId) {{
+                    lastMove = state.comms[i].coord + " " + state.comms[i].icon + " (" + state.comms[i].result + ")";
+                    break;
+                }}
+            }}
+
+            const panel = document.createElement('div');
+            panel.className = 'panel' + (isActive ? ' active' : '');
+            panel.style.border = isActive ? '2px solid ' + color : '1px solid rgba(255,255,255,0.1)';
+            panel.style.opacity = isActive ? '1' : '0.5';
+
+            panel.innerHTML = `
+                <div class="header" style="color: ${{color}}">
+                    <span>STRATEGY | ${{state[teamKey].name}}</span>
+                    ${{isActive ? `<span class="active-badge" style="background:${{color}}">BRAIN ACTIVE</span>` : ''}}
+                </div>
+                <div>
+                    <div class="label">OBJECTIVE:</div>
+                    <div class="content" id="strat_${{teamKey}}"></div>
+                </div>
+                <div>
+                    <div class="label">RATIONALE:</div>
+                    <div class="content" id="reason_${{teamKey}}"></div>
+                </div>
+                <div class="action-box">
+                    <div class="label" style="margin:0">LAST ACTION:</div>
+                    <div style="color:${{color}}; font-family:Orbitron; font-weight:900; font-size:0.7rem;">${{lastMove}}</div>
+                </div>
+            `;
+            container.appendChild(panel);
+
+            function type(elId, text, speed, force = false) {{
+                const el = document.getElementById(elId);
+                const prevText = lastData[elId];
+                
+                // Si el texto es el mismo, no animar
+                if (!force && prevText === text) {{
+                    el.innerHTML = text;
+                    return;
+                }}
+
+                let i = 0;
+                function step() {{
+                    if (i < text.length) {{
+                        el.innerHTML = text.substring(0, i + 1) + '<span class="typing-cursor"></span>';
+                        i++;
+                        setTimeout(step, speed);
+                    }} else {{
+                        el.innerHTML = text;
+                        lastData[elId] = text;
+                        sessionStorage.setItem(storageKey, JSON.stringify(lastData));
                     }}
-                }};
-                socket.onclose = () => setTimeout(connectWS, 2000);
-            }} catch(e) {{}}
+                }}
+                step();
+            }}
+
+            // Solo animar si es el agente activo O si el texto ha cambiado
+            const forceAnim = (isActive && lastData['turn'] !== state.turn);
+            type('strat_' + teamKey, tel.strategy || "---", 25, forceAnim);
+            setTimeout(() => type('reason_' + teamKey, tel.reasoning || "---", 15, forceAnim), 400);
         }}
-        connectWS();
+
+        renderPanel('team_a', 'var(--accent-alpha)');
+        renderPanel('team_b', 'var(--accent-beta)');
+        lastData['turn'] = state.turn;
+        sessionStorage.setItem(storageKey, JSON.stringify(lastData));
     </script>
     """
-    components.html(ws_html, height=0)
+    components.html(html_content, height=230)

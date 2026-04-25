@@ -2,9 +2,14 @@ import json
 from pathlib import Path
 
 # Configuración de Integración
+# Intentamos encontrar la carpeta logs en la raíz o en la carpeta actual
+_local_logs = Path("logs/game_state.json")
+_root_logs = Path("../logs/game_state.json")
+_final_path = _local_logs if _local_logs.exists() else _root_logs
+
 INTEGRATION_CONFIG = {
     "live_mode": True,  
-    "state_path": Path("logs/game_state.json"),
+    "state_path": _final_path,
 }
 
 def get_game_state():
