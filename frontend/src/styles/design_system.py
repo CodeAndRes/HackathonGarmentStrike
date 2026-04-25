@@ -25,9 +25,9 @@ UI_CONFIG = {
     # La prenda que cae fuera (agua)
     "miss_container_scale": 1.5,   # Escala general del símbolo de agua
     "miss_icon_scale": 1.3,        # Escala de la prenda en sí misma
-    "miss_icon_stroke": 1.8,       # Grosor de línea de la prenda perdida (Aumentado para VIS-01)
-    "miss_icon_opacity": 0.6,      # Transparencia total (Aumentado de 0.2 para VIS-01)
-    "miss_color": "#00d4ff",       # Color cyan vibrante (Cambiado de #9badc9 para VIS-01)
+    "miss_icon_stroke": 1.5,       # Grosor de línea de la prenda perdida
+    "miss_icon_opacity": 0.2,      # Transparencia total
+    "miss_color": "#9badc9",       # Color (rojo por defecto) #ff4b4b
     
     # --- 🏗️ DIMENSIONES ESTRUCTURALES 3D ---
     "box_margin_x": 7,             # Margen exterior lateral
@@ -169,28 +169,6 @@ def inject_styles():
         border: 1px solid var(--accent-beta); 
         box-shadow: 0 0 15px rgba(255, 75, 75, 0.2), inset 0 0 10px rgba(255, 75, 75, 0.1); 
     }
-    
-    /* Highlight Táctico (FOCUS-01) */
-    @keyframes targetPulseAlpha {
-        0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.2), inset 0 0 10px rgba(0, 255, 136, 0.1); border-color: var(--accent-alpha); }
-        50% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.8), inset 0 0 30px rgba(0, 255, 136, 0.4); border-color: #ffffff; }
-    }
-    @keyframes targetPulseBeta {
-        0%, 100% { box-shadow: 0 0 15px rgba(255, 75, 75, 0.2), inset 0 0 10px rgba(255, 75, 75, 0.1); border-color: var(--accent-beta); }
-        50% { box-shadow: 0 0 40px rgba(255, 75, 75, 0.8), inset 0 0 30px rgba(255, 75, 75, 0.4); border-color: #ffffff; }
-    }
-    .board-alpha.target-highlight { animation: targetPulseAlpha 1.5s infinite ease-in-out; }
-    .board-beta.target-highlight { animation: targetPulseBeta 1.5s infinite ease-in-out; }
-
-    /* Animación de Impacto/Nuevo Movimiento (ANIM-01) */
-    @keyframes newActionImpact {
-        0% { transform: scale(1.4); filter: brightness(2) drop-shadow(0 0 20px #ffffff); z-index: 10; }
-        50% { transform: scale(0.9); filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.5)); z-index: 10; }
-        100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 transparent); z-index: 1; }
-    }
-    .new-action-anim {
-        animation: newActionImpact 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
 
     .cell {
         aspect-ratio: 1;
@@ -199,6 +177,7 @@ def inject_styles():
         align-items: center;
         justify-content: center;
         font-size: 0.75rem;
+        transition: all 0.2s;
     }
 
     /* Estilo de las etiquetas de coordenadas sincronizado con el equipo */
@@ -389,7 +368,7 @@ def inject_styles():
         letter-spacing: 2px;
         color: #e6edf3;
         margin-bottom: 10px;
-        margin-top: 10px; /* Reducido de 42px para hacer espacio al scoreboard */
+        margin-top: 42px;
         border-bottom: 1px solid #1f2428;
         text-shadow: 0 0 8px rgba(255, 255, 255, 0.15); /* Neón tenue */
     }
@@ -398,65 +377,6 @@ def inject_styles():
         overflow: hidden;
         padding-right: 0px;
         font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Scoreboard Central (UX-01) */
-    .central-scoreboard {
-        background: linear-gradient(180deg, rgba(13, 17, 23, 0.8) 0%, rgba(5, 10, 14, 0.9) 100%);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 25px 15px 15px 15px;
-        text-align: center;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,255,255,0.02);
-        position: relative;
-    }
-    
-    .score-number {
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 900;
-        font-size: 3rem;
-        line-height: 1;
-        letter-spacing: -2px;
-    }
-    
-    .score-divider {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 1.2rem;
-        color: rgba(255,255,255,0.2);
-        font-weight: 900;
-        padding: 0 15px;
-    }
-
-    /* Indicador LIVE con parpadeo */
-    @keyframes pulse-red {
-        0% { opacity: 0.4; transform: scale(0.8); }
-        50% { opacity: 1; transform: scale(1.1); }
-        100% { opacity: 0.4; transform: scale(0.8); }
-    }
-    .led-red {
-        width: 7px;
-        height: 7px;
-        background-color: #ff4b4b;
-        border-radius: 50%;
-        box-shadow: 0 0 8px #ff4b4b;
-        animation: pulse-red 1s infinite ease-in-out;
-    }
-
-    .turn-badge {
-        position: absolute;
-        top: -12px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #00d4ff;
-        color: #000;
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 900;
-        font-size: 0.85rem;
-        padding: 3px 15px;
-        border-radius: 20px;
-        box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
-        letter-spacing: 3px;
     }
 </style>
     """, unsafe_allow_html=True)

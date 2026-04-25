@@ -16,8 +16,9 @@ Reviewer Agent – The Golden Rule is enforced in run_match():
 from __future__ import annotations
 
 import json
-import time
 import random
+import time
+import requests
 from dataclasses import asdict, dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -28,7 +29,7 @@ from rich.progress import track
 from rich.rule import Rule
 from rich.table import Table
 
-from core.engine import AlmacenParser, Board, Game, LOGISTICS_MAP
+from core.engine import AlmacenParser, Board, Game, LOGISTICS_MAP, MoveRecord
 from core.llm_client import AgentMove, LLMClient, MoveHistoryEntry
 from core.visualizer import GameDashboard
 
@@ -502,6 +503,7 @@ def serialize_game_state(game: Game, finished: bool = None, winner: str = None, 
 
     state = {
         "turn": game.turn_count,
+        "turn_agent": "team_a" if game.current_agent == game.names[0] else "team_b",
         "team_a": _serialize_team(game.names[0]),
         "team_b": _serialize_team(game.names[1]),
         "comms": [
@@ -522,12 +524,26 @@ def serialize_game_state(game: Game, finished: bool = None, winner: str = None, 
 
 
 def _write_game_state(game: Game, finished: bool = None, winner: str = None, override_telemetry: dict = None) -> None:
-    """Helper to write game_state.json into logs/ folder."""
+    """Helper to write game_state.json and push to Real-time API."""
     state = serialize_game_state(game, finished=finished, winner=winner, override_telemetry=override_telemetry)
+    
+    def _sanitize(obj):
+        if isinstance(obj, dict): return {str(k): _sanitize(v) for k, v in obj.items()}
+        if isinstance(obj, list): return [_sanitize(i) for i in obj]
+        return obj
+
+    # 1. Escritura tradicional en archivo (Retrocompatibilidad y Debug)
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     with open(log_dir / "game_state.json", "w", encoding="utf-8") as f:
         json.dump(state, f, indent=4, ensure_ascii=False)
+        
+    # 2. PUSH a la API en tiempo real
+    try:
+        # Usamos un timeout muy corto para no bloquear el motor si la API no responde
+        requests.post("http://127.0.0.1:8000/api/event", json=_sanitize(state), timeout=0.05)
+    except Exception:
+        pass # Silencioso si el servidor API no está arriba
 
 
 # ── Agent discovery ───────────────────────────────────────────────────────────

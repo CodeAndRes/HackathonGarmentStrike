@@ -30,6 +30,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt
 from rich.rule import Rule
+import threading
+from core.api import start_api_server
 
 console = Console()
 SETTINGS_PATH = Path("settings.yaml")
@@ -59,6 +61,10 @@ reload_configurations()
 def cmd_play(args: argparse.Namespace) -> None:
     """Run a single match between two agent configs."""
     reload_configurations()
+    
+    # Iniciar servidor de eventos tácticos (Real-time Bridge)
+    threading.Thread(target=start_api_server, daemon=True).start()
+    
     from core.llm_client import LLMClient
     from core.tournament import AgentConfig, run_match
 

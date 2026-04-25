@@ -4,7 +4,7 @@ from pathlib import Path
 # Configuración de Integración
 INTEGRATION_CONFIG = {
     "live_mode": True,  
-    "state_path": Path("../logs/game_state.json"),
+    "state_path": Path("logs/game_state.json"),
 }
 
 def get_game_state():
@@ -54,6 +54,7 @@ def get_game_state():
     
     return {
         "turn": 14,
+        "turn_agent": "team_a",
         "team_a": {
             "name": "ALPHA CORE",
             "pedidos_encajados": 3,

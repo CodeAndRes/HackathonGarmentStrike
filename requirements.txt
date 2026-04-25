@@ -23,3 +23,10 @@ pandas==3.0.2
 altair==6.0.0
 numpy==2.4.4
 Pillow==12.2.0
+streamlit-autorefresh==0.0.1
+
+# Real-time Tactical Bridge (WebSockets)
+fastapi>=0.109.0
+uvicorn>=0.27.0
+requests>=2.31.0
+
