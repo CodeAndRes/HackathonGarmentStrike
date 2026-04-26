@@ -739,7 +739,7 @@
                     el.classList.remove('typing');
                     typingIntervals.delete(elementId);
                 }
-            }, 25); // Speed of typing (ms per char)
+            }, 10); // Speed of typing (ms per char) - Faster for better sync
 
             typingIntervals.set(elementId, interval);
         }
