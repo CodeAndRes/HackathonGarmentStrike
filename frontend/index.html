@@ -1109,8 +1109,8 @@
         // --- SVG GENERATORS (Ported from holographics.py) ---
 
         function getHoloBoxSVG(color, conn, isSealed, isHit, garmentColor) {
-            const margin = 10; // Más margen para que se vea contenido
-            const inset = 6;
+            const margin = 10;
+            const inset = 12; // Aumentado para más profundidad
             const shirtColor = garmentColor || color;
 
             // Solape mínimo (0.5px) para evitar grietas sin salirse de la celda
@@ -1176,6 +1176,9 @@
                 if (!conn.bottom) elements.push(`<path d="M ${ix1} ${iy2} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx1} ${by2} Z" fill="${color}" fill-opacity="0.1"/>`);
                 if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1} ${iy2} L ${bx1} ${by2} L ${bx1} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
                 if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx2} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
+
+                // Seam Line (Unión de cartón) - Muy fina y sutil
+                elements.push(`<line x1="${ix1}" y1="50" x2="${ix2}" y2="50" stroke="${color}" stroke-width="0.3" stroke-opacity="0.2" stroke-dasharray="1,2"/>`);
 
                 // Floor
                 let fPath = "";
