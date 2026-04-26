@@ -61,13 +61,14 @@
         }
 
         .led-red {
-            width: 8px;
-            height: 8px;
+            width: 10px; /* Un pelín más grande */
+            height: 10px;
             background: #ff4b4b;
             border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 10px #ff4b4b;
+            margin-right: 10px;
+            box-shadow: 0 0 15px #ff4b4b, 0 0 5px #fff;
             animation: pulse-red 1s infinite;
+            flex-shrink: 0;
         }
 
         @keyframes pulse-red {
@@ -258,12 +259,11 @@
         }
 
         .score-display {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            display: flex; /* Cambiamos a flex para control total de cercanía */
             align-items: center;
-            justify-items: center;
-            gap: 10px;
-            margin: -5px 0 0 0; /* Margen negativo para subir más */
+            justify-content: center;
+            gap: 5px; /* Súper cerca */
+            margin: -5px 0 0 0;
             width: 100%;
         }
 
@@ -271,22 +271,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 2px;
         }
 
         .score-box {
-            width: 90px;
-            height: 90px;
-            border: 4px solid currentColor;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: 'Orbitron', sans-serif;
             font-size: 3.5rem;
             font-weight: 900;
-            background: rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
+            min-width: 80px;
+            text-align: center;
         }
 
         .score-alpha {
@@ -311,27 +305,27 @@
         .score-stats {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Centrados bajo la caja */
             font-family: 'JetBrains Mono', monospace;
-            line-height: 1.2;
-            opacity: 0.6; /* Más discretos */
+            opacity: 0.6;
+            margin-top: -5px;
         }
 
         .stat-pedidos {
             font-size: 0.65rem;
-            opacity: 0.7;
+            letter-spacing: 1px;
         }
 
         .stat-prendas {
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.8rem;
+            font-weight: 700;
         }
 
         .score-divider {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
+            font-size: 1.2rem;
             opacity: 0.2;
             font-weight: 900;
+            padding: 0 15px;
         }
 
         .moves-log {
@@ -370,7 +364,7 @@
             background: rgba(255, 255, 255, 0.02);
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             font-family: 'JetBrains Mono', monospace;
-            opacity: 0.5;
+            opacity: 0.8; /* Más visible */
             display: grid;
             grid-template-columns: 40px 35px 1fr auto;
             align-items: center;
@@ -632,10 +626,6 @@
 <body>
     <header>
         <div class="logo">⚡ GARMENT STRIKE</div>
-        <div class="live-status">
-            <div class="led-red"></div>
-            LIVE
-        </div>
     </header>
 
     <main>
@@ -659,15 +649,15 @@
         <div class="column">
             <div class="central-scoreboard">
                 <div class="turn-badge" id="turn-badge">TURNO #0</div>
-                <div class="live-status" style="position: absolute; top: 10px; left: 10px; font-size: 0.55rem; letter-spacing: 1px; opacity: 0.7;">
-                    <div class="led-red" style="width: 6px; height: 6px;"></div>
+                <div class="live-status" style="position: absolute; top: 15px; left: 15px; font-family: 'Orbitron', sans-serif; font-weight: 900;">
+                    <div class="led-red"></div>
                     <span id="match-status-text">LIVE</span>
                 </div>
                 <div class="score-display">
                     <div class="score-group">
                         <div class="score-box score-alpha" id="alpha-score">0</div>
-                        <div class="score-stats">
-                            <span class="stat-pedidos" id="alpha-total-pedidos">/0 PEDIDOS</span>
+                        <div class="score-stats" style="align-items: center; text-align: center;">
+                            <span class="stat-pedidos" id="alpha-total-pedidos">/4 PEDIDOS</span>
                             <span class="stat-prendas score-alpha" id="alpha-prendas">0 PRENDAS</span>
                         </div>
                     </div>
@@ -676,8 +666,8 @@
 
                     <div class="score-group">
                         <div class="score-box score-beta" id="beta-score">0</div>
-                        <div class="score-stats">
-                            <span class="stat-pedidos" id="beta-total-pedidos">/0 PEDIDOS</span>
+                        <div class="score-stats" style="align-items: center; text-align: center;">
+                            <span class="stat-pedidos" id="beta-total-pedidos">/4 PEDIDOS</span>
                             <span class="stat-prendas score-beta" id="beta-prendas">0 PRENDAS</span>
                         </div>
                     </div>
@@ -791,22 +781,54 @@
                 }
 
                 // 1. Header & Scoreboard
-                // El marcador de Alpha muestra el éxito de Alpha sobre el tablero de Beta
-                document.getElementById('alpha-score').innerText = state.team_b.pedidos_encajados ?? 0;
-                // El marcador de Beta muestra el éxito de Beta sobre el tablero de Alpha
-                document.getElementById('beta-score').innerText = state.team_a.pedidos_encajados ?? 0;
+                document.getElementById('turn-badge').innerText = `TURNO #${state.turn || 0}`;
+                
+                // Marcador central (éxitos de cada equipo)
+                document.getElementById('alpha-score').innerText = state.team_b.pedidos_encajados;
+                document.getElementById('beta-score').innerText = state.team_a.pedidos_encajados;
+                
+                document.getElementById('alpha-prendas').innerText = `${state.team_b.prendas_encajadas} PRENDAS`;
+                document.getElementById('beta-prendas').innerText = `${state.team_a.prendas_encajadas} PRENDAS`;
                 
                 document.getElementById('alpha-name-huge').innerText = state.team_a.name || 'ALPHA';
                 document.getElementById('beta-name-huge').innerText = state.team_b.name || 'BETA';
                 
                 document.getElementById('alpha-total-pedidos').innerText = `/${state.team_b.total_pedidos ?? 0} PEDIDOS`;
                 document.getElementById('beta-total-pedidos').innerText = `/${state.team_a.total_pedidos ?? 0} PEDIDOS`;
-                
-                document.getElementById('alpha-prendas').innerText = `${state.team_b.prendas_encajadas ?? 0} PRENDAS`;
-                document.getElementById('beta-prendas').innerText = `${state.team_a.prendas_encajadas ?? 0} PRENDAS`;
 
                 const isAlphaTurn = state.turn_agent === 'team_a';
                 
+                // 5. Victory & Status LED
+                const overlay = document.getElementById('victory-overlay');
+                const liveLed = document.querySelector('.led-red');
+                const statusSpan = document.getElementById('match-status-text');
+
+                if (state.finished) {
+                    overlay.style.display = 'flex';
+                    document.getElementById('victory-subtext').innerText = (state.winner || "EMPATE").toUpperCase();
+
+                    if (liveLed) {
+                        liveLed.style.animation = 'none';
+                        liveLed.style.background = '#444';
+                        liveLed.style.boxShadow = 'none';
+                    }
+                    if (statusSpan) {
+                        statusSpan.innerText = 'MATCH OVER';
+                        statusSpan.parentElement.style.color = '#666';
+                    }
+                } else {
+                    overlay.style.display = 'none';
+                    if (liveLed) {
+                        liveLed.style.animation = 'pulse-red 1s infinite';
+                        liveLed.style.background = '#ff4b4b';
+                        liveLed.style.boxShadow = '0 0 15px #ff4b4b';
+                    }
+                    if (statusSpan) {
+                        statusSpan.innerText = 'LIVE';
+                        statusSpan.parentElement.style.color = '#ff4b4b';
+                    }
+                }
+
                 // Glow de los nombres laterales
                 const alphaNameHuge = document.getElementById('alpha-name-huge');
                 const betaNameHuge = document.getElementById('beta-name-huge');
@@ -823,51 +845,11 @@
                 }
 
                 // 3. Boards
-                // IMPORTANTE: Para ver dónde apunta el rival, pasamos la telemetría cruzada
                 renderBoard('alpha', state.team_a, (state.telemetry || {}).team_b);
                 renderBoard('beta', state.team_b, (state.telemetry || {}).team_a);
 
                 // 4. Log
                 if (state.comms) updateLog(state.comms);
-
-                // 5. Victory & Status LED
-                const overlay = document.getElementById('victory-overlay');
-                const liveLed = document.querySelector('.led-red');
-                const liveText = document.querySelector('.live-status');
-
-                if (state.finished) {
-                    overlay.style.display = 'flex';
-                    document.getElementById('victory-subtext').innerText = (state.winner || "EMPATE").toUpperCase();
-
-                    // Apagar LED
-                    if (liveLed) {
-                        liveLed.style.animation = 'none';
-                        liveLed.style.background = '#444';
-                        liveLed.style.boxShadow = 'none';
-                    }
-                    if (liveText) {
-                        liveText.style.color = '#666';
-                        liveText.innerText = 'MATCH OVER';
-                    }
-
-                    if (state.winner === state.team_a.name) {
-                        document.getElementById('victory-text').style.color = 'var(--accent-alpha)';
-                    } else if (state.winner === state.team_b.name) {
-                        document.getElementById('victory-text').style.color = 'var(--accent-beta)';
-                    }
-                } else {
-                    overlay.style.display = 'none';
-                    // Restaurar LED si no ha terminado
-                    if (liveLed) {
-                        liveLed.style.animation = 'pulse-red 1s infinite';
-                        liveLed.style.background = '#ff4b4b';
-                        liveLed.style.boxShadow = '0 0 10px #ff4b4b';
-                    }
-                    if (liveText) {
-                        liveText.style.color = '#ff4b4b';
-                        liveText.innerText = 'LIVE';
-                    }
-                }
 
                 lastState = state;
             } catch (err) {
@@ -1211,10 +1193,10 @@
 
         function getHoloMissSVG() {
             return `
-                <svg viewBox="0 0 100 100" style="width:85%; height:85%; opacity:0.8; transform: rotate(-15deg);">
+                <svg viewBox="0 0 100 100" style="width:70%; height:70%; opacity:0.5; transform: rotate(-10deg);">
                     <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" 
-                          fill="none" stroke="#00d4ff" stroke-width="2.5" transform="translate(25,25) scale(2.2)"/>
-                    <line x1="20" y1="20" x2="80" y2="80" stroke="#00d4ff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+                          fill="none" stroke="#00d4ff" stroke-width="2" transform="translate(25,25) scale(1.8)"/>
+                    <line x1="25" y1="25" x2="75" y2="75" stroke="#00d4ff" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
                 </svg>
             `;
         }
