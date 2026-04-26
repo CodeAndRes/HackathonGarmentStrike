@@ -791,18 +791,19 @@
                 }
 
                 // 1. Header & Scoreboard
-                document.getElementById('turn-badge').innerText = `TURNO #${state.turn || 0}`;
-                document.getElementById('alpha-score').innerText = state.team_a.pedidos_encajados ?? 0;
-                document.getElementById('beta-score').innerText = state.team_b.pedidos_encajados ?? 0;
+                // El marcador de Alpha muestra el éxito de Alpha sobre el tablero de Beta
+                document.getElementById('alpha-score').innerText = state.team_b.pedidos_encajados ?? 0;
+                // El marcador de Beta muestra el éxito de Beta sobre el tablero de Alpha
+                document.getElementById('beta-score').innerText = state.team_a.pedidos_encajados ?? 0;
                 
                 document.getElementById('alpha-name-huge').innerText = state.team_a.name || 'ALPHA';
                 document.getElementById('beta-name-huge').innerText = state.team_b.name || 'BETA';
                 
-                document.getElementById('alpha-total-pedidos').innerText = `/${state.team_a.total_pedidos ?? 0} PEDIDOS`;
-                document.getElementById('beta-total-pedidos').innerText = `/${state.team_b.total_pedidos ?? 0} PEDIDOS`;
+                document.getElementById('alpha-total-pedidos').innerText = `/${state.team_b.total_pedidos ?? 0} PEDIDOS`;
+                document.getElementById('beta-total-pedidos').innerText = `/${state.team_a.total_pedidos ?? 0} PEDIDOS`;
                 
-                document.getElementById('alpha-prendas').innerText = `${state.team_a.prendas_encajadas ?? 0} PRENDAS`;
-                document.getElementById('beta-prendas').innerText = `${state.team_b.prendas_encajadas ?? 0} PRENDAS`;
+                document.getElementById('alpha-prendas').innerText = `${state.team_b.prendas_encajadas ?? 0} PRENDAS`;
+                document.getElementById('beta-prendas').innerText = `${state.team_a.prendas_encajadas ?? 0} PRENDAS`;
 
                 const isAlphaTurn = state.turn_agent === 'team_a';
                 
@@ -1040,14 +1041,19 @@
                 const teamColor = c.agent === 'A' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
                 
                 if (index === 0) {
-                    // Banner destacado para la última jugada (Mostrando el Turno en lugar del nombre)
+                    // Banner destacado para la última jugada
+                    const isMiss = c.result.toUpperCase().includes('MISS');
+                    const statusText = isMiss ? 'PRENDA PERDIDA' : c.result.toUpperCase();
+                    const statusColor = isMiss ? '#00d4ff' : '#fff';
+                    const statusSize = isMiss ? '1.1rem' : '0.85rem';
+                    
                     return `
                         <div class="log-entry latest-move ${teamClass}">
                             <div class="move-main">
                                 <span style="color: ${teamColor}; opacity: 0.6; font-size: 0.8rem;">T${c.turn}</span>
                                 <span style="color: #fff; font-weight: 800;">${c.coord}</span>
                             </div>
-                            <div class="move-status">${c.result.toUpperCase()}</div>
+                            <div class="move-status" style="color: ${statusColor}; font-size: ${statusSize}">${statusText}</div>
                         </div>
                     `;
                 }
@@ -1205,9 +1211,10 @@
 
         function getHoloMissSVG() {
             return `
-                <svg viewBox="0 0 100 100" style="width:70%; height:70%; opacity:0.3; transform: rotate(45deg);">
+                <svg viewBox="0 0 100 100" style="width:85%; height:85%; opacity:0.8; transform: rotate(-15deg);">
                     <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" 
-                          fill="none" stroke="#9badc9" stroke-width="2" transform="translate(30,30) scale(1.5)"/>
+                          fill="none" stroke="#00d4ff" stroke-width="2.5" transform="translate(25,25) scale(2.2)"/>
+                    <line x1="20" y1="20" x2="80" y2="80" stroke="#00d4ff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
                 </svg>
             `;
         }
