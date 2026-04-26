@@ -370,9 +370,9 @@ def run_match(
             if export_json:
                 _write_game_state(game)
             
-            # Pequeña pausa para que el frontend procese el evento
+            # Pausa para que el dashboard web pueda renderizar la animación
             if export_json:
-                time.sleep(0.3)
+                time.sleep(ui_sleep)
 
             if result == "already_shot":
                 wasted[current] += 1

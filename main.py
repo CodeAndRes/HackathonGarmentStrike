@@ -62,14 +62,14 @@ def cmd_play(args: argparse.Namespace) -> None:
     """Run a single match between two agent configs."""
     reload_configurations()
     
-    # Iniciar servidor de eventos tácticos (Real-time Bridge)
-    server_thread = threading.Thread(target=start_api_server, daemon=True)
-    server_thread.start()
-    
-    # CRÍTICO: Esperar a que el servidor esté listo antes de iniciar el motor
-    # Sin esto, los primeros eventos se pierden porque el servidor no está escuchando aún.
-    time.sleep(1.5)
-    console.print("[dim green]API táctica lista en http://127.0.0.1:8000[/dim green]")
+    # Iniciar servidor de eventos tácticos solo si se solicita el modo táctico
+    if getattr(args, 'tactical', False):
+        server_thread = threading.Thread(target=start_api_server, daemon=True)
+        server_thread.start()
+        
+        # CRÍTICO: Esperar a que el servidor esté listo antes de iniciar el motor
+        time.sleep(1.5)
+        console.print("[dim green]API táctica lista en http://127.0.0.1:8000[/dim green]")
     
     from core.llm_client import LLMClient
     from core.tournament import AgentConfig, run_match

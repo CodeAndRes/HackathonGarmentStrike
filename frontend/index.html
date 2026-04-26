@@ -318,6 +318,20 @@
         }
         .master-holo-box { animation: neonPulse 2s infinite ease-in-out; }
 
+        /* --- TYPEWRITER CURSOR --- */
+        .typing::after {
+            content: '▊';
+            margin-left: 2px;
+            animation: blink 0.8s step-end infinite;
+            color: inherit;
+            font-size: 1.1em;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
@@ -443,7 +457,7 @@
                 } catch (err) {
                     console.error("Error en polling:", err);
                 }
-            }, 2000);
+            }, 1000);
         }
 
         function stopPolling() {
@@ -513,10 +527,44 @@
             }
         }
 
+        const typingIntervals = new Map();
+
+        function typeWriter(elementId, text) {
+            const el = document.getElementById(elementId);
+            if (!el || el.dataset.fullText === text) return;
+            
+            // Cancel previous typing for this element
+            if (typingIntervals.has(elementId)) {
+                clearInterval(typingIntervals.get(elementId));
+            }
+            
+            el.dataset.fullText = text;
+            el.innerText = '';
+            el.classList.add('typing');
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    el.innerText += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    el.classList.remove('typing');
+                    typingIntervals.delete(elementId);
+                }
+            }, 25); // Speed of typing (ms per char)
+            
+            typingIntervals.set(elementId, interval);
+        }
+
         function updateTelemetry(key, data, name) {
             document.getElementById(`${key}-tele-title`).innerText = `TELEMETRÍA ${name}`;
-            document.getElementById(`${key}-strategy`).innerText = data.strategy || '...';
-            document.getElementById(`${key}-reasoning`).innerText = data.reasoning || '...';
+            
+            const strategy = data.strategy || 'INICIANDO PROTOCOLO...';
+            const reasoning = data.reasoning || 'CALIBRANDO SISTEMAS DE LOGÍSTICA...';
+            
+            typeWriter(`${key}-strategy`, strategy);
+            typeWriter(`${key}-reasoning`, reasoning);
         }
 
         function renderBoard(teamKey, teamData, tele) {
