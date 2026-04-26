@@ -1048,8 +1048,8 @@
 
             const container = document.getElementById('log-entries');
 
-            // Mostramos exactamente 24 registros
-            const latest = comms.slice(-24).reverse();
+            // Mostramos exactamente 20 registros
+            const latest = comms.slice(-20).reverse();
 
             container.innerHTML = latest.map((c, index) => {
                 const teamClass = c.agent === 'A' ? 'log-a' : 'log-b';
