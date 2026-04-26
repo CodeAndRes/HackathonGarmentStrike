@@ -521,6 +521,7 @@ def serialize_game_state(game: Game, finished: bool = None, winner: str = None, 
             "pedidos_encajados": sum(1 for s in board.ships if s.is_sunk),
             "total_pedidos": len(board.ships),
             "prendas_encajadas": sum(1 for res in board.shots_received.values() if res in ("hit", "sunk")),
+            "sunk_ships": [s.order_id for s in board.ships if s.is_sunk],
             "fleet": fleet,
             "board": board.visible_state(reveal_ships=True)
         }
