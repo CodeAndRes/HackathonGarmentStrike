@@ -366,13 +366,41 @@
 
         .log-entry {
             font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 5px 10px;
             background: rgba(255, 255, 255, 0.02);
-            animation: fadeIn 0.3s ease-out;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.5;
+            display: grid;
+            grid-template-columns: 40px 35px 1fr auto;
+            align-items: center;
+        }
+
+        .log-entry.latest-move {
+            background: rgba(0, 40, 40, 0.4); /* Fondo más denso */
+            opacity: 1;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left-width: 6px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .latest-move .move-main {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-weight: 800;
+        }
+
+        .latest-move .move-status {
+            color: #00d4ff;
+            font-weight: 900;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
         }
 
         @keyframes fadeIn {
@@ -657,7 +685,6 @@
             </div>
 
             <div class="moves-log">
-                <div class="log-header">REGISTRO DE OPERACIONES</div>
                 <div class="log-entries" id="log-entries"></div>
             </div>
         </div>
@@ -1007,9 +1034,24 @@
             // Tomamos los últimos 15 y les damos la vuelta (más nuevo arriba)
             const latest = comms.slice(-15).reverse();
 
-            container.innerHTML = latest.map(c => {
+            container.innerHTML = latest.map((c, index) => {
                 const teamClass = c.agent === 'A' ? 'log-a' : 'log-b';
+                const teamName = c.agent === 'A' ? 'alpha' : 'beta';
                 const teamColor = c.agent === 'A' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+                
+                if (index === 0) {
+                    // Banner destacado para la última jugada (Mostrando el Turno en lugar del nombre)
+                    return `
+                        <div class="log-entry latest-move ${teamClass}">
+                            <div class="move-main">
+                                <span style="color: ${teamColor}; opacity: 0.6; font-size: 0.8rem;">T${c.turn}</span>
+                                <span style="color: #fff; font-weight: 800;">${c.coord}</span>
+                            </div>
+                            <div class="move-status">${c.result.toUpperCase()}</div>
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="log-entry ${teamClass}">
                         <span style="color: ${teamColor}; opacity: 0.5; font-size: 0.6rem; font-weight: 900;">T${c.turn}</span>
