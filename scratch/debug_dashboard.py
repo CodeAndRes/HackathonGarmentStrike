@@ -72,7 +72,7 @@ def generate_mock_state():
 
 async def push_mock_data():
     """Bucle que envía datos cada 2 segundos."""
-    print("🛰️  Enviando datos de prueba al Dashboard...")
+    print("[LOG] Enviando datos de prueba al Dashboard...")
     while True:
         mock_state = generate_mock_state()
         await state.broadcast(mock_state)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     
     # 2. Esperamos un poco a que el servidor arranque
     time.sleep(2)
-    print("\n✅ Servidor de depuración listo en http://127.0.0.1:8000")
+    print("\n[OK] Servidor de depuracion listo en http://127.0.0.1:8000")
     
     # 3. Iniciamos el bucle de datos en el hilo principal
     asyncio.run(push_mock_data())

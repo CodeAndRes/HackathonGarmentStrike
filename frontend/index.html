@@ -147,16 +147,18 @@
             display: grid;
             grid-template-columns: var(--coord-num-width) repeat(10, 1fr);
             grid-template-rows: var(--coord-let-height) repeat(10, 1fr);
-            background: rgba(0, 0, 0, 0.5);
+            
+            /* Color de las líneas de la rejilla */
+            background-color: rgba(255, 255, 255, 0.08); 
+            gap: 1px; /* El secreto de la nitidez */
+            padding: 1px; /* Para el borde exterior */
+
             border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Recuperamos el marco */
             position: relative;
             aspect-ratio: 1 / 1;
-            /* Forzamos cuadrado perfecto */
-            overflow: visible;
-            /* Permitimos que el solape de 1px funcione */
+            overflow: hidden;
             margin: 0;
-            /* Pegado arriba */
         }
 
         .team-alpha .tactical-grid {
@@ -180,7 +182,8 @@
         .cell {
             aspect-ratio: 1 / 1;
             overflow: visible;
-            border: 0.5px solid rgba(255, 255, 255, 0.03);
+            background-color: #080c10; /* Fondo de la celda */
+            border: none;
         }
 
         .label {
@@ -188,6 +191,7 @@
             font-size: 0.75rem;
             font-weight: 700;
             opacity: 0.6;
+            background-color: #0d1218; /* Fondo de la etiqueta ligeramente distinto */
         }
 
         .label-alpha {
