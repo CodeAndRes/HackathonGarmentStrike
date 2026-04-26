@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ GARMENT STRIKE | Tactical Dashboard</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #050a0e;
@@ -92,9 +90,9 @@
         main {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 450px 1fr;
-            gap: 20px;
-            padding: 20px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px; /* Espacio mínimo entre columnas */
+            padding: 8px; /* Margen de pantalla mínimo */
             flex: 1;
             min-height: 0;
             align-items: start;
@@ -103,8 +101,10 @@
         .column {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            min-width: 0;
+            gap: 10px; /* Reducido para ganar espacio vertical */
+            height: calc(100vh - 80px); /* Ajuste preciso al alto de pantalla */
+            min-height: 0;
+            overflow: hidden;
         }
 
         .central-console-area {
@@ -269,9 +269,9 @@
 
         .score-group {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
+            flex-direction: row; /* Volvemos a horizontal */
+            align-items: flex-end; /* Alineados a la base */
+            gap: 10px;
         }
 
         .score-box {
@@ -304,20 +304,24 @@
 
         .score-stats {
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* Pedidos y prendas en la misma fila */
+            align-items: flex-end;
+            gap: 8px;
             font-family: 'JetBrains Mono', monospace;
             opacity: 0.6;
-            margin-top: -5px;
+            margin-bottom: 8px; /* Pequeño ajuste para que no toquen el suelo exacto */
         }
 
         .stat-pedidos {
             font-size: 0.65rem;
             letter-spacing: 1px;
+            white-space: nowrap;
         }
 
         .stat-prendas {
-            font-size: 0.8rem;
+            font-size: 0.65rem;
             font-weight: 700;
+            white-space: nowrap;
         }
 
         .score-divider {
@@ -325,7 +329,8 @@
             font-size: 1.2rem;
             opacity: 0.2;
             font-weight: 900;
-            padding: 0 15px;
+            padding: 0 10px;
+            margin-bottom: 5px;
         }
 
         .moves-log {
@@ -333,10 +338,19 @@
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            padding: 10px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            min-height: 0;
+            min-height: 0; /* Crucial para que flex: 1 funcione con scroll */
+        }
+
+        /* Scrollbar minimalista */
+        .moves-log::-webkit-scrollbar {
+            width: 4px;
+        }
+        .moves-log::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
         }
 
         .log-header {
@@ -359,15 +373,35 @@
         }
 
         .log-entry {
-            font-size: 0.75rem;
-            padding: 5px 10px;
-            background: rgba(255, 255, 255, 0.02);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.65rem;
+            padding: 3px 6px; /* Más estrecho */
+            background: rgba(255, 255, 255, 0.01);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
             font-family: 'JetBrains Mono', monospace;
-            opacity: 0.8; /* Más visible */
+            opacity: 0.8;
             display: grid;
-            grid-template-columns: 40px 35px 1fr auto;
+            grid-template-columns: 28px 25px 18px 1fr; /* Columnas ultra-ajustadas */
+            gap: 2px; /* Gap mínimo */
             align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.1;
+        }
+
+        /* Resaltados por color de equipo */
+        .log-a.log-hit { background: rgba(0, 255, 136, 0.08); opacity: 1; }
+        .log-b.log-hit { background: rgba(255, 75, 75, 0.08); opacity: 1; }
+        
+        .log-a.log-sunk { 
+            background: rgba(0, 255, 136, 0.15); 
+            border-left: 2px solid var(--accent-alpha);
+            opacity: 1; 
+        }
+        .log-b.log-sunk { 
+            background: rgba(255, 75, 75, 0.15); 
+            border-left: 2px solid var(--accent-beta);
+            opacity: 1; 
         }
 
         .log-entry.latest-move {
@@ -655,18 +689,18 @@
                 </div>
                 <div class="score-display">
                     <div class="score-group">
-                        <div class="score-box score-alpha" id="alpha-score">0</div>
-                        <div class="score-stats" style="align-items: center; text-align: center;">
+                        <div class="score-stats">
                             <span class="stat-pedidos" id="alpha-total-pedidos">/4 PEDIDOS</span>
                             <span class="stat-prendas score-alpha" id="alpha-prendas">0 PRENDAS</span>
                         </div>
+                        <div class="score-box score-alpha" id="alpha-score">0</div>
                     </div>
                     
                     <div class="score-divider">VS</div>
 
                     <div class="score-group">
                         <div class="score-box score-beta" id="beta-score">0</div>
-                        <div class="score-stats" style="align-items: center; text-align: center;">
+                        <div class="score-stats">
                             <span class="stat-pedidos" id="beta-total-pedidos">/4 PEDIDOS</span>
                             <span class="stat-prendas score-beta" id="beta-prendas">0 PRENDAS</span>
                         </div>
@@ -1014,17 +1048,35 @@
 
             const container = document.getElementById('log-entries');
 
-            // Tomamos los últimos 15 y les damos la vuelta (más nuevo arriba)
-            const latest = comms.slice(-15).reverse();
+            // Mostramos exactamente 24 registros
+            const latest = comms.slice(-24).reverse();
 
             container.innerHTML = latest.map((c, index) => {
                 const teamClass = c.agent === 'A' ? 'log-a' : 'log-b';
-                const teamName = c.agent === 'A' ? 'alpha' : 'beta';
                 const teamColor = c.agent === 'A' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+                
+                // Mapeo de iconos y clases de resaltado
+                let tacticalIcon = '·';
+                let highlightClass = '';
+                let iconScale = '1';
+
+                const res = c.result.toUpperCase();
+                if (res.includes('SUNK') || res.includes('SELLADO')) {
+                    tacticalIcon = '📦';
+                    highlightClass = 'log-sunk';
+                    iconScale = '1.3';
+                }
+                else if (res.includes('HIT') || res.includes('IMPACTO')) {
+                    tacticalIcon = '👕';
+                    highlightClass = 'log-hit';
+                    iconScale = '1.15';
+                }
+                else if (res.includes('MISS') || res.includes('PERDIDA')) tacticalIcon = '❔';
+                else if (res.includes('ALREADY')) tacticalIcon = '🚫';
                 
                 if (index === 0) {
                     // Banner destacado para la última jugada
-                    const isMiss = c.result.toUpperCase().includes('MISS');
+                    const isMiss = c.result.toUpperCase().includes('MISS') || c.result.toUpperCase().includes('ALREADY');
                     const statusText = isMiss ? 'PRENDA PERDIDA' : c.result.toUpperCase();
                     const statusColor = isMiss ? '#00d4ff' : '#fff';
                     const statusSize = isMiss ? '1.1rem' : '0.85rem';
@@ -1034,6 +1086,7 @@
                             <div class="move-main">
                                 <span style="color: ${teamColor}; opacity: 0.6; font-size: 0.8rem;">T${c.turn}</span>
                                 <span style="color: #fff; font-weight: 800;">${c.coord}</span>
+                                <span style="margin-left: 5px;">${tacticalIcon}</span>
                             </div>
                             <div class="move-status" style="color: ${statusColor}; font-size: ${statusSize}">${statusText}</div>
                         </div>
@@ -1041,11 +1094,13 @@
                 }
 
                 return `
-                    <div class="log-entry ${teamClass}">
-                        <span style="color: ${teamColor}; opacity: 0.5; font-size: 0.6rem; font-weight: 900;">T${c.turn}</span>
-                        <span style="color: #fff; font-weight: 600; margin: 0 5px;">${c.coord}</span>
-                        <span style="opacity: 0.7;">${c.result}</span>
-                        <span style="float: right;">${c.icon}</span>
+                    <div class="log-entry ${teamClass} ${highlightClass}">
+                        <span style="color: ${teamColor}; opacity: 0.6; font-weight: 900;">T${c.turn}</span>
+                        <span style="color: #fff; font-weight: 700;">${c.coord}</span>
+                        <span style="transform: scale(${iconScale}); display: inline-block;">${tacticalIcon}</span>
+                        <span style="color: #fff; font-family: 'Roboto Condensed', sans-serif; font-size: 0.85rem; letter-spacing: -0.3px; border-left: 1px solid rgba(255,255,255,0.05); padding-left: 4px;">
+                            ${c.reasoning || c.result}
+                        </span>
                     </div>
                 `;
             }).join('');
