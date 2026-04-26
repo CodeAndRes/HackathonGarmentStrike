@@ -13,58 +13,83 @@ sys.path.append(str(Path(__file__).parent.parent))
 from core.api import app, state, start_api_server
 
 def generate_mock_state():
-    """Genera un estado de juego falso para probar el diseño."""
-    # Un tablero de 10x10 con algunos barcos
+    """Genera un estado de juego con todas las combinaciones posibles."""
     board_a = [["~"] * 10 for _ in range(10)]
     board_b = [["~"] * 10 for _ in range(10)]
     
     fleet_a = {}
-    # Barco horizontal en 2,2
-    for c in range(2, 5):
-        board_a[2][c] = "#"
-        fleet_a[f"2,{c}"] = "ORDER_1"
-    # Barco vertical en 5,5
-    for r in range(5, 8):
-        board_a[r][5] = "X"
-        fleet_a[f"{r},5"] = "ORDER_2"
+    fleet_b = {}
+    
+    # --- EQUIPO ALPHA: MUESTRA DE ESTADOS ---
+    # 1. Pedido Inicial (Vacío) - Sector A1
+    board_a[0][0] = "#"; board_a[0][1] = "#"
+    fleet_a["0,0"] = "ORD_1"; fleet_a["0,1"] = "ORD_1"
+
+    # 2. Pedido a Medio Llenar (Hits) - Sector C3
+    board_a[2][2] = "#"; board_a[2][3] = "X"
+    fleet_a["2,2"] = "ORD_2"; fleet_a["2,3"] = "ORD_2"
+
+    # 3. Pedido Completado (Sunk/Sealed) - Sector F6
+    board_a[5][5] = "X"; board_a[5][6] = "X"
+    fleet_a["5,5"] = "ORD_3"; fleet_a["5,6"] = "ORD_3"
+
+    # 4. Fallos (Agua)
+    board_a[1][5] = "O"; board_a[8][2] = "❔"
+
+    # --- EQUIPO BETA: MUESTRA DE ATAQUE ---
+    # 1. Pedido vertical a medio llenar (Sector B5)
+    board_b[4][1] = "#"; board_b[5][1] = "X"; board_b[6][1] = "#"
+    fleet_b["4,1"] = "ORD_B1"; fleet_b["5,1"] = "ORD_B1"; fleet_b["6,1"] = "ORD_B1"
+
+    # 2. Pedido Horizontal COMPLETADO (Sunk) - Sector G2
+    board_b[1][6] = "X"; board_b[1][7] = "X"
+    fleet_b["1,6"] = "ORD_B2"; fleet_b["1,7"] = "ORD_B2"
+
+    # 3. Pedido en "L" (Conexiones mixtas) - Sector D8
+    board_b[7][3] = "#"; board_b[8][3] = "X"; board_b[8][4] = "#"
+    fleet_b["7,3"] = "ORD_B3"; fleet_b["8,3"] = "ORD_B3"; fleet_b["8,4"] = "ORD_B3"
+
+    # 4. Mezcla de fallos y escaneos
+    for r in range(0, 3): board_b[r][8] = "O"
+    board_b[9][9] = "❔"; board_b[0][9] = "O"
 
     return {
-        "turn": random.randint(1, 50),
+        "turn": random.randint(1, 100),
         "turn_agent": random.choice(["team_a", "team_b"]),
         "team_a": {
-            "name": "Alpha-Test",
+            "name": "AS_LOGISTICA",
             "pedidos_encajados": 1,
-            "total_pedidos": 5,
-            "prendas_encajadas": 12,
+            "total_pedidos": 4,
+            "prendas_encajadas": 5,
             "board": board_a,
             "fleet": fleet_a,
-            "sunk_ships": ["ORDER_2"]
+            "sunk_ships": ["ORD_3"]
         },
         "team_b": {
-            "name": "Beta-Mock",
-            "pedidos_encajados": 2,
-            "total_pedidos": 5,
-            "prendas_encajadas": 18,
+            "name": "BETA_STRIKE",
+            "pedidos_encajados": 1,
+            "total_pedidos": 4,
+            "prendas_encajadas": 3,
             "board": board_b,
-            "fleet": {},
-            "sunk_ships": []
+            "fleet": fleet_b,
+            "sunk_ships": ["ORD_B2"]
         },
         "comms": [
-            {"turn": 1, "agent": "A", "coord": "C3", "result": "HIT", "icon": "🎯", "reasoning": "Detectada debilidad en sector C3."},
-            {"turn": 2, "agent": "B", "coord": "E5", "result": "MISS", "icon": "💦", "reasoning": "Escaneo fallido en cuadrante E5."},
-            {"turn": 3, "agent": "A", "coord": "F5", "result": "SUNK", "icon": "📦", "reasoning": "Pedido ORDER_2 completado y sellado."}
+            {"turn": 45, "agent": "B", "coord": "B6", "result": "HIT", "icon": "🎯", "reasoning": "Impacto confirmado en logística enemiga."},
+            {"turn": 46, "agent": "A", "coord": "I1", "result": "MISS", "icon": "💦", "reasoning": "Sector vacío detectado."},
+            {"turn": 47, "agent": "A", "coord": "F6", "result": "SUNK", "icon": "📦", "reasoning": "PEDIDO ORD_3 COMPLETADO."}
         ],
         "telemetry": {
             "team_a": {
-                "strategy": "OPTIMIZACIÓN DE CARGA",
-                "reasoning": "Analizando patrones de distribución para maximizar el sellado de cajas en el sector norte.",
-                "cursor": "aiming",
-                "target": "B2"
+                "strategy": "DEFENSA ELÁSTICA",
+                "reasoning": "Priorizando el sellado de los pedidos más cercanos a completarse.",
+                "cursor": "focus"
             },
             "team_b": {
-                "strategy": "BÚSQUEDA AGRESIVA",
-                "reasoning": "El oponente ha sellado una caja. Priorizando interrupción de logística en zona central.",
-                "cursor": "idle"
+                "strategy": "ATAQUE SISTEMÁTICO",
+                "reasoning": "Barriendo cuadrantes B y C en busca de almacenes ocultos.",
+                "cursor": "aiming",
+                "target": "B5"
             }
         },
         "finished": False

@@ -148,10 +148,10 @@
             grid-template-columns: var(--coord-num-width) repeat(10, 1fr);
             grid-template-rows: var(--coord-let-height) repeat(10, 1fr);
             
-            /* Color de las líneas de la rejilla */
+            /* Fallback de color de líneas */
             background-color: rgba(255, 255, 255, 0.08); 
-            gap: 1px; /* El secreto de la nitidez */
-            padding: 1px; /* Para el borde exterior */
+            gap: 1px;
+            padding: 1px;
 
             border-radius: 4px;
             border: 1px solid rgba(255, 255, 255, 0.1); /* Recuperamos el marco */
@@ -164,11 +164,13 @@
         .team-alpha .tactical-grid {
             border-color: var(--accent-alpha);
             box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+            background-color: rgba(0, 255, 136, 0.12); /* Líneas Verdes */
         }
 
         .team-beta .tactical-grid {
             border-color: var(--accent-beta);
             box-shadow: 0 0 15px rgba(255, 75, 75, 0.1);
+            background-color: rgba(255, 75, 75, 0.12); /* Líneas Rojas */
         }
 
         .cell,
@@ -836,13 +838,17 @@
                         right: hasShip && c < numCols - 1 && teamData.fleet[`${r},${c + 1}`] == shipId
                     };
 
-                    let content = '';
                     const isSunk = shipId && teamData.sunk_ships && teamData.sunk_ships.includes(shipId);
+                    const opponentColor = teamKey === 'alpha' ? '#ff4b4b' : '#00ff88';
+                    const localColor = teamKey === 'alpha' ? '#00ff88' : '#ff4b4b';
 
+                    let content = '';
                     if (symbol === '#') {
-                        content = getHoloBoxSVG(teamColor, conn, false, false);
+                        content = getHoloBoxSVG(localColor, conn, false, false);
                     } else if (symbol === 'X') {
-                        content = getHoloBoxSVG(teamColor, conn, isSunk, true);
+                        // Si está hundido (SUNK), todo es del atacante. Si es HIT, caja local y prenda del atacante.
+                        const boxColor = isSunk ? opponentColor : localColor;
+                        content = getHoloBoxSVG(boxColor, conn, isSunk, true, opponentColor);
                     } else if (symbol === 'O') {
                         content = getHoloMissSVG();
                     } else if (symbol && symbol !== '~') {
@@ -920,9 +926,10 @@
 
         // --- SVG GENERATORS (Ported from holographics.py) ---
 
-        function getHoloBoxSVG(color, conn, isSealed, isHit) {
+        function getHoloBoxSVG(color, conn, isSealed, isHit, garmentColor) {
             const margin = 10; // Más margen para que se vea contenido
             const inset = 6;
+            const shirtColor = garmentColor || color;
 
             // Solape mínimo (0.5px) para evitar grietas sin salirse de la celda
             let ix1 = conn.left ? -0.5 : margin;
@@ -1015,7 +1022,7 @@
                     elements.push(`
                         <g transform="translate(50,50) scale(1.8) translate(-10,-11)">
                             <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" 
-                                  fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="0.9" class="master-holo-box"/>
+                                  fill="none" stroke="${shirtColor}" stroke-width="1.5" stroke-opacity="0.9" class="master-holo-box"/>
                         </g>
                     `);
                 }
