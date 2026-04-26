@@ -1111,6 +1111,7 @@
         function getHoloBoxSVG(color, conn, isSealed, isHit, garmentColor) {
             const margin = 10;
             const inset = 12; // Aumentado para más profundidad
+            const isVertical = conn.top || conn.bottom;
             const shirtColor = garmentColor || color;
 
             // Solape mínimo (0.5px) para evitar grietas sin salirse de la celda
@@ -1160,6 +1161,13 @@
                     elements.push(`<line x1="${tx1}" y1="${ty}" x2="${tx2}" y2="${ty}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>`);
                 }
 
+                // Seam Line (Unión de cartón) - Solo en el fondo
+                if (isVertical) {
+                    elements.push(`<line x1="50" y1="${by1}" x2="50" y2="${by2}" stroke="${color}" stroke-width="1.2" stroke-opacity="0.3"/>`);
+                } else {
+                    elements.push(`<line x1="${bx1}" y1="50" x2="${bx2}" y2="50" stroke="${color}" stroke-width="1.2" stroke-opacity="0.3"/>`);
+                }
+
                 // Label
                 if (!conn.right && !conn.bottom) {
                     elements.push(`
@@ -1177,8 +1185,12 @@
                 if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1} ${iy2} L ${bx1} ${by2} L ${bx1} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
                 if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx2} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
 
-                // Seam Line (Unión de cartón) - Muy fina y sutil
-                elements.push(`<line x1="${ix1}" y1="50" x2="${ix2}" y2="50" stroke="${color}" stroke-width="0.3" stroke-opacity="0.2" stroke-dasharray="1,2"/>`);
+                // Seam Line (Unión de cartón) - Solo en el rectángulo del fondo
+                if (isVertical) {
+                    elements.push(`<line x1="50" y1="${by1}" x2="50" y2="${by2}" stroke="${color}" stroke-width="1.2" stroke-opacity="0.4"/>`);
+                } else {
+                    elements.push(`<line x1="${bx1}" y1="50" x2="${bx2}" y2="50" stroke="${color}" stroke-width="1.2" stroke-opacity="0.4"/>`);
+                }
 
                 // Floor
                 let fPath = "";
