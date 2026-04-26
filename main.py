@@ -213,9 +213,10 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
         console.print("2. [yellow]Partida de Ejemplo (Alpha vs Beta)[/yellow]")
         console.print("3. [magenta]Partida Personalizada[/magenta]")
         console.print("4. [blue]Abrir Dashboard Táctico (Web)[/blue]")
-        console.print("5. [red]Salir[/red]")
+        console.print("5. [cyan]Gran Torneo (Bracket)[/cyan]")
+        console.print("6. [red]Salir[/red]")
 
-        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5"], default="5")
+        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6"], default="6")
 
         if choice == "1":
             import subprocess
@@ -415,6 +416,32 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                     break
 
         elif choice == "5":
+            import subprocess
+            import webbrowser
+            console.print("\n[bold cyan]Iniciando Gran Torneo...[/bold cyan]")
+            
+            # Launch FastAPI server in background
+            server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080"]
+            
+            try:
+                subprocess.Popen(
+                    server_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    shell=(os.name == 'nt')
+                )
+                console.print("[green](OK) API del Torneo iniciada en puerto 8080.[/green]")
+                console.print("[dim]Abriendo visualización del torneo...[/dim]")
+                time.sleep(2)
+                
+                # Open the tournament via the API server
+                webbrowser.open("http://localhost:8080")
+            except Exception as e:
+                console.print(f"[red]Error al lanzar el torneo: {e}[/red]")
+            
+            Prompt.ask("\nPresiona Enter para volver al menú")
+
+        elif choice == "6":
             console.print("[yellow]Saliendo...[/yellow]")
             break
 

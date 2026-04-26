@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garment Strike | Tournament Bracket</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05080a;
+            --panel-bg: rgba(10, 15, 20, 0.8);
+            --accent-blue: #00d4ff;
+            --accent-orange: #ff9d00;
+            --accent-green: #00ff88;
+            --accent-red: #ff4b4b;
+            --text-main: #e6edf3;
+            --border-dim: rgba(255, 255, 255, 0.1);
+            --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-dim);
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 5px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 8px 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: var(--accent-blue);
+            color: var(--bg-color);
+            box-shadow: var(--neon-shadow);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .tournament-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 60px 20px;
+            min-height: calc(100vh - 80px);
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            height: 100%;
+            gap: 40px;
+        }
+
+        .match-card {
+            width: 220px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-dim);
+            padding: 10px;
+            position: relative;
+            transition: border-color 0.3s;
+        }
+
+        .match-card.running {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 15px rgba(255, 157, 0, 0.2);
+        }
+
+        .match-card.finished {
+            border-color: var(--accent-green);
+        }
+
+        .team {
+            padding: 8px;
+            margin: 4px 0;
+            background: rgba(255,255,255,0.03);
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid transparent;
+        }
+
+        .team.winner {
+            color: var(--accent-green);
+            border-left-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .team.loser {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .match-id {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--bg-color);
+            padding: 0 5px;
+            font-size: 0.65rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .btn-run {
+            width: 100%;
+            margin-top: 10px;
+            font-size: 0.65rem;
+            padding: 5px;
+        }
+
+        /* Bracket Connectors (CSS lines) */
+        .round-q { margin-right: 40px; }
+        .round-s { margin-right: 40px; }
+
+        .winner-panel {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid var(--accent-orange);
+            background: rgba(255, 157, 0, 0.05);
+            box-shadow: 0 0 30px rgba(255, 157, 0, 0.1);
+        }
+
+        .winner-panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent-orange);
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .status-running { background: var(--accent-orange); color: black; }
+        .status-finished { background: var(--accent-green); color: black; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Garment Strike <span style="color: var(--accent-blue)">Tournament</span></h1>
+        <div class="controls">
+            <button onclick="setupTournament()">Inicializar Torneo</button>
+            <button onclick="resetTournament()" style="border-color: var(--accent-red); color: var(--accent-red);">Reset</button>
+        </div>
+    </div>
+
+    <div class="tournament-container">
+        <!-- Quarter Finals -->
+        <div class="round round-q" id="quarter-finals">
+            <div id="q1" class="match-card"></div>
+            <div id="q2" class="match-card"></div>
+            <div id="q3" class="match-card"></div>
+            <div id="q4" class="match-card"></div>
+        </div>
+
+        <!-- Semi Finals -->
+        <div class="round round-s" id="semi-finals">
+            <div id="s1" class="match-card"></div>
+            <div id="s2" class="match-card"></div>
+        </div>
+
+        <!-- Final -->
+        <div class="round round-f" id="final">
+            <div id="f1" class="match-card" style="width: 280px; border-width: 2px;"></div>
+            <div id="tournament-winner" class="winner-panel" style="display: none; margin-top: 40px;">
+                <h2>CAMPEÓN</h2>
+                <div id="champion-name" style="font-size: 2rem; font-weight: 900; font-family: 'Orbitron';">---</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8080";
+        let pollingInterval = null;
+
+        async function fetchBracket() {
+            try {
+                const response = await fetch(`${API_URL}/bracket`);
+                const data = await response.json();
+                renderBracket(data);
+                
+                // Check if we need to continue polling
+                const anyRunning = Object.values(data).some(m => m.status === "running");
+                if (!anyRunning && pollingInterval) {
+                    // We keep polling but slower? or just wait for next action
+                }
+            } catch (err) {
+                console.error("Error fetching bracket:", err);
+            }
+        }
+
+        function renderBracket(matches) {
+            for (const [id, match] of Object.entries(matches)) {
+                const el = document.getElementById(id);
+                if (!el) continue;
+
+                el.className = `match-card ${match.status}`;
+                
+                let html = `<div class="match-id">${id.toUpperCase()}</div>`;
+                
+                const renderTeam = (name) => {
+                    if (!name) return `<div class="team" style="color: #444;">TBD</div>`;
+                    const isWinner = match.winner === name;
+                    const isLoser = match.winner && match.winner !== name && match.winner !== "EMPATE";
+                    return `
+                        <div class="team ${isWinner ? 'winner' : ''} ${isLoser ? 'loser' : ''}">
+                            <span>${name}</span>
+                            ${isWinner ? '<span>🏆</span>' : ''}
+                        </div>
+                    `;
+                };
+
+                html += renderTeam(match.team_a);
+                html += renderTeam(match.team_b);
+
+                if (match.status === "pending" && match.team_a && match.team_b) {
+                    html += `<button class="btn-run" onclick="runMatch('${id}')">Iniciar Combate</button>`;
+                } else if (match.status === "running") {
+                    html += `<div style="text-align:center; padding: 5px;"><span class="status-badge status-running">En Combate...</span></div>`;
+                } else if (match.status === "finished") {
+                    html += `<div style="text-align:center; padding: 5px;"><span class="status-badge status-finished">Finalizado</span></div>`;
+                }
+
+                el.innerHTML = html;
+            }
+
+            // Global winner
+            if (matches.f1 && matches.f1.status === "finished") {
+                document.getElementById('tournament-winner').style.display = 'block';
+                document.getElementById('champion-name').innerText = matches.f1.winner;
+            } else {
+                document.getElementById('tournament-winner').style.display = 'none';
+            }
+        }
+
+        async function setupTournament() {
+            await fetch(`${API_URL}/setup`, { method: 'POST' });
+            fetchBracket();
+        }
+
+        async function resetTournament() {
+            if (confirm("¿Resetear todo el torneo?")) {
+                await fetch(`${API_URL}/reset`);
+                fetchBracket();
+            }
+        }
+
+        async function runMatch(id) {
+            await fetch(`${API_URL}/run/${id}`, { method: 'POST' });
+            fetchBracket();
+            if (!pollingInterval) {
+                pollingInterval = setInterval(fetchBracket, 2000);
+            }
+        }
+
+        // Initial fetch
+        fetchBracket();
+        // Constant slow polling
+        setInterval(fetchBracket, 5000);
+    </script>
+</body>
+</html>
