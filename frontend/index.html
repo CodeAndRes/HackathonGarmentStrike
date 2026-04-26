@@ -327,14 +327,31 @@
             flex-direction: column;
             gap: 4px;
             min-height: 80px;
+            opacity: 0.3; /* Por defecto apagado */
+            transition: all 0.4s ease;
+            filter: grayscale(0.8);
+        }
+
+        .tele-box.active-turn {
+            opacity: 1;
+            filter: grayscale(0);
+            border-color: rgba(255, 255, 255, 0.2);
+            animation: panel-glow 2s infinite alternate;
+        }
+
+        @keyframes panel-glow {
+            from { box-shadow: 0 0 5px rgba(255,255,255,0.05); }
+            to { box-shadow: 0 0 30px var(--team-color-glow); }
         }
 
         .tele-alpha {
             border-top: 2px solid var(--accent-alpha);
+            --team-color-glow: rgba(0, 255, 136, 0.6);
         }
 
         .tele-beta {
             border-top: 2px solid var(--accent-beta);
+            --team-color-glow: rgba(255, 75, 75, 0.6);
         }
 
         .tele-title {
@@ -655,8 +672,13 @@
 
                 const currentTeamName = state.turn_agent === 'team_a' ? (state.team_a.name || 'Alpha') : (state.team_b.name || 'Beta');
                 const indicator = document.getElementById('turn-indicator');
+                const isAlphaTurn = state.turn_agent === 'team_a';
                 indicator.innerText = `TURNO DE: ${currentTeamName}`;
-                indicator.style.color = state.turn_agent === 'team_a' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+                indicator.style.color = isAlphaTurn ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+
+                // Resaltar paneles de razonamiento
+                document.querySelector('.tele-alpha').classList.toggle('active-turn', isAlphaTurn);
+                document.querySelector('.tele-beta').classList.toggle('active-turn', !isAlphaTurn);
 
                 // 2. Telemetry
                 if (state.telemetry) {
