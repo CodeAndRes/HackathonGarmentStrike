@@ -269,7 +269,7 @@ class LLMClient:
             
             return {
                 "coordenada": coord,
-                "razonamiento": partial_razon or "Respuesta parcial (auto-recuperada)",
+                "razonamiento": f"{partial_razon} (auto-recuperada)".strip(),
                 "estrategia_aplicada": "Auto-recovery",
             }
         

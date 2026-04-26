@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ GARMENT STRIKE | Tactical Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050a0e;
+            --panel-bg: rgba(13, 17, 23, 0.9);
+            --accent-alpha: #00ff88;
+            --accent-beta: #ff4b4b;
+            --text-main: #e6edf3;
+            --grid-line: #1f2428;
+            --coord-num-width: 30px;
+            --coord-let-height: 30px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0d1b2a 0%, #050a0e 100%);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Orbitron', sans-serif;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            font-weight: 900;
+            letter-spacing: 3px;
+            font-size: 1.2rem;
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #ff4b4b;
+        }
+
+        .led-red {
+            width: 8px;
+            height: 8px;
+            background: #ff4b4b;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px #ff4b4b;
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 320px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-height: calc(100vh - 50px);
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        /* --- BOARD STYLES --- */
+        .board-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .team-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .team-alpha .team-name { color: var(--accent-alpha); }
+        .team-beta .team-name { color: var(--accent-beta); }
+
+        .tactical-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: var(--coord-num-width) repeat(10, 1fr);
+            grid-template-rows: var(--coord-let-height) repeat(10, 1fr);
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            aspect-ratio: 1;
+            max-width: 100%;
+        }
+
+        .team-alpha .tactical-grid { border-color: var(--accent-alpha); box-shadow: 0 0 15px rgba(0,255,136,0.1); }
+        .team-beta .tactical-grid { border-color: var(--accent-beta); box-shadow: 0 0 15px rgba(255,75,75,0.1); }
+
+        .cell {
+            border: 0.5px solid rgba(255,255,255,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        .label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            opacity: 0.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .label-alpha { color: var(--accent-alpha); }
+        .label-beta { color: var(--accent-beta); }
+
+        /* --- CENTRAL COLUMN --- */
+        .central-scoreboard {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .turn-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #00d4ff;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.75rem;
+            padding: 3px 15px;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+            white-space: nowrap;
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .score-val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+        }
+
+        .score-alpha { color: var(--accent-alpha); text-shadow: 0 0 10px var(--accent-alpha); }
+        .score-beta { color: var(--accent-beta); text-shadow: 0 0 10px var(--accent-beta); }
+        .score-divider { font-size: 1.5rem; opacity: 0.3; font-weight: 900; }
+
+        .moves-log {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .log-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .log-entries {
+            flex: 1;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 5px;
+        }
+
+        .log-entry {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.02);
+            animation: fadeIn 0.3s ease-out;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .log-a { border-left: 2px solid var(--accent-alpha); }
+        .log-b { border-left: 2px solid var(--accent-beta); }
+
+        /* --- TELEMETRY --- */
+        .telemetry-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 0 20px 20px 20px;
+        }
+
+        .tele-box {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .tele-alpha { border-top: 2px solid var(--accent-alpha); }
+        .tele-beta { border-top: 2px solid var(--accent-beta); }
+
+        .tele-title { font-family: 'Orbitron', sans-serif; font-size: 0.7rem; opacity: 0.5; }
+        .tele-strategy { color: #fff; font-weight: 700; font-size: 0.85rem; }
+        .tele-reasoning { font-size: 0.75rem; opacity: 0.7; font-style: italic; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes cellFlash {
+            0% { background: rgba(255,255,255,0.8); }
+            100% { background: transparent; }
+        }
+        .cell-flash { animation: cellFlash 0.5s ease-out; }
+
+        @keyframes aimPulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+        .aiming-mark {
+            width: 80%;
+            height: 80%;
+            border: 2px dashed #fff;
+            border-radius: 2px;
+            animation: aimPulse 0.5s infinite;
+        }
+
+        /* --- VICTORY OVERLAY --- */
+        #victory-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .vic-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            text-shadow: 0 0 30px #ffd700;
+            color: #ffd700;
+            margin-bottom: 20px;
+            animation: vicGlow 2s infinite;
+        }
+
+        @keyframes vicGlow {
+            0%, 100% { text-shadow: 0 0 20px #ffd700; }
+            50% { text-shadow: 0 0 50px #ffd700, 0 0 80px #ffae00; }
+        }
+
+        /* SVG Anim */
+        @keyframes neonPulse {
+            0%, 100% { filter: drop-shadow(0 0 2px var(--team-neon)) brightness(1); }
+            50% { filter: drop-shadow(0 0 8px var(--team-neon)) brightness(1.2); }
+        }
+        .master-holo-box { animation: neonPulse 2s infinite ease-in-out; }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">⚡ GARMENT STRIKE</div>
+        <div class="live-status">
+            <div class="led-red"></div>
+            LIVE TACTICAL STREAM
+        </div>
+    </header>
+
+    <main>
+        <!-- TEAM ALPHA COLUMN -->
+        <div class="column team-alpha">
+            <div class="team-header">
+                <div class="team-name" id="alpha-name">TEAM ALPHA</div>
+                <div class="team-stats" id="alpha-stats">0/0 CARGO</div>
+            </div>
+            <div class="tactical-grid" id="grid-alpha">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- CENTRAL COLUMN -->
+        <div class="column">
+            <div class="central-scoreboard">
+                <div class="turn-badge" id="turn-badge">TURNO #0</div>
+                <div class="score-display">
+                    <div class="score-val score-alpha" id="alpha-score">0</div>
+                    <div class="score-divider">VS</div>
+                    <div class="score-val score-beta" id="beta-score">0</div>
+                </div>
+                <div id="turn-indicator" style="font-size: 0.7rem; opacity: 0.5; font-family: 'Orbitron';">ESPERANDO MOTOR...</div>
+            </div>
+            <div class="moves-log">
+                <div class="log-header">REGISTRO DE OPERACIONES</div>
+                <div class="log-entries" id="log-entries">
+                    <!-- Logs go here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TEAM BETA COLUMN -->
+        <div class="column team-beta">
+            <div class="team-header" style="flex-direction: row-reverse;">
+                <div class="team-name" id="beta-name">TEAM BETA</div>
+                <div class="team-stats" id="beta-stats">0/0 CARGO</div>
+            </div>
+            <div class="tactical-grid" id="grid-beta">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <div class="telemetry-panels">
+        <div class="tele-box tele-alpha">
+            <div class="tele-title" id="alpha-tele-title">TELEMETRÍA ALPHA</div>
+            <div class="tele-strategy" id="alpha-strategy">...</div>
+            <div class="tele-reasoning" id="alpha-reasoning">...</div>
+        </div>
+        <div class="tele-box tele-beta">
+            <div class="tele-title" id="beta-tele-title">TELEMETRÍA BETA</div>
+            <div class="tele-strategy" id="beta-strategy">...</div>
+            <div class="tele-reasoning" id="beta-reasoning">...</div>
+        </div>
+    </div>
+
+    <div id="victory-overlay">
+        <div class="vic-title" id="victory-text">VICTORIA</div>
+        <div id="victory-subtext" style="font-family: 'Orbitron'; font-size: 1.5rem; opacity: 0.8;">TEAM ALPHA</div>
+        <button onclick="location.reload()" style="margin-top: 40px; background: transparent; border: 1px solid #ffd700; color: #ffd700; padding: 10px 30px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px;">REINICIAR INTERFAZ</button>
+    </div>
+
+    <script>
+        const API_URL = `ws://${window.location.hostname || '127.0.0.1'}:8000/ws/tactical`;
+        const STATE_URL = `http://${window.location.hostname || '127.0.0.1'}:8000/api/state`;
+        let lastState = null;
+        let ws = null;
+        let pollingInterval = null;
+
+        function connect() {
+            console.log("Intentando conectar a WebSocket...");
+            ws = new WebSocket(API_URL);
+            
+            ws.onmessage = (event) => {
+                const state = JSON.parse(event.data);
+                updateDashboard(state);
+                // Si el WS funciona, nos aseguramos de que el polling esté apagado
+                stopPolling();
+            };
+
+            ws.onclose = () => {
+                console.warn("WebSocket cerrado. Iniciando polling de emergencia...");
+                document.getElementById('turn-indicator').innerText = "WS DESCONECTADO - USANDO POLLING";
+                startPolling();
+                setTimeout(connect, 5000); // Intentar reconectar WS cada 5s
+            };
+
+            ws.onerror = (err) => {
+                console.error("Error en WebSocket:", err);
+                startPolling();
+            };
+
+            ws.onopen = () => {
+                console.log("WebSocket conectado correctamente.");
+                document.getElementById('turn-indicator').innerText = "SISTEMA EN LÍNEA (WS)";
+                stopPolling();
+            };
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            console.log("Iniciando polling cada 2s...");
+            pollingInterval = setInterval(async () => {
+                try {
+                    const resp = await fetch(STATE_URL);
+                    if (resp.ok) {
+                        const state = await resp.json();
+                        if (state && !state.error) {
+                            updateDashboard(state);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error en polling:", err);
+                }
+            }, 2000);
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                console.log("Deteniendo polling...");
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error("GLOBAL ERROR:", msg, "at", url, ":", lineNo);
+            return false;
+        };
+
+        function updateDashboard(state) {
+            try {
+                if (!state || !state.team_a || !state.team_b) {
+                    console.warn("Invalid state received:", state);
+                    return;
+                }
+
+                // 1. Header & Scoreboard
+                document.getElementById('turn-badge').innerText = `TURNO #${state.turn || 0}`;
+                document.getElementById('alpha-score').innerText = state.team_a.pedidos_encajados ?? 0;
+                document.getElementById('beta-score').innerText = state.team_b.pedidos_encajados ?? 0;
+                document.getElementById('alpha-name').innerText = state.team_a.name || 'Alpha';
+                document.getElementById('beta-name').innerText = state.team_b.name || 'Beta';
+                document.getElementById('alpha-stats').innerText = `${state.team_a.pedidos_encajados ?? 0}/${state.team_a.total_pedidos ?? 0} PEDIDOS`;
+                document.getElementById('beta-stats').innerText = `${state.team_b.pedidos_encajados ?? 0}/${state.team_b.total_pedidos ?? 0} PEDIDOS`;
+
+                const currentTeamName = state.turn_agent === 'team_a' ? (state.team_a.name || 'Alpha') : (state.team_b.name || 'Beta');
+                const indicator = document.getElementById('turn-indicator');
+                indicator.innerText = `TURNO DE: ${currentTeamName}`;
+                indicator.style.color = state.turn_agent === 'team_a' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+
+                // 2. Telemetry
+                if (state.telemetry) {
+                    updateTelemetry('alpha', state.telemetry.team_a || {}, state.team_a.name || 'Alpha');
+                    updateTelemetry('beta', state.telemetry.team_b || {}, state.team_b.name || 'Beta');
+                }
+
+                // 3. Boards
+                renderBoard('alpha', state.team_a, (state.telemetry || {}).team_a);
+                renderBoard('beta', state.team_b, (state.telemetry || {}).team_b);
+
+                // 4. Log
+                if (state.comms) updateLog(state.comms);
+
+                // 5. Victory
+                const overlay = document.getElementById('victory-overlay');
+                if (state.finished) {
+                    overlay.style.display = 'flex';
+                    document.getElementById('victory-subtext').innerText = (state.winner || "EMPATE").toUpperCase();
+                    if (state.winner === state.team_a.name) {
+                        document.getElementById('victory-text').style.color = 'var(--accent-alpha)';
+                    } else if (state.winner === state.team_b.name) {
+                        document.getElementById('victory-text').style.color = 'var(--accent-beta)';
+                    }
+                } else {
+                    overlay.style.display = 'none';
+                }
+
+                lastState = state;
+            } catch (err) {
+                console.error("Error in updateDashboard:", err);
+            }
+        }
+
+        function updateTelemetry(key, data, name) {
+            document.getElementById(`${key}-tele-title`).innerText = `TELEMETRÍA ${name}`;
+            document.getElementById(`${key}-strategy`).innerText = data.strategy || '...';
+            document.getElementById(`${key}-reasoning`).innerText = data.reasoning || '...';
+        }
+
+        function renderBoard(teamKey, teamData, tele) {
+            const grid = document.getElementById(`grid-${teamKey}`);
+            const teamColor = teamKey === 'alpha' ? '#00ff88' : '#ff4b4b';
+            
+            const numRows = teamData.board.length;
+            const numCols = teamData.board[0].length;
+
+            // Re-render full grid if size changed or not existing
+            if (grid.children.length === 0 || grid.dataset.size != numRows) {
+                grid.innerHTML = '';
+                grid.dataset.size = numRows;
+                grid.style.gridTemplateColumns = `var(--coord-num-width) repeat(${numCols}, 1fr)`;
+                grid.style.gridTemplateRows = `var(--coord-let-height) repeat(${numRows}, 1fr)`;
+
+                // Column labels: A B C D... (letters = cols in engine)
+                grid.appendChild(createCell('', 'label'));
+                const COLS = 'ABCDEFGHIJ';
+                for(let c=0; c<numCols; c++) grid.appendChild(createCell(COLS[c], `label label-${teamKey}`));
+                
+                // Row labels: 1 2 3... (numbers = rows in engine)
+                for(let r=0; r<numRows; r++) {
+                    grid.appendChild(createCell(r+1, `label label-${teamKey}`));
+                    for(let c=0; c<numCols; c++) {
+                        grid.appendChild(createCell('', 'cell', `cell-${teamKey}-${r}-${c}`));
+                    }
+                }
+            }
+
+            // Update cells
+            for(let r=0; r<numRows; r++) {
+                for(let c=0; c<numCols; c++) {
+                    const cellId = `cell-${teamKey}-${r}-${c}`;
+                    const cellEl = document.getElementById(cellId);
+                    const symbol = teamData.board[r][c];
+                    const shipId = teamData.fleet ? teamData.fleet[`${r},${c}`] : null;
+                    
+                    const stateKey = teamKey === 'alpha' ? 'team_a' : 'team_b';
+                    const oldSymbol = lastState ? lastState[stateKey].board[r][c] : null;
+                    
+                    // Check connections for smart borders
+                    const hasShip = shipId && shipId !== 'NONE';
+                    const conn = {
+                        top:    hasShip && r > 0          && teamData.fleet[`${r-1},${c}`] === shipId,
+                        bottom: hasShip && r < numRows-1  && teamData.fleet[`${r+1},${c}`] === shipId,
+                        left:   hasShip && c > 0          && teamData.fleet[`${r},${c-1}`] === shipId,
+                        right:  hasShip && c < numCols-1  && teamData.fleet[`${r},${c+1}`] === shipId
+                    };
+
+                    let content = '';
+                    if (symbol === '#') {
+                        content = getHoloBoxSVG(teamColor, conn, true, false);
+                    } else if (symbol === 'X') {
+                        content = getHoloBoxSVG(teamColor, conn, false, true);
+                    } else if (symbol === 'O') {
+                        content = getHoloMissSVG();
+                    } else if (symbol && symbol !== '~') {
+                        // Fallback for emojis or other symbols
+                        content = `<div style="font-size: 1.2rem;">${symbol}</div>`;
+                    }
+
+                    // Check if aiming — engine coord format: "A3" = col A (index 0), row 3 (index 2)
+                    if (tele && tele.cursor === 'aiming' && tele.target) {
+                        const tColIdx = 'ABCDEFGHIJ'.indexOf(tele.target[0]);  // col index
+                        const tRowIdx = parseInt(tele.target.substring(1)) - 1; // row index (0-based)
+                        if (tRowIdx === r && tColIdx === c) {
+                            content += '<div class="aiming-mark"></div>';
+                        }
+                    }
+
+                    if (cellEl.innerHTML !== content) {
+                        cellEl.innerHTML = content;
+                        if (oldSymbol !== symbol && oldSymbol !== null) {
+                            cellEl.classList.add('cell-flash');
+                            setTimeout(() => cellEl.classList.remove('cell-flash'), 500);
+                        }
+                    }
+                }
+            }
+        }
+
+        function createCell(text, className, id) {
+            const div = document.createElement('div');
+            div.className = className;
+            if (id) div.id = id;
+            div.innerText = text;
+            return div;
+        }
+
+        function updateLog(comms) {
+            const container = document.getElementById('log-entries');
+            const currentCount = container.children.length;
+            if (comms.length > currentCount) {
+                for (let i = currentCount; i < comms.length; i++) {
+                    const c = comms[i];
+                    const div = document.createElement('div');
+                    div.className = `log-entry log-${c.agent.toLowerCase()}`;
+                    div.innerHTML = `<strong>T${c.turn} [${c.agent}] ${c.coord}:</strong> ${c.result} ${c.icon}`;
+                    container.appendChild(div);
+                }
+                // Limit to 20 entries
+                while (container.children.length > 20) {
+                    container.removeChild(container.firstChild);
+                }
+            }
+        }
+
+        // --- SVG GENERATORS (Ported from holographics.py) ---
+
+        function getHoloBoxSVG(color, conn, isSealed, isHit) {
+            const margin = 7;
+            const inset = 10;
+            
+            let ix1 = conn.left ? 0 : margin;
+            let ix2 = conn.right ? 100 : 100 - margin;
+            let iy1 = conn.top ? 0 : margin;
+            let iy2 = conn.bottom ? 100 : 100 - margin;
+            
+            let bx1 = conn.left ? 0 : margin + inset;
+            let bx2 = conn.right ? 100 : 100 - (margin + inset);
+            let by1 = conn.top ? 0 : margin + inset;
+            let by2 = conn.bottom ? 100 : 100 - (margin + inset);
+
+            let elements = [];
+
+            if (isSealed) {
+                // Background
+                let path = `M ${ix1} ${iy1}`;
+                if (!conn.top) path += ` L ${ix2} ${iy1}`; else path += ` M ${ix2} ${iy1}`;
+                if (!conn.right) path += ` L ${ix2} ${iy2}`; else path += ` M ${ix2} ${iy2}`;
+                if (!conn.bottom) path += ` L ${ix1} ${iy2}`; else path += ` M ${ix1} ${iy2}`;
+                if (!conn.left) path += ` L ${ix1} ${iy1}`;
+                
+                elements.push(`<path d="${path}" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="2" class="master-holo-box"/>`);
+                
+                // Tape
+                const isVertical = conn.top || conn.bottom;
+                if (isVertical) {
+                    const tx = (ix1 + ix2) / 2;
+                    const ty1 = conn.top ? 0 : iy1;
+                    const ty2 = conn.bottom ? 100 : iy2;
+                    elements.push(`<line x1="${tx}" y1="${ty1}" x2="${tx}" y2="${ty2}" stroke="${color}" stroke-width="15" stroke-opacity="0.2"/>`);
+                    elements.push(`<line x1="${tx}" y1="${ty1}" x2="${tx}" y2="${ty2}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>`);
+                } else {
+                    const ty = (iy1 + iy2) / 2;
+                    const tx1 = conn.left ? 0 : ix1;
+                    const tx2 = conn.right ? 100 : ix2;
+                    elements.push(`<line x1="${tx1}" y1="${ty}" x2="${tx2}" y2="${ty}" stroke="${color}" stroke-width="15" stroke-opacity="0.2"/>`);
+                    elements.push(`<line x1="${tx1}" y1="${ty}" x2="${tx2}" y2="${ty}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>`);
+                }
+
+                // Label
+                if (!conn.right && !conn.bottom) {
+                    elements.push(`
+                        <g transform="translate(${ix2-28}, ${iy2-22}) rotate(5)">
+                            <rect width="20" height="14" fill="#fff" rx="1" fill-opacity="0.8"/>
+                            <line x1="3" y1="4" x2="17" y2="4" stroke="#000" stroke-width="1.5" stroke-opacity="0.5"/>
+                            <line x1="3" y1="7" x2="12" y2="7" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>
+                        </g>
+                    `);
+                }
+            } else {
+                // Walls
+                if (!conn.top) elements.push(`<path d="M ${ix1} ${iy1} L ${ix2} ${iy1} L ${bx2} ${by1} L ${bx1} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
+                if (!conn.bottom) elements.push(`<path d="M ${ix1} ${iy2} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx1} ${by2} Z" fill="${color}" fill-opacity="0.1"/>`);
+                if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1} ${iy2} L ${bx1} ${by2} L ${bx1} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
+                if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx2} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
+                
+                // Floor
+                let fPath = "";
+                if (!conn.top) fPath += ` M ${bx1} ${by1} L ${bx2} ${by1}`;
+                if (!conn.bottom) fPath += ` M ${bx1} ${by2} L ${bx2} ${by2}`;
+                if (!conn.left) fPath += ` M ${bx1} ${by1} L ${bx1} ${by2}`;
+                if (!conn.right) fPath += ` M ${bx2} ${by1} L ${bx2} ${by2}`;
+                elements.push(`<path d="${fPath}" fill="none" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+
+                // Outer Perim
+                let pPath = "";
+                if (!conn.top) pPath += ` M ${ix1} ${iy1} L ${ix2} ${iy1}`;
+                if (!conn.bottom) pPath += ` M ${ix1} ${iy2} L ${ix2} ${iy2}`;
+                if (!conn.left) pPath += ` M ${ix1} ${iy1} L ${ix1} ${iy2}`;
+                if (!conn.right) pPath += ` M ${ix2} ${iy1} L ${ix2} ${iy2}`;
+                elements.push(`<path d="${pPath}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity="0.8"/>`);
+
+                // Diagonals
+                if (!conn.left && !conn.top) elements.push(`<line x1="${ix1}" y1="${iy1}" x2="${bx1}" y2="${by1}" stroke="${color}" stroke-width="1" stroke-opacity="0.4"/>`);
+                if (!conn.right && !conn.top) elements.push(`<line x1="${ix2}" y1="${iy1}" x2="${bx2}" y2="${by1}" stroke="${color}" stroke-width="1" stroke-opacity="0.4"/>`);
+                if (!conn.left && !conn.bottom) elements.push(`<line x1="${ix1}" y1="${iy2}" x2="${bx1}" y2="${by2}" stroke="${color}" stroke-width="1" stroke-opacity="0.4"/>`);
+                if (!conn.right && !conn.bottom) elements.push(`<line x1="${ix2}" y1="${iy2}" x2="${bx2}" y2="${by2}" stroke="${color}" stroke-width="1" stroke-opacity="0.4"/>`);
+
+                // Shirt icon if hit
+                if (isHit) {
+                    elements.push(`
+                        <g transform="translate(50,50) scale(1.8) translate(-10,-11)">
+                            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" 
+                                  fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="0.9" class="master-holo-box"/>
+                        </g>
+                    `);
+                }
+
+                // Flaps
+                const fH = 8;
+                const fW = 8;
+                if (!conn.top) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1+4} ${iy1-fH} L ${ix2-4} ${iy1-fH} L ${ix2} ${iy1} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                if (!conn.bottom) elements.push(`<path d="M ${ix1} ${iy2} L ${ix1+4} ${iy2+fH} L ${ix2-4} ${iy2+fH} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1-fW} ${iy1+4} L ${ix1-fW} ${iy2-4} L ${ix1} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2+fW} ${iy1+4} L ${ix2+fW} ${iy2-4} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+            }
+
+            return `<svg viewBox="0 0 100 100" style="overflow:visible; width:100%; height:100%;">${elements.join('')}</svg>`;
+        }
+
+        function getHoloMissSVG() {
+            return `
+                <svg viewBox="0 0 100 100" style="width:70%; height:70%; opacity:0.3; transform: rotate(45deg);">
+                    <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" 
+                          fill="none" stroke="#9badc9" stroke-width="2" transform="translate(30,30) scale(1.5)"/>
+                </svg>
+            `;
+        }
+
+        // Start connection
+        connect();
+    </script>
+</body>
+</html>

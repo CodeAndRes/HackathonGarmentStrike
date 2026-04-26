@@ -34,3 +34,5 @@ models_catalog:
   deepseek:
     - "deepseek/deepseek-chat"
     - "deepseek/deepseek-reasoner"
+  especial:
+    - "offline"

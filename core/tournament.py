@@ -310,10 +310,9 @@ def run_match(
             )
             forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
 
-            # -- ESCENA 0: RESET Y FOCO (Borrar textos del equipo actual para el inicio del turno) --
+            # Reset telemetría del equipo activo antes de pedir el movimiento
             if export_json:
                 _write_game_state(game, override_telemetry={current: {"strategy": "", "reasoning": "", "cursor": None}})
-            time.sleep(1.0) # 2 ciclos de polling
 
             try:
                 move: AgentMove = active_client.get_move(
@@ -335,31 +334,14 @@ def run_match(
                 tokens[current]["p"] += move.prompt_tokens
                 tokens[current]["c"] += move.completion_tokens
 
-                # -- FASE 0: RESET --
+                # Emitir telemetría pre-disparo (el frontend anima a su ritmo)
                 if export_json:
-                    _write_game_state(game, override_telemetry={current: {"strategy": "", "reasoning": "", "cursor": "focus"}})
-                time.sleep(0.5) 
-
-                # -- FASE 1: OBJETIVO --
-                if export_json:
-                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": "", "cursor": "strategy"}})
-                time.sleep(1.5) 
-
-                # -- FASE 2: ANÁLISIS --
-                if export_json:
-                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": razon, "cursor": "reasoning"}})
-                time.sleep(3.0)
-
-                # -- FASE 3: IMPACTO --
-                result = game.apply_move(col, row, razon, estrategia)
-                if export_json:
-                    _write_game_state(game, override_telemetry={current: {"strategy": estrategia, "reasoning": razon, "cursor": "impact"}})
-                time.sleep(1.0)
-
-                # -- FASE 4: RESULTADO FINAL --
-                if export_json:
-                    _write_game_state(game) 
-                time.sleep(3.0) 
+                    _write_game_state(game, override_telemetry={current: {
+                        "strategy": estrategia,
+                        "reasoning": razon,
+                        "cursor": "aiming",
+                        "target": move.coordenada
+                    }})
 
             except Exception as e:
                 api_errors[current] += 1
@@ -380,13 +362,17 @@ def run_match(
             if lat > 0:
                 lats[current].append(lat)
 
-            # -- ESCENA 3: IMPACTO (Se ejecuta el movimiento, desaparece el cursor) --
+            # Ejecutar el movimiento UNA SOLA VEZ
             result = game.apply_move(col, row, razon, estrategia)
             if result in ("hit", "sunk"):
                 hits_count[current] += 1
 
             if export_json:
                 _write_game_state(game)
+            
+            # Pequeña pausa para que el frontend procese el evento
+            if export_json:
+                time.sleep(0.3)
 
             if result == "already_shot":
                 wasted[current] += 1
@@ -557,7 +543,7 @@ def _write_game_state(game: Game, finished: bool = None, winner: str = None, ove
     # 2. PUSH a la API en tiempo real
     try:
         # Usamos un timeout muy corto para no bloquear el motor si la API no responde
-        requests.post("http://127.0.0.1:8000/api/event", json=_sanitize(state), timeout=0.05)
+        requests.post("http://127.0.0.1:8000/api/event", json=_sanitize(state), timeout=1.0)
     except Exception:
         pass # Silencioso si el servidor API no está arriba
 

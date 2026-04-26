@@ -63,7 +63,13 @@ def cmd_play(args: argparse.Namespace) -> None:
     reload_configurations()
     
     # Iniciar servidor de eventos tácticos (Real-time Bridge)
-    threading.Thread(target=start_api_server, daemon=True).start()
+    server_thread = threading.Thread(target=start_api_server, daemon=True)
+    server_thread.start()
+    
+    # CRÍTICO: Esperar a que el servidor esté listo antes de iniciar el motor
+    # Sin esto, los primeros eventos se pierden porque el servidor no está escuchando aún.
+    time.sleep(1.5)
+    console.print("[dim green]API táctica lista en http://127.0.0.1:8000[/dim green]")
     
     from core.llm_client import LLMClient
     from core.tournament import AgentConfig, run_match
@@ -237,7 +243,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             
             console.print("\n[bold]Modo de Visualización:[/bold]")
             console.print("1. Clásica (Terminal)")
-            console.print("2. Táctica (Web Dashboard)")
+            console.print("2. Táctica (Dashboard Web — abrir http://127.0.0.1:8000)")
             v = Prompt.ask("Elige", choices=["1", "2"], default="1")
             args.tactical = (v == "2")
             
@@ -250,28 +256,12 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
 
         elif choice == "4":
-            import subprocess
             import webbrowser
             
             console.print("\n[bold blue]Iniciando Dashboard Táctico...[/bold blue]")
-            # Launch streamlit in the background using the current python environment
-            cmd = [sys.executable, "-m", "streamlit", "run", "Interface.py"]
-            
-            try:
-                # Use Popen to run in background without blocking the menu
-                subprocess.Popen(
-                    cmd, 
-                    cwd="frontend", 
-                    stdout=subprocess.DEVNULL, 
-                    stderr=subprocess.DEVNULL,
-                    shell=(os.name == 'nt') # Necessary on Windows for some envs
-                )
-                console.print("[green](OK) Servidor Streamlit lanzado en segundo plano.[/green]")
-                console.print("[dim]Abriendo navegador en http://localhost:8501...[/dim]")
-                time.sleep(2)
-                webbrowser.open("http://localhost:8501")
-            except Exception as e:
-                console.print(f"[red]Error al lanzar el dashboard: {e}[/red]")
+            console.print("[dim]El servidor API se inicia automáticamente al lanzar una partida.[/dim]")
+            console.print("[dim]Abriendo el dashboard en el navegador...[/dim]")
+            webbrowser.open("http://127.0.0.1:8000")
             
             Prompt.ask("\nPresiona Enter para volver al menú")
 
@@ -424,7 +414,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                 elif sub_choice == "7":
                     break
 
-        elif choice == "4":
+        elif choice == "5":
             console.print("[yellow]Saliendo...[/yellow]")
             break
 
