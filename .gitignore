@@ -40,3 +40,4 @@ logs/
 # Frontend
 frontend/.venv/
 frontend/__pycache__/
+Refs/

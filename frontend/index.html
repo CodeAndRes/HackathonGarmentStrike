@@ -250,9 +250,11 @@
         }
 
         .score-divider {
-            font-size: 1.5rem;
-            opacity: 0.3;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            opacity: 0.15;
             font-weight: 900;
+            letter-spacing: 5px;
         }
 
         .moves-log {
@@ -364,12 +366,15 @@
             color: #fff;
             font-weight: 700;
             font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .tele-reasoning {
             font-size: 0.75rem;
             opacity: 0.7;
             font-style: italic;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.4;
         }
 
         /* --- ANIMATIONS --- */
@@ -694,11 +699,26 @@
                 // 4. Log
                 if (state.comms) updateLog(state.comms);
 
-                // 5. Victory
+                // 5. Victory & Status LED
                 const overlay = document.getElementById('victory-overlay');
+                const liveLed = document.querySelector('.led-red');
+                const liveText = document.querySelector('.live-status');
+
                 if (state.finished) {
                     overlay.style.display = 'flex';
                     document.getElementById('victory-subtext').innerText = (state.winner || "EMPATE").toUpperCase();
+                    
+                    // Apagar LED
+                    if (liveLed) {
+                        liveLed.style.animation = 'none';
+                        liveLed.style.background = '#444';
+                        liveLed.style.boxShadow = 'none';
+                    }
+                    if (liveText) {
+                        liveText.style.color = '#666';
+                        liveText.innerText = 'MATCH OVER';
+                    }
+
                     if (state.winner === state.team_a.name) {
                         document.getElementById('victory-text').style.color = 'var(--accent-alpha)';
                     } else if (state.winner === state.team_b.name) {
@@ -706,6 +726,16 @@
                     }
                 } else {
                     overlay.style.display = 'none';
+                    // Restaurar LED si no ha terminado
+                    if (liveLed) {
+                        liveLed.style.animation = 'pulse-red 1s infinite';
+                        liveLed.style.background = '#ff4b4b';
+                        liveLed.style.boxShadow = '0 0 10px #ff4b4b';
+                    }
+                    if (liveText) {
+                        liveText.style.color = '#ff4b4b';
+                        liveText.innerText = 'LIVE TACTICAL STREAM';
+                    }
                 }
 
                 lastState = state;
