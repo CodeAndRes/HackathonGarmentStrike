@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garment Strike | Tournament Bracket</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #05080a;
@@ -18,17 +21,21 @@
             --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: 'JetBrains Mono', monospace;
             overflow-x: hidden;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 70%),
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
             background-size: 100% 100%, 40px 40px, 40px 40px;
         }
 
@@ -38,7 +45,7 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-dim);
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
         }
 
@@ -96,12 +103,41 @@
         }
 
         .match-card {
-            width: 220px;
+            width: 280px;
+            /* Ajustado para 1080p */
             background: var(--panel-bg);
             border: 1px solid var(--border-dim);
-            padding: 10px;
+            padding: 15px;
             position: relative;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .match-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        /* SVG connector overlay */
+        #bracket-svg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+            justify-content: center;
+        }
+
+        .round-q {
+            gap: 180px;
         }
 
         .match-card.running {
@@ -114,10 +150,11 @@
         }
 
         .team {
-            padding: 8px;
-            margin: 4px 0;
-            background: rgba(255,255,255,0.03);
-            font-size: 0.85rem;
+            padding: 10px;
+            margin: 6px 0;
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 1.1rem;
+            /* Letra más grande */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -141,21 +178,29 @@
             left: 10px;
             background: var(--bg-color);
             padding: 0 5px;
-            font-size: 0.65rem;
-            color: #666;
+            font-size: 0.8rem;
+            /* Letra más grande */
+            color: #888;
+            /* Un poco más claro */
             font-weight: bold;
         }
 
         .btn-run {
             width: 100%;
             margin-top: 10px;
-            font-size: 0.65rem;
-            padding: 5px;
+            font-size: 0.8rem;
+            /* Letra más grande */
+            padding: 8px;
         }
 
         /* Bracket Connectors (CSS lines) */
-        .round-q { margin-right: 40px; }
-        .round-s { margin-right: 40px; }
+        .round-q {
+            margin-right: 40px;
+        }
+
+        .round-s {
+            margin-right: 40px;
+        }
 
         .winner-panel {
             text-align: center;
@@ -178,40 +223,119 @@
             text-transform: uppercase;
         }
 
-        .status-running { background: var(--accent-orange); color: black; }
-        .status-finished { background: var(--accent-green); color: black; }
+        .status-running {
+            background: var(--accent-orange);
+            color: black;
+        }
+
+        .status-finished {
+            background: var(--accent-green);
+            color: black;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>Garment Strike <span style="color: var(--accent-blue)">Tournament</span></h1>
         <div class="controls">
             <button onclick="setupTournament()">Inicializar Torneo</button>
-            <button onclick="resetTournament()" style="border-color: var(--accent-red); color: var(--accent-red);">Reset</button>
+            <button onclick="resetTournament()"
+                style="border-color: var(--accent-red); color: var(--accent-red);">Reset</button>
         </div>
     </div>
 
-    <div class="tournament-container">
-        <!-- Quarter Finals -->
-        <div class="round round-q" id="quarter-finals">
-            <div id="q1" class="match-card"></div>
-            <div id="q2" class="match-card"></div>
-            <div id="q3" class="match-card"></div>
-            <div id="q4" class="match-card"></div>
+    <style>
+        .tournament-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            /* Reducido para 1080p */
+            padding: 40px;
+            min-height: calc(100vh - 80px);
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .side-col {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            /* Coincide con 20+20 */
+            flex: 1;
+            min-width: 380px;
+        }
+
+        .left-col {
+            justify-content: flex-end;
+        }
+
+        .right-col {
+            justify-content: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .center-final {
+            width: 320px;
+            /* Ajustado */
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+    </style>
+
+    <svg id="bracket-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="neon-blue">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="tournament-wrapper">
+        <!-- BLOQUE IZQUIERDO -->
+        <div class="side-col left-col">
+            <div class="round round-q">
+                <div id="q1" class="match-card"></div>
+                <div id="q2" class="match-card"></div>
+            </div>
+            <div class="round">
+                <div id="s1" class="match-card"></div>
+            </div>
         </div>
 
-        <!-- Semi Finals -->
-        <div class="round round-s" id="semi-finals">
-            <div id="s1" class="match-card"></div>
-            <div id="s2" class="match-card"></div>
-        </div>
+        <!-- BLOQUE CENTRAL -->
+        <div class="center-final">
+            <div
+                style="font-family: 'Orbitron'; font-size: 0.8rem; color: var(--accent-orange); letter-spacing: 3px; margin-bottom: 10px; text-align: center;">
+                GRAN FINAL</div>
+            <div id="f1" class="match-card"
+                style="width: 100%; border-width: 2px; border-color: var(--accent-orange); padding: 30px;"></div>
 
-        <!-- Final -->
-        <div class="round round-f" id="final">
-            <div id="f1" class="match-card" style="width: 280px; border-width: 2px;"></div>
-            <div id="tournament-winner" class="winner-panel" style="display: none; margin-top: 40px;">
+            <div id="tournament-winner" class="winner-panel" style="display: none; margin-top: 30px;">
                 <h2>CAMPEÓN</h2>
-                <div id="champion-name" style="font-size: 2rem; font-weight: 900; font-family: 'Orbitron';">---</div>
+                <div id="champion-name"
+                    style="font-size: 2.2rem; font-weight: 900; font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(255,157,0,0.5);">
+                    ---</div>
+            </div>
+        </div>
+
+        <!-- BLOQUE DERECHO -->
+        <div class="side-col right-col">
+            <div class="round round-q">
+                <div id="q3" class="match-card"></div>
+                <div id="q4" class="match-card"></div>
+            </div>
+            <div class="round">
+                <div id="s2" class="match-card"></div>
             </div>
         </div>
     </div>
@@ -225,7 +349,7 @@
                 const response = await fetch(`${API_URL}/bracket`);
                 const data = await response.json();
                 renderBracket(data);
-                
+
                 // Check if we need to continue polling
                 const anyRunning = Object.values(data).some(m => m.status === "running");
                 if (!anyRunning && pollingInterval) {
@@ -242,9 +366,9 @@
                 if (!el) continue;
 
                 el.className = `match-card ${match.status}`;
-                
+
                 let html = `<div class="match-id">${id.toUpperCase()}</div>`;
-                
+
                 const renderTeam = (name) => {
                     if (!name) return `<div class="team" style="color: #444;">TBD</div>`;
                     const isWinner = match.winner === name;
@@ -304,6 +428,84 @@
         fetchBracket();
         // Constant slow polling
         setInterval(fetchBracket, 5000);
+
+        // ── SVG Bracket Connectors ────────────────────────────────────────
+        function r(id) { return document.getElementById(id).getBoundingClientRect(); }
+
+        function addPath(svg, d, stroke, width, opacity) {
+            const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            p.setAttribute('d', d);
+            p.setAttribute('fill', 'none');
+            p.setAttribute('stroke', stroke);
+            p.setAttribute('stroke-width', width);
+            p.setAttribute('stroke-opacity', opacity);
+            p.setAttribute('stroke-linecap', 'square');
+            svg.appendChild(p);
+        }
+
+        function drawConnectors() {
+            const svg = document.getElementById('bracket-svg');
+            svg.querySelectorAll('path').forEach(e => e.remove());
+
+            const rq1 = r('q1'), rq2 = r('q2'), rs1 = r('s1');
+            const rq3 = r('q3'), rq4 = r('q4'), rs2 = r('s2');
+            const rf1 = r('f1');
+
+            const dim = 'rgba(0,212,255,0.25)';
+            const blue = '#00d4ff';
+
+            // ── LEFT SIDE: Q1 & Q2 → vertical bar → S1 ──
+            // The vertical bar sits at midX between q1.right and s1.left
+            const lBarX = rq1.right + (rs1.left - rq1.right) / 2;
+            const lTop = Math.min(rq1.top + rq1.height / 2, rq2.top + rq2.height / 2);
+            const lBot = Math.max(rq1.top + rq1.height / 2, rq2.top + rq2.height / 2);
+            const lMidY = (lTop + lBot) / 2; // where the bar connects to s1
+
+            // Q1 horizontal → bar
+            addPath(svg, `M ${rq1.right} ${rq1.top + rq1.height / 2} H ${lBarX}`, dim, 1.5, 1);
+            // Q2 horizontal → bar
+            addPath(svg, `M ${rq2.right} ${rq2.top + rq2.height / 2} H ${lBarX}`, dim, 1.5, 1);
+            // Vertical bar connecting Q1 and Q2
+            addPath(svg, `M ${lBarX} ${lTop} V ${lBot}`, dim, 1.5, 1);
+            // Bar mid → S1 left
+            addPath(svg, `M ${lBarX} ${lMidY} H ${rs1.left}`, dim, 1.5, 1);
+
+            // ── RIGHT SIDE: Q3 & Q4 ← vertical bar ← S2 ──
+            const rBarX = rs2.right + (rq3.left - rs2.right) / 2;
+            const rTop = Math.min(rq3.top + rq3.height / 2, rq4.top + rq4.height / 2);
+            const rBot = Math.max(rq3.top + rq3.height / 2, rq4.top + rq4.height / 2);
+            const rMidY = (rTop + rBot) / 2;
+
+            addPath(svg, `M ${rq3.left} ${rq3.top + rq3.height / 2} H ${rBarX}`, dim, 1.5, 1);
+            addPath(svg, `M ${rq4.left} ${rq4.top + rq4.height / 2} H ${rBarX}`, dim, 1.5, 1);
+            addPath(svg, `M ${rBarX} ${rTop} V ${rBot}`, dim, 1.5, 1);
+            addPath(svg, `M ${rBarX} ${rMidY} H ${rs2.right}`, dim, 1.5, 1);
+
+            // ── S1 → F1 (neon blue) ──
+            const s1x = rs1.right, s1y = rs1.top + rs1.height / 2;
+            const f1lx = rf1.left, f1y = rf1.top + rf1.height / 2;
+            const lmx = s1x + (f1lx - s1x) / 2;
+            // glow
+            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 6, 0.12);
+            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 1.5, 1);
+
+            // ── S2 ← F1 (neon blue) ──
+            const s2x = rs2.left, s2y = rs2.top + rs2.height / 2;
+            const f1rx = rf1.right;
+            const rmx = f1rx + (s2x - f1rx) / 2;
+            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 6, 0.12);
+            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 1.5, 1);
+        }
+
+        window.addEventListener('load', () => setTimeout(drawConnectors, 200));
+        window.addEventListener('resize', drawConnectors);
+
+        const _origRender = renderBracket;
+        renderBracket = function (matches) {
+            _origRender(matches);
+            setTimeout(drawConnectors, 100);
+        };
     </script>
 </body>
+
 </html>
