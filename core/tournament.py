@@ -163,6 +163,19 @@ def run_match(
     ship_sizes: list[int] | None = None,
     export_json: bool = False,
 ) -> MatchRecord:
+    # Cargar tiempos de coreografía desde settings.yaml (con fallbacks)
+    import yaml
+    try:
+        with open("settings.yaml", "r", encoding="utf-8") as f:
+            choreo = yaml.safe_load(f).get("choreography", {})
+    except:
+        choreo = {}
+    
+    d_strat = choreo.get("strategy_delay", 0.7)
+    d_reason = choreo.get("reasoning_delay", 1.0)
+    d_aim = choreo.get("aiming_delay", 0.8)
+    d_res = choreo.get("result_delay", ui_sleep)
+    d_trans = choreo.get("transition_delay", 0.5)
     """
     Play one full match.
 
@@ -310,9 +323,14 @@ def run_match(
             )
             forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
 
-            # Reset telemetría del equipo activo antes de pedir el movimiento
-            if export_json:
-                _write_game_state(game, override_telemetry={current: {"strategy": "", "reasoning": "", "cursor": None}})
+            # Fase 1: Pensamiento (Thinking) - Coreografía
+            if export_json or dashboard:
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {
+                        "strategy": "ANALIZANDO...", "reasoning": "Sincronizando sistemas...", "cursor": "thinking"
+                    }})
+                if dashboard:
+                    dashboard.render(board_a, board_b, game.move_log, current, "ANALIZANDO...", "Sincronizando sistemas...")
 
             try:
                 move: AgentMove = active_client.get_move(
@@ -334,14 +352,40 @@ def run_match(
                 tokens[current]["p"] += move.prompt_tokens
                 tokens[current]["c"] += move.completion_tokens
 
-                # Emitir telemetría pre-disparo (el frontend anima a su ritmo)
+                # --- COREOGRAFÍA DE 5 PASOS ---
+                
+                # Paso 1: Mostrar Estrategia
                 if export_json:
                     _write_game_state(game, override_telemetry={current: {
-                        "strategy": estrategia,
-                        "reasoning": razon,
-                        "cursor": "aiming",
-                        "target": move.coordenada
+                        "strategy": estrategia, "reasoning": "...", "cursor": None
                     }})
+                if dashboard:
+                    dashboard.render(board_a, board_b, game.move_log, current, estrategia, "...")
+                time.sleep(d_strat)
+
+                # Paso 2: Mostrar Razonamiento
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {
+                        "strategy": estrategia, "reasoning": razon, "cursor": None
+                    }})
+                if dashboard:
+                    dashboard.render(board_a, board_b, game.move_log, current, estrategia, razon)
+                time.sleep(d_reason)
+
+                # Paso 3: Mostrar Objetivo (Aiming)
+                if export_json:
+                    _write_game_state(game, override_telemetry={current: {
+                        "strategy": estrategia, "reasoning": razon, "cursor": "aiming", "target": move.coordenada
+                    }})
+                
+                if dashboard:
+                    dashboard.render_drop_animation(
+                        board_a, board_b, game.move_log, current, 
+                        col, row, estrategia, razon
+                    )
+                
+                # Sincronía
+                time.sleep(d_aim)
 
             except Exception as e:
                 api_errors[current] += 1
@@ -367,16 +411,27 @@ def run_match(
             if result in ("hit", "sunk"):
                 hits_count[current] += 1
 
+            # Paso 4: Resultado del Impacto
             if export_json:
                 _write_game_state(game)
             
-            # Pausa para que el dashboard web pueda renderizar la animación
-            if export_json:
-                time.sleep(ui_sleep)
+            if dashboard:
+                # 4.1: Mostrar impacto resaltado [[X]] durante 1 segundo
+                dashboard.render(
+                    board_a, board_b, game.move_log, current, 
+                    estrategia, razon, highlight_coord=f"{col}{row}"
+                )
+                time.sleep(1.0)
+                
+                # 4.2: Mostrar estado normal
+                dashboard.render(board_a, board_b, game.move_log, current, estrategia, razon)
+            
+            time.sleep(d_res)
 
             if result == "already_shot":
                 wasted[current] += 1
 
+            # ... (log writing logic stays the same) ...
             with log_file.open("a", encoding="utf-8") as f:
                 lat_str = f" {lat/1000.0:.2f}s" if lat else ""
                 log_res = LOGISTICS_MAP.get(result, result.upper())
@@ -388,20 +443,11 @@ def run_match(
                 elif result == "already_shot":
                     f.write(f"           ↳ (Error: AI intentó disparar donde ya había disparado)\n")
 
-            # Refresh dashboard after every shot
-            if dashboard:
-                dashboard.render(
-                    board_a=board_a,
-                    board_b=board_b,
-                    move_log=game.move_log,
-                    current_agent=current,
-                    last_strategy=estrategia,
-                    last_reasoning=razon,
-                )
-                time.sleep(ui_sleep)
-
             if result not in ("hit", "sunk"):
                 game.switch_turn()
+                # Paso 5: Transición de turno
+                if export_json or dashboard:
+                    time.sleep(d_trans)
     finally:
         # Determine winner (Natural or Tiebreaker)
         finished, natural_winner = game.is_over()

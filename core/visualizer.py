@@ -26,10 +26,10 @@ console = Console()
 # ── Cell styling ──────────────────────────────────────────────────────────────
 
 _CELL_STYLE: dict[str, str] = {
-    "~": "dim blue",          # unknown
-    "X": "bold red",          # hit / sunk
-    "O": "bold cyan",         # miss – water
-    "#": "bold green",        # own ship (revealed)
+    "~": "dim blue",                    # desconocido
+    "X": "bold white on red",           # impacto / hundido
+    "O": "bold white on blue",          # agua / fallo
+    "#": "bold white on green",         # barco propio revelado
 }
 
 _RESULT_STYLE: dict[str, str] = {
@@ -50,7 +50,7 @@ _RESULT_ICON: dict[str, str] = {
 # ── Board renderer ────────────────────────────────────────────────────────────
 
 
-def render_board(board: Board, title: str, reveal: bool = False) -> Table:
+def render_board(board: Board, title: str, reveal: bool = False, highlight_coord: str | None = None) -> Table:
     """Return a Rich Table representing the board."""
     grid = board.visible_state(reveal_ships=reveal)
     tbl = Table(
@@ -61,11 +61,19 @@ def render_board(board: Board, title: str, reveal: bool = False) -> Table:
     )
     tbl.add_column("", style="bold white", justify="right", width=3, no_wrap=True)
     for col in board.cols:
-        tbl.add_column(col, justify="center", width=3, no_wrap=True)
+        tbl.add_column(col, justify="center", width=5, no_wrap=True)
 
     for ri, row_data in enumerate(grid):
         row_num = str(ri + 1)
-        cells = [Text(ch, style=_CELL_STYLE.get(ch, "white")) for ch in row_data]
+        cells = []
+        for ci, ch in enumerate(row_data):
+            # Check if this cell is the one to highlight
+            current_coord = f"{board.cols[ci]}{ri+1}"
+            if highlight_coord and current_coord == highlight_coord:
+                cells.append(Text(f"[[{ch}]]", style="bold white on blue" if ch == "O" else "bold white on red"))
+            else:
+                cells.append(Text(ch, style=_CELL_STYLE.get(ch, "white")))
+        
         tbl.add_row(row_num, *cells)
 
     return tbl
@@ -107,7 +115,8 @@ def render_telemetry(
     content.append("Estrategia:     ", style="dim")
     content.append(f"{strategy or '(no especificada)'}\n\n", style="bold green")
     content.append("Razonamiento:\n", style="dim")
-    content.append(reasoning or "(sin razonamiento)", style="italic white")
+    # Usamos from_markup para permitir colores dentro del razonamiento (como el mensaje de lanzamiento)
+    content.append(Text.from_markup(reasoning or "(sin razonamiento)", style="italic white"))
     return Panel(
         content,
         title="[bold cyan]🧠 Telemetría de Pensamiento[/bold cyan]",
@@ -180,6 +189,7 @@ class GameDashboard:
         current_agent: str,
         last_strategy: str = "",
         last_reasoning: str = "",
+        highlight_coord: str | None = None
     ) -> None:
         elements = [
             Rule("[bold yellow]  ⚡  GARMENT STRIKE – Supply Chain Simulation  ⚡  [/bold yellow]"),
@@ -188,8 +198,12 @@ class GameDashboard:
         ]
 
         # Dual board (spectator: both revealed)
-        tbl_a = render_board(board_a, title=f"[green]{self.name_a}[/green]  (propio)", reveal=True)
-        tbl_b = render_board(board_b, title=f"[red]{self.name_b}[/red]  (propio)", reveal=True)
+        # We only highlight on the board that was attacked (not the attacker's own board)
+        is_a_attacking = (current_agent == self.name_a)
+        tbl_a = render_board(board_a, title=f"[green]{self.name_a}[/green]  (propio)", reveal=True, 
+                             highlight_coord=highlight_coord if not is_a_attacking else None)
+        tbl_b = render_board(board_b, title=f"[red]{self.name_b}[/red]  (propio)", reveal=True,
+                             highlight_coord=highlight_coord if is_a_attacking else None)
         elements.append(Columns([tbl_a, tbl_b], equal=True, expand=True))
 
         # Move log
@@ -201,6 +215,25 @@ class GameDashboard:
 
         group = Group(*elements)
         self.live.update(group, refresh=True)
+
+    def render_drop_animation(
+        self,
+        board_a: Board,
+        board_b: Board,
+        move_log: list[MoveRecord],
+        current_agent: str,
+        target_col: str,
+        target_row: int,
+        strategy: str,
+        reasoning: str
+    ) -> None:
+        """Shows a simple launch message."""
+        import time
+        self.render(
+            board_a, board_b, move_log, current_agent, strategy, 
+            f"{reasoning}\n\n[bold bright_cyan]🚀 Lanzando Prenda a 👕 -> {target_col}{target_row}[/bold bright_cyan]"
+        )
+        time.sleep(1.0)
 
     def print_winner(self, winner: str | None, total_turns: int) -> None:
         console.print()

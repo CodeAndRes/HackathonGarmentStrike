@@ -4,7 +4,7 @@
 
 engine:
   default_model: "groq/llama-3.1-8b-instant"
-  api_sleep: 12.0
+  api_sleep: 2.0
   max_tokens: 120
   ui_sleep: 1.2
   max_retries: 3
@@ -36,3 +36,11 @@ models_catalog:
     - "deepseek/deepseek-reasoner"
   especial:
     - "offline"
+
+# 🎭 Tiempos de la Coreografía (Segundos)
+choreography:
+  strategy_delay: 1.0
+  reasoning_delay: 1.0
+  aiming_delay: 1.5
+  result_delay: 0.8
+  transition_delay: 1.0
