@@ -91,7 +91,7 @@
         main {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 320px 1fr;
+            grid-template-columns: 1fr 450px 1fr;
             gap: 20px;
             padding: 20px;
             height: calc(100vh - 50px);
@@ -102,6 +102,9 @@
         .column {
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
+            /* Agrupar elementos arriba */
+            gap: 10px;
             min-height: 0;
             height: 100%;
         }
@@ -117,10 +120,10 @@
 
         /* --- BOARD STYLES --- */
         .board-container {
-            flex: 1;
             display: flex;
             flex-direction: column;
             position: relative;
+            /* Quitamos el flex: 1 para que no empuje hacia abajo */
         }
 
         .team-header {
@@ -141,7 +144,6 @@
         }
 
         .tactical-grid {
-            width: 100%;
             display: grid;
             grid-template-columns: var(--coord-num-width) repeat(10, 1fr);
             grid-template-rows: var(--coord-let-height) repeat(10, 1fr);
@@ -153,8 +155,8 @@
             /* Forzamos cuadrado perfecto */
             overflow: visible;
             /* Permitimos que el solape de 1px funcione */
-            margin: auto 0;
-            /* Centrado vertical si sobra espacio */
+            margin: 0;
+            /* Pegado arriba */
         }
 
         .team-alpha .tactical-grid {
@@ -320,7 +322,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             padding: 10px;
-            margin-top: 5px;
+            margin-top: -5px;
             display: flex;
             flex-direction: column;
             gap: 4px;
