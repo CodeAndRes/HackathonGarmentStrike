@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ GARMENT STRIKE | Tactical Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-deep: #050a0e;
@@ -39,9 +42,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             font-family: 'Orbitron', sans-serif;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
         }
 
         .logo {
@@ -68,9 +71,20 @@
         }
 
         @keyframes pulse-red {
-            0% { opacity: 0.4; transform: scale(0.8); }
-            50% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 0.4; transform: scale(0.8); }
+            0% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            100% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
         }
 
         /* --- MAIN LAYOUT --- */
@@ -80,13 +94,24 @@
             grid-template-columns: 1fr 320px 1fr;
             gap: 20px;
             padding: 20px;
-            max-height: calc(100vh - 50px);
+            height: calc(100vh - 50px);
+            overflow: hidden;
+            /* Nada sale de aquí */
         }
 
         .column {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .central-console-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            aspect-ratio: 1 / 1;
+            /* Misma proporción que los tableros */
             min-height: 0;
         }
 
@@ -107,51 +132,74 @@
             align-items: flex-end;
         }
 
-        .team-alpha .team-name { color: var(--accent-alpha); }
-        .team-beta .team-name { color: var(--accent-beta); }
+        .team-alpha .team-name {
+            color: var(--accent-alpha);
+        }
+
+        .team-beta .team-name {
+            color: var(--accent-beta);
+        }
 
         .tactical-grid {
-            flex: 1;
+            width: 100%;
             display: grid;
             grid-template-columns: var(--coord-num-width) repeat(10, 1fr);
             grid-template-rows: var(--coord-let-height) repeat(10, 1fr);
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
-            aspect-ratio: 1;
-            max-width: 100%;
+            aspect-ratio: 1 / 1;
+            /* Forzamos cuadrado perfecto */
+            overflow: visible;
+            /* Permitimos que el solape de 1px funcione */
+            margin: auto 0;
+            /* Centrado vertical si sobra espacio */
         }
 
-        .team-alpha .tactical-grid { border-color: var(--accent-alpha); box-shadow: 0 0 15px rgba(0,255,136,0.1); }
-        .team-beta .tactical-grid { border-color: var(--accent-beta); box-shadow: 0 0 15px rgba(255,75,75,0.1); }
+        .team-alpha .tactical-grid {
+            border-color: var(--accent-alpha);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+        }
 
-        .cell {
-            border: 0.5px solid rgba(255,255,255,0.03);
+        .team-beta .tactical-grid {
+            border-color: var(--accent-beta);
+            box-shadow: 0 0 15px rgba(255, 75, 75, 0.1);
+        }
+
+        .cell,
+        .label {
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
             overflow: visible;
+            border: 0.5px solid rgba(255, 255, 255, 0.03);
         }
 
         .label {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 700;
             opacity: 0.6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .label-alpha { color: var(--accent-alpha); }
-        .label-beta { color: var(--accent-beta); }
+        .label-alpha {
+            color: var(--accent-alpha);
+        }
+
+        .label-beta {
+            color: var(--accent-beta);
+        }
 
         /* --- CENTRAL COLUMN --- */
         .central-scoreboard {
             background: var(--panel-bg);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 20px;
             text-align: center;
@@ -189,14 +237,26 @@
             font-weight: 900;
         }
 
-        .score-alpha { color: var(--accent-alpha); text-shadow: 0 0 10px var(--accent-alpha); }
-        .score-beta { color: var(--accent-beta); text-shadow: 0 0 10px var(--accent-beta); }
-        .score-divider { font-size: 1.5rem; opacity: 0.3; font-weight: 900; }
+        .score-alpha {
+            color: var(--accent-alpha);
+            text-shadow: 0 0 10px var(--accent-alpha);
+        }
+
+        .score-beta {
+            color: var(--accent-beta);
+            text-shadow: 0 0 10px var(--accent-beta);
+        }
+
+        .score-divider {
+            font-size: 1.5rem;
+            opacity: 0.3;
+            font-weight: 900;
+        }
 
         .moves-log {
             flex: 1;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             padding: 10px;
             display: flex;
@@ -210,32 +270,49 @@
             opacity: 0.5;
             margin-bottom: 8px;
             padding-bottom: 4px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .log-entries {
             flex: 1;
-            overflow-y: hidden;
+            overflow: hidden;
+            /* Sin scroll, solo las últimas */
             display: flex;
-            flex-direction: column-reverse;
-            gap: 5px;
+            flex-direction: column;
+            /* Dirección normal */
+            gap: 4px;
         }
 
         .log-entry {
             font-size: 0.75rem;
             padding: 4px 8px;
             border-radius: 4px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
             animation: fadeIn 0.3s ease-out;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
 
-        .log-a { border-left: 2px solid var(--accent-alpha); }
-        .log-b { border-left: 2px solid var(--accent-beta); }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-a {
+            border-left: 2px solid var(--accent-alpha);
+        }
+
+        .log-b {
+            border-left: 2px solid var(--accent-beta);
+        }
 
         /* --- TELEMETRY --- */
         .telemetry-panels {
@@ -247,7 +324,7 @@
 
         .tele-box {
             background: var(--panel-bg);
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             padding: 12px;
             min-height: 100px;
@@ -256,38 +333,103 @@
             gap: 5px;
         }
 
-        .tele-alpha { border-top: 2px solid var(--accent-alpha); }
-        .tele-beta { border-top: 2px solid var(--accent-beta); }
+        .tele-alpha {
+            border-top: 2px solid var(--accent-alpha);
+        }
 
-        .tele-title { font-family: 'Orbitron', sans-serif; font-size: 0.7rem; opacity: 0.5; }
-        .tele-strategy { color: #fff; font-weight: 700; font-size: 0.85rem; }
-        .tele-reasoning { font-size: 0.75rem; opacity: 0.7; font-style: italic; }
+        .tele-beta {
+            border-top: 2px solid var(--accent-beta);
+        }
+
+        .tele-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        .tele-strategy {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .tele-reasoning {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-style: italic;
+        }
 
         /* --- ANIMATIONS --- */
         @keyframes cellFlash {
-            0% { background: rgba(255,255,255,0.8); }
-            100% { background: transparent; }
+            0% {
+                background: rgba(255, 255, 255, 0.8);
+            }
+
+            100% {
+                background: transparent;
+            }
         }
-        .cell-flash { animation: cellFlash 0.5s ease-out; }
+
+        .cell-flash {
+            animation: cellFlash 0.5s ease-out;
+        }
+
+        .aiming-mark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px #fff, inset 0 0 10px #fff;
+            animation: aimPulse 0.6s infinite alternate;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        /* Esquinas reforzadas para la mira */
+        .aiming-mark::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            border-top: 4px solid #fff;
+            border-left: 4px solid #fff;
+        }
+
+        .aiming-mark::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            border-bottom: 4px solid #fff;
+            border-right: 4px solid #fff;
+        }
 
         @keyframes aimPulse {
-            0% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.5; }
-        }
-        .aiming-mark {
-            width: 80%;
-            height: 80%;
-            border: 2px dashed #fff;
-            border-radius: 2px;
-            animation: aimPulse 0.5s infinite;
+            0% {
+                transform: scale(0.9);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
         }
 
         /* --- VICTORY OVERLAY --- */
         #victory-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
             z-index: 1000;
             display: none;
             flex-direction: column;
@@ -307,16 +449,33 @@
         }
 
         @keyframes vicGlow {
-            0%, 100% { text-shadow: 0 0 20px #ffd700; }
-            50% { text-shadow: 0 0 50px #ffd700, 0 0 80px #ffae00; }
+
+            0%,
+            100% {
+                text-shadow: 0 0 20px #ffd700;
+            }
+
+            50% {
+                text-shadow: 0 0 50px #ffd700, 0 0 80px #ffae00;
+            }
         }
 
         /* SVG Anim */
         @keyframes neonPulse {
-            0%, 100% { filter: drop-shadow(0 0 2px var(--team-neon)) brightness(1); }
-            50% { filter: drop-shadow(0 0 8px var(--team-neon)) brightness(1.2); }
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 2px var(--team-neon)) brightness(1);
+            }
+
+            50% {
+                filter: drop-shadow(0 0 8px var(--team-neon)) brightness(1.2);
+            }
         }
-        .master-holo-box { animation: neonPulse 2s infinite ease-in-out; }
+
+        .master-holo-box {
+            animation: neonPulse 2s infinite ease-in-out;
+        }
 
         /* --- TYPEWRITER CURSOR --- */
         .typing::after {
@@ -328,12 +487,19 @@
         }
 
         @keyframes blink {
-            from, to { opacity: 1; }
-            50% { opacity: 0; }
-        }
 
+            from,
+            to {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
 </head>
+
 <body>
     <header>
         <div class="logo">⚡ GARMENT STRIKE</div>
@@ -364,7 +530,8 @@
                     <div class="score-divider">VS</div>
                     <div class="score-val score-beta" id="beta-score">0</div>
                 </div>
-                <div id="turn-indicator" style="font-size: 0.7rem; opacity: 0.5; font-family: 'Orbitron';">ESPERANDO MOTOR...</div>
+                <div id="turn-indicator" style="font-size: 0.7rem; opacity: 0.5; font-family: 'Orbitron';">ESPERANDO
+                    MOTOR...</div>
             </div>
             <div class="moves-log">
                 <div class="log-header">REGISTRO DE OPERACIONES</div>
@@ -402,7 +569,9 @@
     <div id="victory-overlay">
         <div class="vic-title" id="victory-text">VICTORIA</div>
         <div id="victory-subtext" style="font-family: 'Orbitron'; font-size: 1.5rem; opacity: 0.8;">TEAM ALPHA</div>
-        <button onclick="location.reload()" style="margin-top: 40px; background: transparent; border: 1px solid #ffd700; color: #ffd700; padding: 10px 30px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px;">REINICIAR INTERFAZ</button>
+        <button onclick="location.reload()"
+            style="margin-top: 40px; background: transparent; border: 1px solid #ffd700; color: #ffd700; padding: 10px 30px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px;">REINICIAR
+            INTERFAZ</button>
     </div>
 
     <script>
@@ -415,7 +584,7 @@
         function connect() {
             console.log("Intentando conectar a WebSocket...");
             ws = new WebSocket(API_URL);
-            
+
             ws.onmessage = (event) => {
                 const state = JSON.parse(event.data);
                 updateDashboard(state);
@@ -468,7 +637,7 @@
             }
         }
 
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
             console.error("GLOBAL ERROR:", msg, "at", url, ":", lineNo);
             return false;
         };
@@ -501,8 +670,9 @@
                 }
 
                 // 3. Boards
-                renderBoard('alpha', state.team_a, (state.telemetry || {}).team_a);
-                renderBoard('beta', state.team_b, (state.telemetry || {}).team_b);
+                // IMPORTANTE: Para ver dónde apunta el rival, pasamos la telemetría cruzada
+                renderBoard('alpha', state.team_a, (state.telemetry || {}).team_b);
+                renderBoard('beta', state.team_b, (state.telemetry || {}).team_a);
 
                 // 4. Log
                 if (state.comms) updateLog(state.comms);
@@ -532,16 +702,16 @@
         function typeWriter(elementId, text) {
             const el = document.getElementById(elementId);
             if (!el || el.dataset.fullText === text) return;
-            
+
             // Cancel previous typing for this element
             if (typingIntervals.has(elementId)) {
                 clearInterval(typingIntervals.get(elementId));
             }
-            
+
             el.dataset.fullText = text;
             el.innerText = '';
             el.classList.add('typing');
-            
+
             let i = 0;
             const interval = setInterval(() => {
                 if (i < text.length) {
@@ -553,16 +723,16 @@
                     typingIntervals.delete(elementId);
                 }
             }, 25); // Speed of typing (ms per char)
-            
+
             typingIntervals.set(elementId, interval);
         }
 
         function updateTelemetry(key, data, name) {
             document.getElementById(`${key}-tele-title`).innerText = `TELEMETRÍA ${name}`;
-            
+
             const strategy = data.strategy || 'INICIANDO PROTOCOLO...';
             const reasoning = data.reasoning || 'CALIBRANDO SISTEMAS DE LOGÍSTICA...';
-            
+
             typeWriter(`${key}-strategy`, strategy);
             typeWriter(`${key}-reasoning`, reasoning);
         }
@@ -570,7 +740,7 @@
         function renderBoard(teamKey, teamData, tele) {
             const grid = document.getElementById(`grid-${teamKey}`);
             const teamColor = teamKey === 'alpha' ? '#00ff88' : '#ff4b4b';
-            
+
             const numRows = teamData.board.length;
             const numCols = teamData.board[0].length;
 
@@ -584,42 +754,44 @@
                 // Column labels: A B C D... (letters = cols in engine)
                 grid.appendChild(createCell('', 'label'));
                 const COLS = 'ABCDEFGHIJ';
-                for(let c=0; c<numCols; c++) grid.appendChild(createCell(COLS[c], `label label-${teamKey}`));
-                
+                for (let c = 0; c < numCols; c++) grid.appendChild(createCell(COLS[c], `label label-${teamKey}`));
+
                 // Row labels: 1 2 3... (numbers = rows in engine)
-                for(let r=0; r<numRows; r++) {
-                    grid.appendChild(createCell(r+1, `label label-${teamKey}`));
-                    for(let c=0; c<numCols; c++) {
+                for (let r = 0; r < numRows; r++) {
+                    grid.appendChild(createCell(r + 1, `label label-${teamKey}`));
+                    for (let c = 0; c < numCols; c++) {
                         grid.appendChild(createCell('', 'cell', `cell-${teamKey}-${r}-${c}`));
                     }
                 }
             }
 
             // Update cells
-            for(let r=0; r<numRows; r++) {
-                for(let c=0; c<numCols; c++) {
+            for (let r = 0; r < numRows; r++) {
+                for (let c = 0; c < numCols; c++) {
                     const cellId = `cell-${teamKey}-${r}-${c}`;
                     const cellEl = document.getElementById(cellId);
                     const symbol = teamData.board[r][c];
                     const shipId = teamData.fleet ? teamData.fleet[`${r},${c}`] : null;
-                    
+
                     const stateKey = teamKey === 'alpha' ? 'team_a' : 'team_b';
                     const oldSymbol = lastState ? lastState[stateKey].board[r][c] : null;
-                    
+
                     // Check connections for smart borders
                     const hasShip = shipId && shipId !== 'NONE';
                     const conn = {
-                        top:    hasShip && r > 0          && teamData.fleet[`${r-1},${c}`] === shipId,
-                        bottom: hasShip && r < numRows-1  && teamData.fleet[`${r+1},${c}`] === shipId,
-                        left:   hasShip && c > 0          && teamData.fleet[`${r},${c-1}`] === shipId,
-                        right:  hasShip && c < numCols-1  && teamData.fleet[`${r},${c+1}`] === shipId
+                        top: hasShip && r > 0 && teamData.fleet[`${r - 1},${c}`] == shipId,
+                        bottom: hasShip && r < numRows - 1 && teamData.fleet[`${r + 1},${c}`] == shipId,
+                        left: hasShip && c > 0 && teamData.fleet[`${r},${c - 1}`] == shipId,
+                        right: hasShip && c < numCols - 1 && teamData.fleet[`${r},${c + 1}`] == shipId
                     };
 
                     let content = '';
+                    const isSunk = shipId && teamData.sunk_ships && teamData.sunk_ships.includes(shipId);
+
                     if (symbol === '#') {
-                        content = getHoloBoxSVG(teamColor, conn, true, false);
+                        content = getHoloBoxSVG(teamColor, conn, isSunk, false);
                     } else if (symbol === 'X') {
-                        content = getHoloBoxSVG(teamColor, conn, false, true);
+                        content = getHoloBoxSVG(teamColor, conn, isSunk, true);
                     } else if (symbol === 'O') {
                         content = getHoloMissSVG();
                     } else if (symbol && symbol !== '~') {
@@ -638,6 +810,14 @@
 
                     if (cellEl.innerHTML !== content) {
                         cellEl.innerHTML = content;
+
+                        // Si hay barco, quitamos el borde de la rejilla para que la unión sea perfecta
+                        if (hasShip) {
+                            cellEl.style.border = 'none';
+                        } else {
+                            cellEl.style.border = '0.5px solid rgba(255,255,255,0.03)';
+                        }
+
                         if (oldSymbol !== symbol && oldSymbol !== null) {
                             cellEl.classList.add('cell-flash');
                             setTimeout(() => cellEl.classList.remove('cell-flash'), 500);
@@ -655,64 +835,87 @@
             return div;
         }
 
+        let lastLogHash = '';
         function updateLog(comms) {
-            const container = document.getElementById('log-entries');
-            const currentCount = container.children.length;
-            if (comms.length > currentCount) {
-                for (let i = currentCount; i < comms.length; i++) {
-                    const c = comms[i];
-                    const div = document.createElement('div');
-                    div.className = `log-entry log-${c.agent.toLowerCase()}`;
-                    div.innerHTML = `<strong>T${c.turn} [${c.agent}] ${c.coord}:</strong> ${c.result} ${c.icon}`;
-                    container.appendChild(div);
-                }
-                // Limit to 20 entries
-                while (container.children.length > 20) {
-                    container.removeChild(container.firstChild);
-                }
+            if (!comms || comms.length === 0) {
+                document.getElementById('log-entries').innerHTML = '';
+                lastLogHash = '';
+                return;
             }
+
+            // Creamos un hash simple de los últimos mensajes para saber si hay cambios
+            const currentHash = comms.length + (comms.length > 0 ? comms[comms.length - 1].coord : '');
+            if (currentHash === lastLogHash) return;
+            lastLogHash = currentHash;
+
+            const container = document.getElementById('log-entries');
+
+            // Tomamos los últimos 15 y les damos la vuelta (más nuevo arriba)
+            const latest = comms.slice(-15).reverse();
+
+            container.innerHTML = latest.map(c => {
+                const teamClass = c.agent === 'A' ? 'log-a' : 'log-b';
+                const teamColor = c.agent === 'A' ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+                return `
+                    <div class="log-entry ${teamClass}">
+                        <span style="color: ${teamColor}; opacity: 0.5; font-size: 0.6rem; font-weight: 900;">T${c.turn}</span>
+                        <span style="color: #fff; font-weight: 600; margin: 0 5px;">${c.coord}</span>
+                        <span style="opacity: 0.7;">${c.result}</span>
+                        <span style="float: right;">${c.icon}</span>
+                    </div>
+                `;
+            }).join('');
         }
 
         // --- SVG GENERATORS (Ported from holographics.py) ---
 
         function getHoloBoxSVG(color, conn, isSealed, isHit) {
-            const margin = 7;
-            const inset = 10;
-            
-            let ix1 = conn.left ? 0 : margin;
-            let ix2 = conn.right ? 100 : 100 - margin;
-            let iy1 = conn.top ? 0 : margin;
-            let iy2 = conn.bottom ? 100 : 100 - margin;
-            
-            let bx1 = conn.left ? 0 : margin + inset;
-            let bx2 = conn.right ? 100 : 100 - (margin + inset);
-            let by1 = conn.top ? 0 : margin + inset;
-            let by2 = conn.bottom ? 100 : 100 - (margin + inset);
+            const margin = 10; // Más margen para que se vea contenido
+            const inset = 6;
+
+            // Solape mínimo (0.5px) para evitar grietas sin salirse de la celda
+            let ix1 = conn.left ? -0.5 : margin;
+            let ix2 = conn.right ? 100.5 : 100 - margin;
+            let iy1 = conn.top ? -0.5 : margin;
+            let iy2 = conn.bottom ? 100.5 : 100 - margin;
+
+            let bx1 = conn.left ? -0.5 : margin + inset;
+            let bx2 = conn.right ? 100.5 : 100 - (margin + inset);
+            let by1 = conn.top ? -0.5 : margin + inset;
+            let by2 = conn.bottom ? 100.5 : 100 - (margin + inset);
 
             let elements = [];
 
             if (isSealed) {
-                // Background
+                // Background & Border: Dibujamos un perímetro inteligente
+                // Solo trazamos línea (stroke) si NO hay conexión en ese lado
                 let path = `M ${ix1} ${iy1}`;
-                if (!conn.top) path += ` L ${ix2} ${iy1}`; else path += ` M ${ix2} ${iy1}`;
-                if (!conn.right) path += ` L ${ix2} ${iy2}`; else path += ` M ${ix2} ${iy2}`;
-                if (!conn.bottom) path += ` L ${ix1} ${iy2}`; else path += ` M ${ix1} ${iy2}`;
-                if (!conn.left) path += ` L ${ix1} ${iy1}`;
-                
-                elements.push(`<path d="${path}" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="2" class="master-holo-box"/>`);
-                
-                // Tape
+                path += ` L ${ix2} ${iy1}`;
+                path += ` L ${ix2} ${iy2}`;
+                path += ` L ${ix1} ${iy2}`;
+                path += ` Z`;
+
+                // Relleno
+                elements.push(`<path d="${path}" fill="${color}" fill-opacity="0.2" class="master-holo-box"/>`);
+
+                // Bordes selectivos (Smart Borders)
+                if (!conn.top) elements.push(`<line x1="${ix1}" y1="${iy1}" x2="${ix2}" y2="${iy1}" stroke="${color}" stroke-width="2" stroke-opacity="0.8"/>`);
+                if (!conn.right) elements.push(`<line x1="${ix2}" y1="${iy1}" x2="${ix2}" y2="${iy2}" stroke="${color}" stroke-width="2" stroke-opacity="0.8"/>`);
+                if (!conn.bottom) elements.push(`<line x1="${ix2}" y1="${iy2}" x2="${ix1}" y2="${iy2}" stroke="${color}" stroke-width="2" stroke-opacity="0.8"/>`);
+                if (!conn.left) elements.push(`<line x1="${ix1}" y1="${iy2}" x2="${ix1}" y2="${iy1}" stroke="${color}" stroke-width="2" stroke-opacity="0.8"/>`);
+
+                // Tape: Cinta de embalaje continua
                 const isVertical = conn.top || conn.bottom;
                 if (isVertical) {
                     const tx = (ix1 + ix2) / 2;
-                    const ty1 = conn.top ? 0 : iy1;
-                    const ty2 = conn.bottom ? 100 : iy2;
+                    const ty1 = conn.top ? -0.5 : iy1;
+                    const ty2 = conn.bottom ? 100.5 : iy2;
                     elements.push(`<line x1="${tx}" y1="${ty1}" x2="${tx}" y2="${ty2}" stroke="${color}" stroke-width="15" stroke-opacity="0.2"/>`);
                     elements.push(`<line x1="${tx}" y1="${ty1}" x2="${tx}" y2="${ty2}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>`);
                 } else {
                     const ty = (iy1 + iy2) / 2;
-                    const tx1 = conn.left ? 0 : ix1;
-                    const tx2 = conn.right ? 100 : ix2;
+                    const tx1 = conn.left ? -0.5 : ix1;
+                    const tx2 = conn.right ? 100.5 : ix2;
                     elements.push(`<line x1="${tx1}" y1="${ty}" x2="${tx2}" y2="${ty}" stroke="${color}" stroke-width="15" stroke-opacity="0.2"/>`);
                     elements.push(`<line x1="${tx1}" y1="${ty}" x2="${tx2}" y2="${ty}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>`);
                 }
@@ -720,7 +923,7 @@
                 // Label
                 if (!conn.right && !conn.bottom) {
                     elements.push(`
-                        <g transform="translate(${ix2-28}, ${iy2-22}) rotate(5)">
+                        <g transform="translate(${ix2 - 28}, ${iy2 - 22}) rotate(5)">
                             <rect width="20" height="14" fill="#fff" rx="1" fill-opacity="0.8"/>
                             <line x1="3" y1="4" x2="17" y2="4" stroke="#000" stroke-width="1.5" stroke-opacity="0.5"/>
                             <line x1="3" y1="7" x2="12" y2="7" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>
@@ -733,7 +936,7 @@
                 if (!conn.bottom) elements.push(`<path d="M ${ix1} ${iy2} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx1} ${by2} Z" fill="${color}" fill-opacity="0.1"/>`);
                 if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1} ${iy2} L ${bx1} ${by2} L ${bx1} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
                 if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2} ${iy2} L ${bx2} ${by2} L ${bx2} ${by1} Z" fill="${color}" fill-opacity="0.1"/>`);
-                
+
                 // Floor
                 let fPath = "";
                 if (!conn.top) fPath += ` M ${bx1} ${by1} L ${bx2} ${by1}`;
@@ -766,13 +969,38 @@
                     `);
                 }
 
-                // Flaps
-                const fH = 8;
-                const fW = 8;
-                if (!conn.top) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1+4} ${iy1-fH} L ${ix2-4} ${iy1-fH} L ${ix2} ${iy1} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
-                if (!conn.bottom) elements.push(`<path d="M ${ix1} ${iy2} L ${ix1+4} ${iy2+fH} L ${ix2-4} ${iy2+fH} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
-                if (!conn.left) elements.push(`<path d="M ${ix1} ${iy1} L ${ix1-fW} ${iy1+4} L ${ix1-fW} ${iy2-4} L ${ix1} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
-                if (!conn.right) elements.push(`<path d="M ${ix2} ${iy1} L ${ix2+fW} ${iy1+4} L ${ix2+fW} ${iy2-4} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                // Flaps: Reducidos para que no se salgan de la celda
+                const fH = 6;
+                const fW = 6;
+
+                // TOP FLAP
+                if (!conn.top) {
+                    let fx1 = conn.left ? ix1 : ix1 + 4;
+                    let fx2 = conn.right ? ix2 : ix2 - 4;
+                    // Si hay conexión lateral, no estrechamos ese lado para que sea continuo
+                    elements.push(`<path d="M ${ix1} ${iy1} L ${fx1} ${iy1 - fH} L ${fx2} ${iy1 - fH} L ${ix2} ${iy1} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                }
+
+                // BOTTOM FLAP
+                if (!conn.bottom) {
+                    let fx1 = conn.left ? ix1 : ix1 + 4;
+                    let fx2 = conn.right ? ix2 : ix2 - 4;
+                    elements.push(`<path d="M ${ix1} ${iy2} L ${fx1} ${iy2 + fH} L ${fx2} ${iy2 + fH} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                }
+
+                // LEFT FLAP
+                if (!conn.left) {
+                    let fy1 = conn.top ? iy1 : iy1 + 4;
+                    let fy2 = conn.bottom ? iy2 : iy2 - 4;
+                    elements.push(`<path d="M ${ix1} ${iy1} L ${ix1 - fW} ${fy1} L ${ix1 - fW} ${fy2} L ${ix1} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                }
+
+                // RIGHT FLAP
+                if (!conn.right) {
+                    let fy1 = conn.top ? iy1 : iy1 + 4;
+                    let fy2 = conn.bottom ? iy2 : iy2 - 4;
+                    elements.push(`<path d="M ${ix2} ${iy1} L ${ix2 + fW} ${fy1} L ${ix2 + fW} ${fy2} L ${ix2} ${iy2} Z" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`);
+                }
             }
 
             return `<svg viewBox="0 0 100 100" style="overflow:visible; width:100%; height:100%;">${elements.join('')}</svg>`;
@@ -791,4 +1019,5 @@
         connect();
     </script>
 </body>
+
 </html>
