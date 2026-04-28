@@ -10,15 +10,15 @@
         rel="stylesheet">
     <style>
         :root {
-            --bg-color: #05080a;
-            --panel-bg: rgba(10, 15, 20, 0.8);
-            --accent-blue: #00d4ff;
-            --accent-orange: #ff9d00;
-            --accent-green: #00ff88;
-            --accent-red: #ff4b4b;
-            --text-main: #e6edf3;
-            --border-dim: rgba(255, 255, 255, 0.1);
-            --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            --bg-color: #000000; /* True black for projector contrast */
+            --panel-bg: rgba(15, 22, 30, 0.95); /* More solid */
+            --accent-blue: #00e5ff; /* Brighter */
+            --accent-orange: #ffaa00; /* Brighter */
+            --accent-green: #00ff9d; /* Brighter */
+            --accent-red: #ff5555;
+            --text-main: #ffffff; /* Pure white */
+            --border-dim: rgba(255, 255, 255, 0.25); /* More visible lines */
+            --neon-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
         }
 
         * {
@@ -32,6 +32,9 @@
             color: var(--text-main);
             font-family: 'JetBrains Mono', monospace;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
             background-image:
                 radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 70%),
                 linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -150,47 +153,45 @@
         }
 
         .team {
-            padding: 10px;
-            margin: 6px 0;
-            background: rgba(255, 255, 255, 0.03);
-            font-size: 1.1rem;
-            /* Letra más grande */
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.08); /* Better contrast */
+            font-size: 1.3rem; /* Letra AÚN más grande para proyector */
+            font-weight: bold; /* Más legible */
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-left: 3px solid transparent;
+            border-left: 4px solid transparent;
         }
 
         .team.winner {
             color: var(--accent-green);
             border-left-color: var(--accent-green);
-            background: rgba(0, 255, 136, 0.05);
+            background: rgba(0, 255, 136, 0.08);
         }
 
         .team.loser {
-            opacity: 0.5;
+            opacity: 0.4;
             text-decoration: line-through;
         }
 
         .match-id {
             position: absolute;
-            top: -10px;
+            top: -12px;
             left: 10px;
             background: var(--bg-color);
-            padding: 0 5px;
-            font-size: 0.8rem;
-            /* Letra más grande */
-            color: #888;
-            /* Un poco más claro */
-            font-weight: bold;
+            padding: 0 8px;
+            font-size: 1rem;
+            color: #bbb; /* Más contraste */
+            font-weight: 900;
         }
 
         .btn-run {
             width: 100%;
-            margin-top: 10px;
-            font-size: 0.8rem;
-            /* Letra más grande */
-            padding: 8px;
+            margin-top: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 10px;
         }
 
         /* Bracket Connectors (CSS lines) */
@@ -245,15 +246,28 @@
         </div>
     </div>
 
+    <!-- TIMER PANEL (MOVIDO ARRIBA) -->
+    <div style="display: flex; justify-content: center; padding-top: 20px; width: 100%; position: relative; z-index: 10;">
+        <div class="timer-panel" style="text-align: center; border: 2px solid var(--accent-blue); padding: 15px 40px; background: rgba(0, 0, 0, 0.8); border-radius: 8px; box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); width: 450px;">
+            <div style="font-family: 'Orbitron'; font-size: 1.1rem; color: var(--accent-blue); font-weight: bold; letter-spacing: 3px; margin-bottom: 10px;">TIEMPO DE PREPARACIÓN</div>
+            <div id="timer-display" style="font-family: 'JetBrains Mono', monospace; font-size: 4rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px rgba(0,212,255,0.8); margin-bottom: 15px; transition: color 0.3s, text-shadow 0.3s;">05:00</div>
+            <div class="timer-controls" style="display: flex; gap: 15px; justify-content: center; align-items: center;">
+                <input type="number" id="timer-minutes" value="5" min="1" max="60" style="width: 70px; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-blue); color: white; padding: 5px; text-align: center; font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: bold; outline: none;">
+                <span style="font-size: 1.1rem; color: #ccc; margin-right: 10px; font-weight: bold;">MIN</span>
+                <button onclick="startTimer()" id="btn-timer-start" style="padding: 8px 20px; font-size: 1.1rem; font-weight: bold; border-color: var(--accent-green); color: var(--accent-green);">INICIAR</button>
+                <button onclick="resetTimer()" style="padding: 8px 20px; font-size: 1.1rem; font-weight: bold; border-color: var(--accent-red); color: var(--accent-red);">STOP</button>
+            </div>
+        </div>
+    </div>
+
     <style>
         .tournament-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 40px;
-            /* Reducido para 1080p */
-            padding: 40px;
-            min-height: calc(100vh - 80px);
+            padding: 20px;
+            flex: 1; /* Ocupa el espacio restante y centra el diagrama perfectamente */
             width: 100%;
             overflow-x: auto;
         }
@@ -312,7 +326,6 @@
             </div>
         </div>
 
-        <!-- BLOQUE CENTRAL -->
         <div class="center-final">
             <div
                 style="font-family: 'Orbitron'; font-size: 0.8rem; color: var(--accent-orange); letter-spacing: 3px; margin-bottom: 10px; text-align: center;">
@@ -429,10 +442,120 @@
         // Constant slow polling
         setInterval(fetchBracket, 5000);
 
+        // ── Countdown Timer Logic ─────────────────────────────────────────
+        let countdownInterval = null;
+        let remainingSeconds = 0;
+        let audioCtx = null;
+
+        function playBeep() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Secuencia de 3 pitidos de alarma (estilo táctico)
+            for(let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Frecuencia A5
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                }, i * 500);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+            const s = (remainingSeconds % 60).toString().padStart(2, '0');
+            const display = document.getElementById('timer-display');
+            display.innerText = `${m}:${s}`;
+            
+            // Efecto visual cuando quedan 10 segundos o menos
+            if (remainingSeconds <= 10 && remainingSeconds > 0) {
+                display.style.color = '#ff4b4b';
+                display.style.textShadow = '0 0 20px rgba(255, 75, 75, 0.8)';
+            } else if (remainingSeconds === 0 && countdownInterval === null) {
+                 // Finalizado
+                 display.style.color = '#ff4b4b';
+            } else {
+                display.style.color = '#fff';
+                display.style.textShadow = '0 0 15px rgba(0, 212, 255, 0.6)';
+            }
+        }
+
+        function startTimer() {
+            if (countdownInterval) return; // Ya está corriendo
+            
+            const minutesInput = parseInt(document.getElementById('timer-minutes').value) || 5;
+            
+            if (remainingSeconds <= 0) {
+                remainingSeconds = minutesInput * 60;
+            }
+            
+            document.getElementById('btn-timer-start').disabled = true;
+            
+            // Inicializar AudioContext en interacción del usuario para cumplir con las políticas de Autoplay
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            updateTimerDisplay();
+            
+            countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay();
+                
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    document.getElementById('btn-timer-start').disabled = false;
+                    playBeep();
+                    
+                    // Alarma visual: parpadeo rápido
+                    let blinks = 0;
+                    const blinkInt = setInterval(() => {
+                        const el = document.getElementById('timer-display');
+                        el.style.opacity = el.style.opacity === '0' ? '1' : '0';
+                        blinks++;
+                        if(blinks > 8) {
+                            clearInterval(blinkInt);
+                            el.style.opacity = '1';
+                        }
+                    }, 250);
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            const minutesInput = parseInt(document.getElementById('timer-minutes').value) || 5;
+            remainingSeconds = minutesInput * 60;
+            document.getElementById('btn-timer-start').disabled = false;
+            updateTimerDisplay();
+        }
+
+        // Event listener para actualizar el display si cambian el input manualmente antes de iniciar
+        document.getElementById('timer-minutes').addEventListener('change', () => {
+            if (!countdownInterval) {
+                resetTimer();
+            }
+        });
+
+
         // ── SVG Bracket Connectors ────────────────────────────────────────
         function r(id) { return document.getElementById(id).getBoundingClientRect(); }
 
-        function addPath(svg, d, stroke, width, opacity) {
+        function addPath(svg, d, stroke, width, opacity, useFilter = false) {
             const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             p.setAttribute('d', d);
             p.setAttribute('fill', 'none');
@@ -440,6 +563,7 @@
             p.setAttribute('stroke-width', width);
             p.setAttribute('stroke-opacity', opacity);
             p.setAttribute('stroke-linecap', 'square');
+            if (useFilter) p.setAttribute('filter', 'url(#neon-blue)');
             svg.appendChild(p);
         }
 
@@ -451,24 +575,19 @@
             const rq3 = r('q3'), rq4 = r('q4'), rs2 = r('s2');
             const rf1 = r('f1');
 
-            const dim = 'rgba(0,212,255,0.25)';
-            const blue = '#00d4ff';
+            const dim = 'rgba(255, 255, 255, 0.4)'; // Brighter lines for projector
+            const blue = '#00e5ff'; // Brighter neon
 
             // ── LEFT SIDE: Q1 & Q2 → vertical bar → S1 ──
-            // The vertical bar sits at midX between q1.right and s1.left
             const lBarX = rq1.right + (rs1.left - rq1.right) / 2;
             const lTop = Math.min(rq1.top + rq1.height / 2, rq2.top + rq2.height / 2);
             const lBot = Math.max(rq1.top + rq1.height / 2, rq2.top + rq2.height / 2);
-            const lMidY = (lTop + lBot) / 2; // where the bar connects to s1
+            const lMidY = (lTop + lBot) / 2;
 
-            // Q1 horizontal → bar
-            addPath(svg, `M ${rq1.right} ${rq1.top + rq1.height / 2} H ${lBarX}`, dim, 1.5, 1);
-            // Q2 horizontal → bar
-            addPath(svg, `M ${rq2.right} ${rq2.top + rq2.height / 2} H ${lBarX}`, dim, 1.5, 1);
-            // Vertical bar connecting Q1 and Q2
-            addPath(svg, `M ${lBarX} ${lTop} V ${lBot}`, dim, 1.5, 1);
-            // Bar mid → S1 left
-            addPath(svg, `M ${lBarX} ${lMidY} H ${rs1.left}`, dim, 1.5, 1);
+            addPath(svg, `M ${rq1.right} ${rq1.top + rq1.height / 2} H ${lBarX}`, dim, 3, 1);
+            addPath(svg, `M ${rq2.right} ${rq2.top + rq2.height / 2} H ${lBarX}`, dim, 3, 1);
+            addPath(svg, `M ${lBarX} ${lTop} V ${lBot}`, dim, 3, 1);
+            addPath(svg, `M ${lBarX} ${lMidY} H ${rs1.left}`, dim, 3, 1);
 
             // ── RIGHT SIDE: Q3 & Q4 ← vertical bar ← S2 ──
             const rBarX = rs2.right + (rq3.left - rs2.right) / 2;
@@ -476,25 +595,25 @@
             const rBot = Math.max(rq3.top + rq3.height / 2, rq4.top + rq4.height / 2);
             const rMidY = (rTop + rBot) / 2;
 
-            addPath(svg, `M ${rq3.left} ${rq3.top + rq3.height / 2} H ${rBarX}`, dim, 1.5, 1);
-            addPath(svg, `M ${rq4.left} ${rq4.top + rq4.height / 2} H ${rBarX}`, dim, 1.5, 1);
-            addPath(svg, `M ${rBarX} ${rTop} V ${rBot}`, dim, 1.5, 1);
-            addPath(svg, `M ${rBarX} ${rMidY} H ${rs2.right}`, dim, 1.5, 1);
+            addPath(svg, `M ${rq3.left} ${rq3.top + rq3.height / 2} H ${rBarX}`, dim, 3, 1);
+            addPath(svg, `M ${rq4.left} ${rq4.top + rq4.height / 2} H ${rBarX}`, dim, 3, 1);
+            addPath(svg, `M ${rBarX} ${rTop} V ${rBot}`, dim, 3, 1);
+            addPath(svg, `M ${rBarX} ${rMidY} H ${rs2.right}`, dim, 3, 1);
 
             // ── S1 → F1 (neon blue) ──
             const s1x = rs1.right, s1y = rs1.top + rs1.height / 2;
             const f1lx = rf1.left, f1y = rf1.top + rf1.height / 2;
             const lmx = s1x + (f1lx - s1x) / 2;
             // glow
-            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 6, 0.12);
-            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 1.5, 1);
+            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 12, 0.2);
+            addPath(svg, `M ${s1x} ${s1y} H ${lmx} V ${f1y} H ${f1lx}`, blue, 4, 1, true);
 
             // ── S2 ← F1 (neon blue) ──
             const s2x = rs2.left, s2y = rs2.top + rs2.height / 2;
             const f1rx = rf1.right;
             const rmx = f1rx + (s2x - f1rx) / 2;
-            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 6, 0.12);
-            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 1.5, 1);
+            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 12, 0.2);
+            addPath(svg, `M ${f1rx} ${f1y} H ${rmx} V ${s2y} H ${s2x}`, blue, 4, 1, true);
         }
 
         window.addEventListener('load', () => setTimeout(drawConnectors, 200));
