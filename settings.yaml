@@ -13,7 +13,7 @@ engine:
   ship_sizes: [4, 3, 3, 2]
 
 tournament:
-  default_model: "offline"
+  default_model: "deepseek/deepseek-chat"
   rounds:
     q: 
       board_size: 6
@@ -21,11 +21,11 @@ tournament:
       ship_sizes: [4, 3, 2]
     s: 
       board_size: 8
-      max_turns: 20
+      max_turns: 10
       ship_sizes: [4, 3, 3, 2]
     f: 
       board_size: 10
-      max_turns: 20
+      max_turns: 10
       ship_sizes: [5, 4, 3, 3, 2]
 
 models_catalog:
