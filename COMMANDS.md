@@ -41,7 +41,15 @@ python main.py tournament --agents-dir agentes --output results.json
 ## 4. Visualización y Dashboards
 
 ### Dashboard Táctico (Seguimiento de partida)
-Si la partida está en marcha y quieres ver el tablero en tiempo real:
+Si la partida está en marcha y quieres ver el tablero en tiempo real, tienes dos opciones:
+
+**Opción A: Dashboard HTML Nativo (Recomendado)**
+```powershell
+python -m uvicorn core.api:app --port 8000 --reload
+```
+*Disponible en:* `http://localhost:8000`
+
+**Opción B: Dashboard Streamlit (Legacy / Por si acaso)**
 ```powershell
 python -m streamlit run frontend/Interface.py
 ```

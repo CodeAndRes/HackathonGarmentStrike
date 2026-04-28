@@ -65,6 +65,40 @@
             gap: 15px;
         }
 
+        .btn-validate {
+            border-color: #ff9f43 !important;
+            color: #ff9f43 !important;
+        }
+        .btn-validate:hover {
+            background: #ff9f43 !important;
+            color: #000 !important;
+        }
+
+        #validation-results {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 350px;
+            max-height: 80vh;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .val-item {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .val-name { font-weight: bold; font-family: Orbitron; font-size: 0.9rem; }
+        .val-status { font-size: 0.7rem; text-transform: uppercase; margin-top: 4px; }
+        .val-error { color: #ff4b4b; font-size: 0.8rem; margin-top: 5px; list-style: none; padding: 0; }
+        .val-success { color: #00ff88; }
+
         button {
             background: rgba(0, 212, 255, 0.1);
             border: 1px solid var(--accent-blue);
@@ -240,10 +274,19 @@
     <div class="header">
         <h1>Garment Strike <span style="color: var(--accent-blue)">Tournament</span></h1>
         <div class="controls">
+            <button class="btn-validate" onclick="validateAgents()">Validar Equipos</button>
             <button onclick="setupTournament()">Inicializar Torneo</button>
             <button onclick="resetTournament()"
                 style="border-color: var(--accent-red); color: var(--accent-red);">Reset</button>
         </div>
+    </div>
+
+    <div id="validation-results">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+            <h3 style="margin:0; font-family:Orbitron; color:#ff9f43;">Informe de Validación</h3>
+            <button onclick="document.getElementById('validation-results').style.display='none'" style="padding:2px 8px;">X</button>
+        </div>
+        <div id="validation-content"></div>
     </div>
 
     <!-- TIMER PANEL (MOVIDO ARRIBA) -->
@@ -354,7 +397,7 @@
     </div>
 
     <script>
-        const API_URL = "http://localhost:8080";
+        const API_URL = "";
         let pollingInterval = null;
 
         async function fetchBracket() {
@@ -430,10 +473,35 @@
         }
 
         async function runMatch(id) {
-            await fetch(`${API_URL}/run/${id}`, { method: 'POST' });
-            fetchBracket();
-            if (!pollingInterval) {
-                pollingInterval = setInterval(fetchBracket, 2000);
+            const ev = typeof window.event !== 'undefined' ? window.event : null;
+            const btn = ev ? ev.target : null;
+            if (btn && btn.tagName === 'BUTTON') {
+                btn.disabled = true;
+                btn.innerText = 'Iniciando...';
+            }
+
+            // Abrir la pestaña ANTES del await para evitar que el navegador bloquee el popup
+            const dashWindow = window.open("http://127.0.0.1:8000/", "_blank");
+            
+            try {
+                const response = await fetch(`${API_URL}/run/${id}`, { method: 'POST' });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert("Error: " + (errorData.detail || "No se pudo iniciar el combate"));
+                    if (dashWindow) dashWindow.close();
+                    fetchBracket();
+                    return;
+                }
+                
+                fetchBracket();
+                if (!pollingInterval) {
+                    pollingInterval = setInterval(fetchBracket, 2000);
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+                alert("Error de conexión con el servidor");
+                if (dashWindow) dashWindow.close();
+                fetchBracket();
             }
         }
 
@@ -618,6 +686,58 @@
 
         window.addEventListener('load', () => setTimeout(drawConnectors, 200));
         window.addEventListener('resize', drawConnectors);
+
+        async function validateAgents() {
+            // Detectar la fase actual basándose en el estado de los combates
+            let phase = 'q';
+            try {
+                const bRes = await fetch(`${API_URL}/bracket`);
+                const matches = await bRes.json();
+                
+                const qFinished = ['q1','q2','q3','q4'].every(id => matches[id]?.status === 'finished');
+                const sFinished = ['s1','s2'].every(id => matches[id]?.status === 'finished');
+                
+                if (sFinished) phase = 'f';
+                else if (qFinished) phase = 's';
+            } catch(e) { 
+                console.warn("No se pudo detectar fase, usando 'q'", e);
+            }
+
+            const resPanel = document.getElementById('validation-results');
+            const resContent = document.getElementById('validation-content');
+            
+            resPanel.style.display = 'block';
+            resContent.innerHTML = `<div style="color:#666; font-family:JetBrains Mono;">Analizando agentes (Fase ${phase.toUpperCase()})...</div>`;
+
+            try {
+                const response = await fetch(`${API_URL}/validate/${phase}`);
+                const data = await response.json();
+                
+                let html = '';
+                for (const [name, result] of Object.entries(data)) {
+                    html += `
+                        <div class="val-item">
+                            <div class="val-name">${name}</div>
+                            <div class="val-status ${result.is_valid ? 'val-success' : 'val-error'}">
+                                ${result.is_valid ? '✔ VÁLIDO' : '✘ IRREGULAR'}
+                            </div>
+                            <div style="font-size:0.7rem; color:#888; margin-top:3px;">
+                                Archivo: <span style="color:#aaa">${result.almacen_usado}</span><br>
+                                Estrategia: ${result.word_count} palabras | Pedidos: [${result.ship_sizes.join(',')}]
+                            </div>
+                            ${!result.is_valid ? `
+                                <ul class="val-error">
+                                    ${result.errors.map(e => `<li>• ${e}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                resContent.innerHTML = html;
+            } catch (err) {
+                resContent.innerHTML = '<div style="color:red;">Error de conexión con el validador.</div>';
+            }
+        }
 
         const _origRender = renderBracket;
         renderBracket = function (matches) {

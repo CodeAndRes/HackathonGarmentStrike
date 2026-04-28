@@ -15,9 +15,8 @@ class BracketMatch:
     winner: Optional[str] = None
     status: str = "pending" # pending, running, finished
     result: Optional[dict] = None
-
 class BracketEngine:
-    def __init__(self, agents_dir: str = "agentes"):
+    def __init__(self, agents_dir: str = "torneo"):
         self.agents_dir = Path(agents_dir)
         self.all_agents = self._discover_agents()
         self.matches: Dict[str, BracketMatch] = {}
@@ -26,12 +25,23 @@ class BracketEngine:
         
     def _discover_agents(self) -> List[AgentConfig]:
         agents = []
-        for d in self.agents_dir.iterdir():
-            if d.is_dir():
-                md = d / "agent.md"
-                almacen = list(d.glob("almacen_*.md"))
-                if md.exists() and almacen:
-                    agents.append(AgentConfig(name=d.name, agent_md_path=md, almacen_path=almacen[0]))
+        if not self.agents_dir.exists():
+            return agents
+            
+        for f in self.agents_dir.glob("*.md"):
+            # Ignorar archivos .almacen.md
+            if f.name.endswith(".almacen.md"):
+                continue
+                
+            agent_name = f.stem
+            almacen_path = self.agents_dir / f"{agent_name}.almacen.md"
+            
+            if almacen_path.exists():
+                agents.append(AgentConfig(
+                    name=agent_name, 
+                    agent_md_path=f, 
+                    almacen_path=almacen_path
+                ))
         return agents
 
     def setup_tournament(self, seed_agents: List[str] = None):
@@ -89,21 +99,73 @@ class BracketEngine:
         self.save_state()
         
         try:
-            config_a = self.get_match_config(match.team_a)
-            config_b = self.get_match_config(match.team_b)
+            # Obtener configuraciones básicas
+            base_a = self.get_match_config(match.team_a)
+            base_b = self.get_match_config(match.team_b)
             
-            # Run the match using existing core logic
-            record: MatchRecord = run_match(
-                config_a, config_b, llm_client,
-                visual=False, 
-                export_json=True # This allows the dashboard to follow along
-            )
+            # Crear copias locales para no contaminar otras rondas si modificamos el path
+            from copy import copy
+            config_a = copy(base_a)
+            config_b = copy(base_b)
             
-            match.winner = record.winner if record.winner else "EMPATE"
-            match.status = "finished"
-            match.result = asdict(record)
+            # Determinar la fase para aplicar las reglas correctas
+            phase = match_id[0] # 'q', 's', o 'f'
             
-            self._advance_tournament(match_id, match.winner)
+            # Selección adaptativa: busca archivos específicos de fase (.s.md, .f.md)
+            for cfg in [config_a, config_b]:
+                # Almacén: nombre.almacen.s.md
+                phase_almacen = cfg.almacen_path.parent / f"{cfg.name}.almacen.{phase}.md"
+                if phase_almacen.exists():
+                    cfg.almacen_path = phase_almacen
+                
+                # Agente: nombre.s.md
+                phase_agent = cfg.agent_md_path.parent / f"{cfg.name}.{phase}.md"
+                if phase_agent.exists():
+                    cfg.agent_md_path = phase_agent
+            
+            # Cargar settings para obtener las reglas de la ronda
+            import yaml
+            try:
+                with open("settings.yaml", "r", encoding="utf-8") as f:
+                    settings = yaml.safe_load(f) or {}
+                    tournament_rules = settings.get("tournament", {}).get("rounds", {}).get(phase, {})
+            except Exception:
+                tournament_rules = {}
+
+            board_size = tournament_rules.get("board_size", 10)
+            max_turns = tournament_rules.get("max_turns", 50)
+            ship_sizes = tournament_rules.get("ship_sizes", [5, 4, 3, 3, 2])
+            
+            # Actualizar el board_size del cliente para evitar coordenadas fuera de límites
+            llm_client.board_size = board_size
+            
+            try:
+                # Run the match using existing core logic
+                record: MatchRecord = run_match(
+                    config_a, config_b, llm_client,
+                    visual=False, 
+                    export_json=True, # This allows the dashboard to follow along
+                    board_size=board_size,
+                    max_turns=max_turns,
+                    ship_sizes=ship_sizes
+                )
+                
+                # Recargar la referencia por si load_state reemplazó los objetos en memoria
+                current_match = self.matches.get(match_id)
+                if current_match:
+                    current_match.winner = record.winner if record.winner else "EMPATE"
+                    current_match.status = "finished"
+                    current_match.result = asdict(record)
+                
+                self._advance_tournament(match_id, record.winner if record.winner else "EMPATE")
+            except Exception as match_exc:
+                print(f"\n[CRITICAL ERROR] Match {match_id} crashed during run_match: {match_exc}")
+                import traceback
+                traceback.print_exc()
+                # Marcar como error para no quedarse atascado en 'running'
+                current_match = self.matches.get(match_id)
+                if current_match:
+                    current_match.status = "error"
         finally:
             self.is_running = False
             self.save_state()
@@ -120,3 +182,51 @@ class BracketEngine:
         elif match_id == "q4": self.matches["s2"].team_b = winner
         elif match_id == "s1": self.matches["f1"].team_a = winner
         elif match_id == "s2": self.matches["f1"].team_b = winner
+
+    def validate_teams(self, phase: str = 'q') -> dict:
+        """Valida todos los agentes participantes contra las reglas de una fase."""
+        from core.validator import AgentValidator
+        import yaml
+        
+        try:
+            with open("settings.yaml", "r", encoding="utf-8") as f:
+                settings = yaml.safe_load(f) or {}
+                rules = settings.get("tournament", {}).get("rounds", {}).get(phase, {})
+        except:
+            rules = {}
+
+        board_size = rules.get("board_size", 10)
+        ship_sizes = rules.get("ship_sizes", [5, 4, 3, 3, 2])
+        
+        validator = AgentValidator(word_limit=500)
+        results = {}
+        
+        # Filtrar agentes que participan en la fase actual
+        active_teams = set()
+        for mid, m in self.matches.items():
+            if mid.startswith(phase):
+                if m.team_a: active_teams.add(m.team_a)
+                if m.team_b: active_teams.add(m.team_b)
+        
+        agents = [a for a in self._discover_agents() if a.name in active_teams]
+        
+        for agent in agents:
+            # Aplicar lógica adaptativa para la validación de fase
+            # Buscamos archivos específicos (.s.md, .f.md)
+            phase_almacen = agent.almacen_path.parent / f"{agent.name}.almacen.{phase}.md"
+            if phase_almacen.exists():
+                agent.almacen_path = phase_almacen
+            
+            phase_agent = agent.agent_md_path.parent / f"{agent.name}.{phase}.md"
+            if phase_agent.exists():
+                agent.agent_md_path = phase_agent
+
+            res = validator.validate(agent, board_size, ship_sizes)
+            results[agent.name] = {
+                "is_valid": res.is_valid,
+                "errors": res.errors,
+                "word_count": res.word_count,
+                "ship_sizes": res.ship_sizes,
+                "almacen_usado": agent.almacen_path.name # Añadido para que el usuario vea qué archivo se está validando
+            }
+        return results

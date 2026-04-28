@@ -317,8 +317,8 @@ def run_match(
                 game.move_log.pop() # Limpiamos para no ensuciar el log real
 
             board_text = (
-                target_board.grid_text_minimal()
-                if active_client.quick_mode
+                target_board.grid_text_compact()
+                if getattr(active_client, "quick_mode", False)
                 else target_board.grid_text(reveal_ships=False)
             )
             forbidden_set = {f"{c}{r}" for c, r in target_board.shots_received.keys()}
@@ -438,7 +438,7 @@ def run_match(
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                 model_name = getattr(active_client, "model", "unknown")
                 f.write(f"[{timestamp}] [{model_name}] [T {game.turn_count:>3}] {current:<15} -> {col}{row:<3} | {log_res:<16} | lat:{lat_str}\n")
-                if "SISTEMA" in razon:
+                if "SISTEMA" in str(razon):
                     f.write(f"           ↳ (AVISO: El LLM falló. Se usó tiro forzado para continuar)\n")
                 elif result == "already_shot":
                     f.write(f"           ↳ (Error: AI intentó disparar donde ya había disparado)\n")
@@ -600,10 +600,10 @@ def _write_game_state(game: Game, finished: bool = None, winner: str = None, ove
 
 def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
     """
-    Scan <agents_dir>/ for team sub-folders.
-    Each valid team folder must contain:
-        agent.md          – strategy manifesto
-        almacen_*.md      – warehouse placement
+    Scan <agents_dir>/ for team files.
+    Each valid team must have:
+        NAME.md          – strategy manifesto
+        NAME.almacen.md  – warehouse placement
     """
     agents_dir = Path(agents_dir)
     configs: list[AgentConfig] = []
@@ -612,32 +612,21 @@ def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
         console.print(f"[red]Carpeta '{agents_dir}' no encontrada.[/red]")
         return configs
 
-    for team_dir in sorted(agents_dir.iterdir()):
-        if not team_dir.is_dir():
-            continue
-        agent_md = team_dir / "agent.md"
-        almacen_files = sorted(team_dir.glob("almacen_*.md"))
-
-        if not agent_md.exists():
-            console.print(
-                f"[yellow][!] {team_dir.name}: agent.md no encontrado - omitido.[/yellow]"
-            )
-            continue
-        if not almacen_files:
-            console.print(
-                f"[yellow][!] {team_dir.name}: almacen_*.md no encontrado - omitido.[/yellow]"
-            )
-            continue
-
-        configs.append(
-            AgentConfig(
-                name=team_dir.name,
-                agent_md_path=agent_md,
-                almacen_path=almacen_files[0],
-            )
-        )
-        console.print(f"[green][OK] Agente cargado: {team_dir.name}[/green]")
-
+    for item in sorted(agents_dir.iterdir()):
+        # Caso A: Estructura anidada (agentes/nombre/agent.md)
+        if item.is_dir():
+            agent_md = item / "agent.md"
+            almacen_files = sorted(item.glob("almacen_*.md")) or sorted(item.glob("*.md"))
+            if agent_md.exists() and almacen_files:
+                configs.append(AgentConfig(name=item.name, agent_md_path=agent_md, almacen_path=almacen_files[0]))
+        
+        # Caso B: Estructura plana (torneo/nombre.md + nombre.almacen.md)
+        elif item.suffix == ".md" and not item.name.endswith(".almacen.md"):
+            agent_name = item.stem
+            almacen_path = agents_dir / f"{agent_name}.almacen.md"
+            if almacen_path.exists():
+                configs.append(AgentConfig(name=agent_name, agent_md_path=item, almacen_path=almacen_path))
+            
     return configs
 
 

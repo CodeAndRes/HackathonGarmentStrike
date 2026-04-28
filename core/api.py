@@ -91,4 +91,5 @@ async def serve_dashboard():
 
 def start_api_server(host="127.0.0.1", port=8000):
     import uvicorn
+    # Eliminamos install_signal_handlers para evitar incompatibilidad con versiones antiguas
     uvicorn.run(app, host=host, port=port, log_level="critical")

@@ -58,62 +58,54 @@ def validate_agents(agents_dir: Path) -> list[dict[str, str]]:
             }
         ]
 
-    for team_dir in sorted(agents_dir.iterdir()):
-        if not team_dir.is_dir():
+    for f in sorted(agents_dir.glob("*.md")):
+        if f.name.endswith(".almacen.md"):
             continue
 
-        team = team_dir.name
-        agent_md = team_dir / "agent.md"
-        almacen_files = sorted(team_dir.glob("almacen_*.md"))
+        team = f.stem
+        # Almacenes a validar por fase
+        almacenes_to_check = [
+            (f"{team}.almacen.md", "q"),
+            (f"{team}.almacen.s.md", "s"),
+            (f"{team}.almacen.f.md", "f"),
+        ]
 
-        if not agent_md.exists():
-            rows.append(
-                {
-                    "equipo": team,
-                    "estado": "WARN",
-                    "detalle": "Falta agent.md",
-                }
-            )
-            continue
+        # Cargar reglas de settings para validar correctamente cada fase
+        import yaml
+        try:
+            with open("settings.yaml", "r", encoding="utf-8") as settings_f:
+                all_rules = yaml.safe_load(settings_f).get("tournament", {}).get("rounds", {})
+        except:
+            all_rules = {}
 
-        if not almacen_files:
-            rows.append(
-                {
-                    "equipo": team,
-                    "estado": "WARN",
-                    "detalle": "Falta almacen_*.md (se usaria auto-generacion)",
-                }
-            )
-            continue
+        for filename, phase in almacenes_to_check:
+            almacen_path = agents_dir / filename
+            
+            if not almacen_path.exists():
+                if phase == "q": # El principal es obligatorio o usará fallback
+                    rows.append({"equipo": f"{team} ({phase})", "estado": "WARN", "detalle": f"Falta {filename}"})
+                continue
 
-        ships, used_fallback, reason = AlmacenParser.parse_with_status(
-            almacen_files[0], emit_warning=False
-        )
-        _ = ships  # explicit: parse validates board when possible
+            rules = all_rules.get(phase, {})
+            size = rules.get("board_size", 10)
+            ship_sizes = rules.get("ship_sizes", [5,4,3,3,2])
 
-        if used_fallback:
-            rows.append(
-                {
-                    "equipo": team,
-                    "estado": "WARN",
-                    "detalle": f"Auto-generacion requerida: {reason}",
-                }
+            ships, used_fallback, reason = AlmacenParser.parse_with_status(
+                almacen_path, size=size, ship_sizes=ship_sizes, emit_warning=False
             )
-        else:
-            rows.append(
-                {
-                    "equipo": team,
-                    "estado": "OK",
-                    "detalle": "Archivo almacen valido",
-                }
-            )
+
+            if used_fallback:
+                rows.append({"equipo": f"{team} ({phase})", "estado": "WARN", "detalle": f"Error en {filename}: {reason}"})
+            else:
+                rows.append({"equipo": f"{team} ({phase})", "estado": "OK", "detalle": f"Archivo {filename} valido"})
+
 
     if not rows:
         rows.append(
             {
                 "equipo": "(global)",
                 "estado": "WARN",
-                "detalle": "No se encontraron subcarpetas de equipos en /agentes",
+                "detalle": f"No se encontraron archivos .md en {agents_dir}",
             }
         )
 
@@ -128,7 +120,7 @@ def render_status(label: str, ok: bool, detail: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Garment Strike readiness checker")
-    parser.add_argument("--agents-dir", default="agentes", help="Carpeta de equipos")
+    parser.add_argument("--agents-dir", default="torneo", help="Carpeta de equipos")
     args = parser.parse_args()
 
     load_dotenv()

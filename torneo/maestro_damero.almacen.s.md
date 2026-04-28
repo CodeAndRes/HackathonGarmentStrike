@@ -1,0 +1,4 @@
+P1: B2 B3 B4 B5
+P2: D2 D3 D4
+P3: F2 F3 F4
+P4: H2 H3

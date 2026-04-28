@@ -1,47 +1,62 @@
 # 🏆 MANUAL DEL COMANDANTE: TORNEO GARMENT STRIKE
 
-¡Bienvenidos al torneo de logística táctica! Aquí se enfrentarán no solo agentes de IA, sino las mentes estratégicas que los configuran. Como comandante, tu éxito depende de tu capacidad para "entrenar" a tu agente a través de sus archivos de configuración.
-
-## 📋 Reglas Fundamentales
-
-### 1. El Arsenal del Agente
-Cada equipo debe gestionar y entregar dos archivos clave:
-- **`persona.md` (La Estrategia):** Define el razonamiento, la personalidad y el patrón táctico de tu agente. Es su "instinto" de combate.
-- **`board.md` (El Almacén):** Define la disposición de tus 5 pedidos (tamaños 5, 4, 3, 3 y 2) en la cuadrícula 10x10.
-
-### 2. Restricciones Técnicas
-- **Límite de Tamaño:** Máximo **5 KB** por archivo. (Los agentes procesan mejor la información concisa).
-- **Formato Estricto:** Se deben usar las plantillas de `/templates`. Alterar la estructura puede causar que el agente "se confunda" o el sistema rechace el archivo.
-
-### 3. Dinámica de Tiempos (Cronómetro Central)
-El torneo sigue un ritmo estricto controlado por el cronómetro del dashboard:
-- **Fase de Setup Inicial:** **10 Minutos**. Tiempo generoso para rellenar las plantillas, esconder tus pedidos y definir tu "Gran Estrategia".
-- **Fase de Ajuste Táctico:** **3 Minutos**. Entre rondas, el tiempo es escaso. Solo tendrás 180 segundos para reaccionar a lo que viste en la batalla anterior.
-
-## 🕵️ El Rol del Jugador: Observación y Re-Calibración
-No eres un espectador, eres un **Analista Táctico**. Durante el combate, DEBES observar el dashboard para responder:
-1. **¿Mi agente es predecible?** Si el rival te hunde barcos rápido, tu `board.md` es demasiado obvio.
-2. **¿Mi agente desperdicia tiros?** Si dispara a zonas donde ya falló o no sigue un patrón lógico, tu `persona.md` necesita reglas más claras.
-3. **¿Cómo juega el rival?** Puedes adaptar tu estrategia para la siguiente ronda basándote en los patrones de los otros equipos.
+¡Bienvenidos al torneo de logística táctica! Aquí se enfrentarán no solo agentes de IA, sino las mentes estratégicas que los configuran. En este torneo **no hay plantillas**. Deberéis investigar y descubrir la manera más inteligente de usar vuestras palabras para crear la estrategia perfecta.
 
 ---
 
-## 💡 Matices y Estrategias Avanzadas (Pro-Tips)
+## 🗺️ 1. MECÁNICAS DEL JUEGO
 
-### A. La Paradoja del Engaño
-En el `persona.md`, puedes describir una táctica que no vas a usar para confundir a los equipos que intenten espiar tu código (si las reglas lo permiten), pero asegúrate de que las **Reglas con ID** sean las que realmente quieres que ejecute la IA.
+El juego es una batalla naval táctica (hundir la flota) adaptada a un entorno logístico. Dos agentes de IA se enfrentan enviando coordenadas a ciegas hasta destruir la logística del rival.
 
-### B. Gestión de "Branching"
-Te recomendamos tener preparadas varias versiones de tus archivos:
-- `persona_agresivo.md`: Para rivales novatos.
-- `persona_analitico.md`: Para rivales con mapas complejos.
-- `board_disperso.md` vs `board_agrupado.md`.
+### Progresión del Torneo (El Desafío Crece)
+El tamaño del almacén y la cantidad de pedidos aumentan con cada fase:
+- **Primera Ronda:** Tablero **6x6** (A-F, 1-6). Tienes **3 pedidos** de tamaños: **4, 3, 2**. Límite: 50 turnos.
+- **Segunda Ronda:** Tablero **8x8** (A-H, 1-8). Tienes **4 pedidos** de tamaños: **4, 3, 3, 2**. Límite: 60 turnos.
+- **Gran Final:** Tablero **10x10** (A-J, 1-10). Tienes **5 pedidos** de tamaños: **5, 4, 3, 3, 2**. Sin límite de turnos.
 
-### C. Eficiencia de Instrucciones
-La IA tiene una "ventana de atención". En lugar de escribir un párrafo largo, usa listas de puntos:
-- `[ID: BUSQUEDA]` Priorizar esquinas.
-- `[ID: CAZA]` Tras acierto, buscar en cruz.
-Esto es mucho más efectivo que una descripción narrativa larga.
+### Reglas de Colocación (El Almacén)
+- Solo pueden colocarse en línea recta (**horizontal o vertical**). No en diagonal.
+- **No pueden superponerse** (dos cajas no pueden ocupar la misma coordenada).
+- Pueden estar pegadas unas a otras, pero es estratégicamente peligroso.
 
-> [!IMPORTANT]
-> **Recuerda:** Gana el equipo que mejor se adapte. Si tu agente pierde la primera ronda, tienes 3 minutos para cambiar radicalmente su forma de pensar. **¡Haz que cuenten!**
+---
+
+## ⚔️ 2. EL ARSENAL (Tus Archivos)
+
+Cada equipo debe entregar dos archivos de texto plano (`.md`). 
+**Límite estricto:** Máximo **300 palabras** por archivo. La IA tiene una ventana de atención limitada; sé conciso y directo.
+
+### Archivo 1: El Almacén (`almacen.md`)
+Aquí defines dónde escondes tus pedidos para la ronda actual. El formato es estricto (ejemplo para la 1ª Ronda):
+```text
+P1: A1 B1 C1 D1
+P2: A3 B3 C3
+P3: F4 F5
+```
+
+### Archivo 2: La Estrategia (`agent.md`)
+Este es el "cerebro" de tu IA. Escribe en lenguaje natural las instrucciones que debe seguir tu agente.
+- **Búsqueda:** ¿Cómo debe explorar el tablero al principio? (¿Al azar? ¿En patrón de ajedrez? ¿Por los bordes?)
+- **Caza:** Cuando acierta un tiro, ¿cómo debe reaccionar para hundir el resto de la caja sin desperdiciar turnos?
+- *Nota técnica:* El motor ya se encarga de pedirle a la IA que responda en el formato técnico necesario. Tu trabajo en este archivo es puramente **explicarle cómo debe pensar y decidir**.
+
+---
+
+## 🏆 3. CONDICIONES DE VICTORIA Y DESEMPATE
+
+El objetivo es hundir las 4 cajas del rival usando el **menor número de turnos posible**.
+
+1. **Victoria Directa:** El primer agente en hundir todas las cajas del enemigo gana la partida.
+2. **Límite de Turnos:** Si se alcanza el límite de turnos de la ronda sin un ganador claro, la batalla se detiene y actúan los jueces mecánicos.
+3. **Reglas de Desempate (Tie-breakers Oficiales):** Si se llega al límite de turnos, el sistema de puntuación evalúa en este orden exacto:
+   - **1º Criterio (Pedidos Hundidos):** El equipo que haya conseguido hundir más pedidos COMPLETOS del rival.
+   - **2º Criterio (Impactos Totales):** Si hay empate, gana quien haya acertado más veces (partes de barcos dañadas).
+   - **3º Criterio (Defensa):** Si persiste el empate, gana quien haya RECIBIDO MENOS impactos en su propio tablero.
+
+---
+
+## ⏱️ 4. DINÁMICA DEL TORNEO
+
+1. **Setup Inicial:** Tendréis un tiempo para escribir vuestro `agent.md` y esconder vuestras cajas en el `almacen.md`.
+2. **Observación Táctica:** Durante la batalla, observaréis el Dashboard en tiempo real. Prestad mucha atención: ¿vuestro agente dispara a zonas ilógicas? ¿Se queda atascado tras acertar un tiro?
+3. **Ajustes entre Rondas:** Si pasáis de ronda, tendréis un tiempo muy limitado para editar vuestra estrategia y corregir los fallos que hayáis observado. ¡El que mejor se adapta, gana!

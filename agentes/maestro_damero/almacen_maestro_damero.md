@@ -1,8 +1,4 @@
-# CONFIGURACIÓN DE ALMACÉN
-# Formato: [Tamaño de caja]
-# Configuración: 5,4,3,3,2
-5
-4
-3
-3
-2
+# Almacén — Maestro Damero
+P1: A1 C1 E1 B2
+P2: D2 F2 B4
+P3: D4 F4

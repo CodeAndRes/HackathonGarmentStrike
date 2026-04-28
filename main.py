@@ -281,7 +281,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             custom_save_file = None
             custom_save_label = "No"
             
-            agents_list = discover_agents("agentes")
+            agents_list = discover_agents("torneo")
             team_a_idx = 0
             team_b_idx = min(1, len(agents_list) - 1) if agents_list else 0
             
@@ -535,7 +535,7 @@ def build_parser() -> argparse.ArgumentParser:
     tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
     tour.add_argument(
         "--agents-dir",
-        default="agentes",
+        default="torneo",
         metavar="DIR",
         help="Carpeta con subcarpetas de equipos  (default: agentes/).",
     )

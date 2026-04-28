@@ -3,15 +3,30 @@
 # Las API Keys deben permanecer en el archivo .env.
 
 engine:
-  default_model: "groq/llama-3.1-8b-instant"
+  default_model: "offline"
   api_sleep: 2.0
   max_tokens: 120
   ui_sleep: 1.2
   max_retries: 3
   board_size: 6
-  max_turns: 50
+  max_turns: 10
   ship_sizes: [4, 3, 3, 2]
-#ship_sizes: [5, 4, 3, 3, 2]
+
+tournament:
+  default_model: "offline"
+  rounds:
+    q: 
+      board_size: 6
+      max_turns: 20
+      ship_sizes: [4, 3, 2]
+    s: 
+      board_size: 8
+      max_turns: 20
+      ship_sizes: [4, 3, 3, 2]
+    f: 
+      board_size: 10
+      max_turns: 20
+      ship_sizes: [5, 4, 3, 3, 2]
 
 models_catalog:
   groq:

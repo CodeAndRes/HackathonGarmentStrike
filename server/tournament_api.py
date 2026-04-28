@@ -7,10 +7,23 @@ import os
 import yaml
 from pathlib import Path
 from dotenv import load_dotenv
+import threading
 
 load_dotenv()
 
 app = FastAPI(title="Garment Strike Tournament API")
+
+# Arrancar el servidor táctico en background
+from core.api import start_api_server
+def run_tactical_server():
+    try:
+        start_api_server(host="127.0.0.1", port=8000)
+    except Exception as e:
+        print(f"Error al iniciar servidor táctico: {e}")
+
+tactical_thread = threading.Thread(target=run_tactical_server, daemon=True)
+tactical_thread.start()
+print("Servidor Táctico (Dashboard) iniciado en el puerto 8000")
 
 # Enable CORS for frontend
 app.add_middleware(
@@ -38,7 +51,6 @@ def get_settings():
 
 @app.get("/bracket")
 def get_bracket():
-    engine.load_state() # Refresh from disk
     return engine.matches
 
 @app.post("/setup")
@@ -46,9 +58,12 @@ def setup_tournament():
     engine.setup_tournament()
     return {"status": "Tournament setup complete", "matches": engine.matches}
 
+@app.get("/validate/{phase}")
+def validate_agents(phase: str):
+    return engine.validate_teams(phase)
+
 @app.post("/run/{match_id}")
 def run_match_task(match_id: str, background_tasks: BackgroundTasks):
-    engine.load_state()
     match = engine.matches.get(match_id)
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
@@ -57,14 +72,27 @@ def run_match_task(match_id: str, background_tasks: BackgroundTasks):
     if match.status == "running":
         raise HTTPException(status_code=400, detail="Match already running")
     
-    settings = get_settings()
-    model = os.getenv("DEFAULT_MODEL", "gemini/gemini-1.5-flash")
+    # Leer el modelo por defecto desde la configuración de torneo
+    import yaml
+    try:
+        with open("settings.yaml", "r", encoding="utf-8") as f:
+            full_settings = yaml.safe_load(f) or {}
+            tourn_settings = full_settings.get("tournament", {})
+    except:
+        tourn_settings = {}
+        
+    model = tourn_settings.get("default_model", os.getenv("DEFAULT_MODEL", "deepseek/deepseek-chat"))
     
-    client = LLMClient(
-        model=model,
-        temperature=float(settings.get("temperature", 0.7)),
-        max_tokens=int(settings.get("max_tokens", 150))
-    )
+    settings = get_settings()
+    if model.lower() == "offline":
+        from core.llm_client import OfflineLLMClient
+        client = OfflineLLMClient(board_size=10) # Bracket engine adjusts board size later
+    else:
+        client = LLMClient(
+            model=model,
+            temperature=float(settings.get("temperature", 0.7)),
+            max_tokens=int(settings.get("max_tokens", 150))
+        )
     
     # We pass the engine method to background tasks
     background_tasks.add_task(engine.run_bracket_match, match_id, client)
