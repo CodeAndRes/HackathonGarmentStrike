@@ -380,6 +380,7 @@
             <h4>Gestión de Torneo</h4>
             <div class="controls">
                 <button class="btn-validate" onclick="validateAgents()">Validar Equipos</button>
+                <button onclick="runNextMatch()" style="border-color: var(--accent-green); color: var(--accent-green); font-weight: bold;">Lanzar Siguiente Combate 🚀</button>
                 <button onclick="toggleTimer()" style="border-color: #00ff9d; color: #00ff9d;">Mostrar Temporizador</button>
                 <button onclick="setupTournament()">Inicializar Torneo</button>
                 <button onclick="resetTournament()"
@@ -643,7 +644,32 @@
             }
         }
 
+        async function runNextMatch() {
+            // Obtener el estado actual del bracket
+            try {
+                const response = await fetch(`${API_URL}/bracket`);
+                const matches = await response.json();
+                
+                // Buscar el primer combate pendiente que tenga ambos equipos
+                const order = ['q1','q2','q3','q4','s1','s2','f1'];
+                const nextId = order.find(id => {
+                    const m = matches[id];
+                    return m && m.status === 'pending' && m.team_a && m.team_b;
+                });
+
+                if (nextId) {
+                    toggleMenu(); // Cerrar menú
+                    runMatch(nextId);
+                } else {
+                    alert("No hay combates pendientes listos para ejecutar.");
+                }
+            } catch (err) {
+                console.error("Error al buscar siguiente combate:", err);
+            }
+        }
+
         // Initial fetch
+
         fetchBracket();
         // Constant slow polling
         setInterval(fetchBracket, 5000);

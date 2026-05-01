@@ -45,8 +45,10 @@ class BracketEngine:
         return agents
 
     def setup_tournament(self, seed_agents: List[str] = None):
-        """Initializes the 8-team bracket."""
+        """Initializes the 8-team bracket. Rediscover agents to pick up new files."""
+        self.all_agents = self._discover_agents()
         if seed_agents:
+
             selected = [a for a in self.all_agents if a.name in seed_agents]
         else:
             selected = random.sample(self.all_agents, min(len(self.all_agents), 8))

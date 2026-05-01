@@ -1,4 +1,0 @@
-P1: A1 A2 A3 A4
-P2: C8 D8 E8
-P3: G1 G2 G3
-P4: B4 C4

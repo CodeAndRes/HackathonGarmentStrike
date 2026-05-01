@@ -4,7 +4,7 @@
 
 engine:
   default_model: "offline"
-  api_sleep: 2.0
+  api_sleep: 1.0
   max_tokens: 120
   ui_sleep: 1.2
   max_retries: 3
@@ -17,15 +17,15 @@ tournament:
   rounds:
     q: 
       board_size: 6
-      max_turns: 20
+      max_turns: 10
       ship_sizes: [4, 3, 2]
     s: 
       board_size: 8
-      max_turns: 10
+      max_turns: 20
       ship_sizes: [4, 3, 3, 2]
     f: 
       board_size: 10
-      max_turns: 10
+      max_turns: 30
       ship_sizes: [5, 4, 3, 3, 2]
 
 models_catalog:
@@ -56,6 +56,6 @@ models_catalog:
 choreography:
   strategy_delay: 1.0
   reasoning_delay: 1.0
-  aiming_delay: 1.5
-  result_delay: 0.8
+  aiming_delay: 1.0
+  result_delay: 0.5
   transition_delay: 1.0
