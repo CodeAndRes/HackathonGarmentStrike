@@ -247,51 +247,7 @@ def run_match(
             # OPTIMIZATION LIMIT
             if game.turn_count >= max_turns:
                 with log_file.open("a", encoding="utf-8") as f:
-                    f.write(f"\n[SISTEMA] Límite de {max_turns} turnos alcanzado. Aplicando desempate por puntos.\n")
-                
-                # Winner evaluation logic on timeout
-                # 1. Sunk ships (pedidos encajados) — who sank more enemy ships
-                sunk_a = sum(1 for s in board_b.ships if s.is_sunk)  # A sank on B's board
-                sunk_b = sum(1 for s in board_a.ships if s.is_sunk)  # B sank on A's board
-                
-                # 2. Total hits on enemy (prendas encajadas)
-                hits_by_a = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
-                hits_by_b = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
-                
-                # 3. Hits received on OWN board (less is better — defensive metric)
-                dmg_to_a = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
-                dmg_to_b = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
-
-                if sunk_a > sunk_b:
-                    timeout_winner = config_a.name
-                    reason = "PUNTOS"
-                elif sunk_b > sunk_a:
-                    timeout_winner = config_b.name
-                    reason = "PUNTOS"
-                elif hits_by_a > hits_by_b:
-                    timeout_winner = config_a.name
-                    reason = "HITS"
-                elif hits_by_b > hits_by_a:
-                    timeout_winner = config_b.name
-                    reason = "HITS"
-                elif dmg_to_a < dmg_to_b:
-                    timeout_winner = config_a.name
-                    reason = "DEFENSA"
-                elif dmg_to_b < dmg_to_a:
-                    timeout_winner = config_b.name
-                    reason = "DEFENSA"
-                else:
-                    timeout_winner = None
-                    reason = "EMPATE ABSOLUTO"
-                
-                if timeout_winner:
-                   with log_file.open("a", encoding="utf-8") as f:
-                       f.write(f"[SISTEMA] Victoria concedida a {timeout_winner} por {reason}.\n")
-                   final_reason = f"Límite de turnos ({reason})"
-                else:
-                   with log_file.open("a", encoding="utf-8") as f:
-                       f.write(f"[SISTEMA] {reason}: Nadie consigue ventaja.\n")
-                   final_reason = f"Límite de turnos ({reason})"
+                    f.write(f"\n[SISTEMA] Límite de {max_turns} turnos alcanzado. Aplicando desempate oficial.\n")
                 break
 
             current = game.current_agent
@@ -449,24 +405,53 @@ def run_match(
                 if export_json or dashboard:
                     time.sleep(d_trans)
     finally:
-        # Determine winner (Natural or Tiebreaker)
+        # 1. Determine natural end
         finished, natural_winner = game.is_over()
         
-        hits_a = hits_count[config_a.name]
-        hits_b = hits_count[config_b.name]
-        if hits_a > hits_b:
-            timeout_winner = config_a.name
-            final_reason = "Mayor número de aciertos (timeout)"
-        elif hits_b > hits_a:
-            timeout_winner = config_b.name
-            final_reason = "Mayor número de aciertos (timeout)"
-        else:
-            timeout_winner = "EMPATE"
-            final_reason = "Igualdad de aciertos (timeout)"
-
-        winner = natural_winner if finished else timeout_winner
         if finished:
-            final_reason = f"Victoria por eliminación"
+            winner = natural_winner
+            final_reason = "Victoria por eliminación"
+        else:
+            # 2. Official Tie-breaker (Sunk Ships > Hits > Defense)
+            sunk_a = sum(1 for s in board_b.ships if s.is_sunk)
+            sunk_b = sum(1 for s in board_a.ships if s.is_sunk)
+            
+            hits_by_a = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
+            hits_by_b = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
+            
+            dmg_to_a = sum(1 for r in board_a.shots_received.values() if r in ("hit", "sunk"))
+            dmg_to_b = sum(1 for r in board_b.shots_received.values() if r in ("hit", "sunk"))
+
+            if sunk_a > sunk_b:
+                winner = config_a.name
+                reason = "PUNTOS (Hundidos)"
+            elif sunk_b > sunk_a:
+                winner = config_b.name
+                reason = "PUNTOS (Hundidos)"
+            elif hits_by_a > hits_by_b:
+                winner = config_a.name
+                reason = "HITS (Impactos)"
+            elif hits_by_b > hits_by_a:
+                winner = config_b.name
+                reason = "HITS (Impactos)"
+            elif dmg_to_a < dmg_to_b:
+                winner = config_a.name
+                reason = "DEFENSA"
+            elif dmg_to_b < dmg_to_a:
+                winner = config_b.name
+                reason = "DEFENSA"
+            else:
+                winner = "EMPATE"
+                reason = "EMPATE ABSOLUTO"
+            
+            type_str = "Límite de turnos" if game.turn_count >= max_turns else "Interrupción técnica"
+            final_reason = f"{type_str} ({reason})"
+            
+            # Log final decision if it was a timeout or error
+            with log_file.open("a", encoding="utf-8") as f:
+                f.write(f"\n[SISTEMA] {final_reason}\n")
+                if winner != "EMPATE":
+                    f.write(f"[SISTEMA] Ganador definitivo: {winner}\n")
 
         if dashboard:
             dashboard.stop()

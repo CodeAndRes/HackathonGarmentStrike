@@ -17,15 +17,15 @@ tournament:
   rounds:
     q: 
       board_size: 6
-      max_turns: 10
+      max_turns: 50
       ship_sizes: [4, 3, 2]
     s: 
       board_size: 8
-      max_turns: 20
+      max_turns: 60
       ship_sizes: [4, 3, 3, 2]
     f: 
       board_size: 10
-      max_turns: 30
+      max_turns: 100
       ship_sizes: [5, 4, 3, 3, 2]
 
 models_catalog:

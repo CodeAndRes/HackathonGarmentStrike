@@ -421,7 +421,7 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             console.print("\n[bold cyan]Iniciando Gran Torneo...[/bold cyan]")
             
             # Launch FastAPI server in background
-            server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080"]
+            server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080", "--reload"]
             
             try:
                 subprocess.Popen(
