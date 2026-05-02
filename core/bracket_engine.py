@@ -4,7 +4,8 @@ from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict
 
-from core.tournament import AgentConfig, run_match, MatchRecord
+from core.models import AgentConfig, MatchRecord
+from core.tournament import run_match
 from core.llm_client import LLMClient
 
 @dataclass

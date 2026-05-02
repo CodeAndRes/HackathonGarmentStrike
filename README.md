@@ -23,7 +23,7 @@
 
 ## 🖥️ Dashboard Táctico (Web)
 
-El proyecto incluye una visualización web en tiempo real construida con Streamlit. Consulta las [Instrucciones del Frontend](frontend/README.md) para arrancarlo.
+El proyecto incluye una visualización web en tiempo real construida con FastAPI y HTML nativo. Consulta el [Manual de Comandos](COMMANDS.md) para arrancarlo.
 
 ---
 
