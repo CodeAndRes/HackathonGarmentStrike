@@ -33,7 +33,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine = BracketEngine()
+tournament_dir = os.getenv("TOURNAMENT_DIR", "torneo")
+engine = BracketEngine(tournament_dir=tournament_dir)
 # Try to load existing state
 engine.load_state()
 

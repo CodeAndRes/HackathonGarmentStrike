@@ -22,6 +22,7 @@ import argparse
 import os
 import sys
 import time
+import shutil
 import yaml
 from pathlib import Path
 from dotenv import load_dotenv
@@ -418,7 +419,55 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
         elif choice == "5":
             import subprocess
             import webbrowser
-            console.print("\n[bold cyan]Iniciando Gran Torneo...[/bold cyan]")
+            
+            console.print("\n[bold cyan]-- Gestión de Torneos --[/bold cyan]")
+            console.print("1. [green]Crear Nuevo Torneo[/green]")
+            console.print("2. [yellow]Jugar Torneo Existente[/yellow]")
+            console.print("3. [red]Cancelar[/red]")
+            
+            t_choice = Prompt.ask("Selecciona", choices=["1", "2", "3"], default="2")
+            
+            selected_dir = "torneo" # default
+            
+            if t_choice == "1":
+                t_name = Prompt.ask("Nombre del nuevo torneo (ej: Mayo-2026)")
+                selected_dir = f"torneos/{t_name}"
+                Path(selected_dir).mkdir(parents=True, exist_ok=True)
+                console.print(f"[green]Carpeta creada: {selected_dir}[/green]")
+                if Prompt.ask("¿Copiar agentes del pool actual ('torneo/')?", choices=["s", "n"], default="s") == "s":
+                    for f in Path("torneo").glob("*"):
+                        if f.is_file():
+                            shutil.copy(f, Path(selected_dir) / f.name)
+                    console.print("[dim]Agentes copiados.[/dim]")
+            
+            elif t_choice == "2":
+                available = []
+                if Path("torneo").exists(): available.append("torneo")
+                if Path("torneos").exists():
+                    available.extend([str(d) for d in Path("torneos").iterdir() if d.is_dir()])
+                
+                if not available:
+                    console.print("[red]No hay torneos guardados.[/red]")
+                    time.sleep(1.5)
+                    continue
+                
+                console.print("\n[bold]Torneos encontrados:[/bold]")
+                for i, d in enumerate(available, 1):
+                    console.print(f"{i}. {d}")
+                
+                t_idx = IntPrompt.ask("Selecciona torneo", default=1)
+                if 1 <= t_idx <= len(available):
+                    selected_dir = available[t_idx-1]
+                else:
+                    continue
+            else:
+                continue
+
+            console.print(f"\n[bold cyan]Iniciando Gran Torneo en: {selected_dir}...[/bold cyan]")
+            
+            # Prepare environment with the selected directory
+            env = os.environ.copy()
+            env["TOURNAMENT_DIR"] = selected_dir
             
             # Launch FastAPI server in background
             server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080", "--reload"]
@@ -428,7 +477,8 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                     server_cmd,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    shell=(os.name == 'nt')
+                    shell=(os.name == 'nt'),
+                    env=env
                 )
                 console.print("[green](OK) API del Torneo iniciada en puerto 8080.[/green]")
                 console.print("[dim]Abriendo visualización del torneo...[/dim]")

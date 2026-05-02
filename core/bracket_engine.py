@@ -17,11 +17,12 @@ class BracketMatch:
     status: str = "pending" # pending, running, finished
     result: Optional[dict] = None
 class BracketEngine:
-    def __init__(self, agents_dir: str = "torneo"):
-        self.agents_dir = Path(agents_dir)
+    def __init__(self, tournament_dir: str = "torneo"):
+        self.tournament_dir = Path(tournament_dir)
+        self.agents_dir = self.tournament_dir
         self.all_agents = self._discover_agents()
         self.matches: Dict[str, BracketMatch] = {}
-        self.state_file = Path("logs/bracket_state.json")
+        self.state_file = self.tournament_dir / "bracket_state.json"
         self.is_running = False # Global lock for match execution
         
     def _discover_agents(self) -> List[AgentConfig]:
