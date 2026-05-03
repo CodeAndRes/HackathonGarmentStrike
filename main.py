@@ -112,16 +112,48 @@ def cmd_play(args: argparse.Namespace) -> None:
             args.team_b: _get_client(model_b),
         }
 
+    # Siempre creamos una carpeta de torneo "ad-hoc" para cumplir con la unificación
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    safe_name_a = "".join(c for c in args.team_a if c.isalnum())
+    safe_name_b = "".join(c for c in args.team_b if c.isalnum())
+    folder_name = f"torneos/Partida_{safe_name_a}_vs_{safe_name_b}_{timestamp}"
+    output_dir = Path(folder_name)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Copiar agentes a la carpeta para que sea autocontenida
+    shutil.copy(args.agent_a, output_dir / f"{args.team_a}.md")
+    shutil.copy(args.almacen_a, output_dir / f"{args.team_a}.almacen.md")
+    shutil.copy(args.agent_b, output_dir / f"{args.team_b}.md")
+    shutil.copy(args.almacen_b, output_dir / f"{args.team_b}.almacen.md")
+    
+    from core.bracket_engine import BracketEngine
+    engine = BracketEngine(tournament_dir=str(output_dir))
+    engine.setup_tournament(seed_agents=[args.team_a, args.team_b], count=2)
+    
+    console.print(f"[dim]Carpeta de partida creada: {folder_name}[/dim]")
+
     match = run_match(
         config_a, config_b, llm_client, visual=not args.no_visual, 
         ui_sleep=args.ui_sleep, board_size=args.board_size,
         max_turns=args.max_turns,
         ship_sizes=args.ship_sizes,
-        export_json=getattr(args, 'tactical', False)
+        export_json=getattr(args, 'tactical', False),
+        output_dir=output_dir
     )
 
     winner_str = match.winner if match.winner else "EMPATE"
     console.print(f"\n[bold]Ganador:[/bold] {winner_str}")
+    
+    # Si teníamos un motor de bracket, actualizamos el estado final
+    if output_dir:
+        from core.bracket_engine import BracketMatch
+        from dataclasses import asdict
+        m_state = engine.matches.get("f1")
+        if m_state:
+            m_state.winner = winner_str
+            m_state.status = "finished"
+            m_state.result = asdict(match)
+            engine.save_state()
     console.print(f"[bold]Turnos totales:[/bold] {match.total_turns}")
     
     acc_a = (match.hits_a / match.shots_a * 100) if match.shots_a > 0 else 0
@@ -249,9 +281,11 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             v = Prompt.ask("Elige", choices=["1", "2"], default="1")
             args.tactical = (v == "2")
             
-            if Prompt.ask("\n¿Deseas guardar el informe detallado (JSON/Markdown) en la carpeta 'reports/'?", choices=["s", "n"], default="n") == "s":
-                args.output = "partida_ejemplo.json"
+            if Prompt.ask("\n¿Deseas iniciar la visualización táctica (Dashboard Web)?", choices=["s", "n"], default="n") == "s":
+                args.tactical = True
+                args.output = "partida_ejemplo.json" # Esto disparará la creación de la carpeta
             else:
+                args.tactical = False
                 args.output = None
 
             cmd_play(args)
@@ -427,33 +461,53 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             
             t_choice = Prompt.ask("Selecciona", choices=["1", "2", "3"], default="2")
             
-            selected_dir = "torneo" # default
+            selected_dir = None
             
             if t_choice == "1":
                 t_name = Prompt.ask("Nombre del nuevo torneo (ej: Mayo-2026)")
                 selected_dir = f"torneos/{t_name}"
-                Path(selected_dir).mkdir(parents=True, exist_ok=True)
+                target_path = Path(selected_dir)
+                target_path.mkdir(parents=True, exist_ok=True)
                 console.print(f"[green]Carpeta creada: {selected_dir}[/green]")
-                if Prompt.ask("¿Copiar agentes del pool actual ('torneo/')?", choices=["s", "n"], default="s") == "s":
-                    for f in Path("torneo").glob("*"):
-                        if f.is_file():
-                            shutil.copy(f, Path(selected_dir) / f.name)
-                    console.print("[dim]Agentes copiados.[/dim]")
+                
+                # Opción de copiar agentes de torneos previos
+                prev_torneos = [d for d in Path("torneos").iterdir() if d.is_dir() and d.name != t_name]
+                if prev_torneos:
+                    console.print("\n[dim]¿Quieres copiar agentes de un torneo anterior?[/dim]")
+                    console.print("0. No copiar (empezar vacío)")
+                    for i, d in enumerate(prev_torneos, 1):
+                        console.print(f"{i}. {d.name}")
+                    
+                    c_idx = IntPrompt.ask("Selecciona", default=0)
+                    if 1 <= c_idx <= len(prev_torneos):
+                        src_dir = prev_torneos[c_idx-1]
+                        for f in src_dir.glob("*.md"):
+                            shutil.copy(f, target_path / f.name)
+                        console.print(f"[green](OK) Agentes copiados desde {src_dir.name}[/green]")
+                
+                # Inicializar el bracket según el número de agentes
+                from core.bracket_engine import BracketEngine
+                engine = BracketEngine(tournament_dir=selected_dir)
+                count = IntPrompt.ask("¿Número de participantes? (2, 4, 8)", choices=[2, 4, 8], default=8)
+                engine.setup_tournament(count=count)
+                console.print(f"[green](OK) Torneo de {count} equipos inicializado.[/green]")
             
             elif t_choice == "2":
-                available = []
-                if Path("torneo").exists(): available.append("torneo")
-                if Path("torneos").exists():
-                    available.extend([str(d) for d in Path("torneos").iterdir() if d.is_dir()])
+                if not Path("torneos").exists():
+                    console.print("[red]No hay torneos guardados en 'torneos/'.[/red]")
+                    time.sleep(1.5)
+                    continue
+                    
+                available = [str(d) for d in Path("torneos").iterdir() if d.is_dir()]
                 
                 if not available:
                     console.print("[red]No hay torneos guardados.[/red]")
                     time.sleep(1.5)
                     continue
                 
-                console.print("\n[bold]Torneos encontrados:[/bold]")
+                console.print("\n[bold]Torneos encontrados en 'torneos/':[/bold]")
                 for i, d in enumerate(available, 1):
-                    console.print(f"{i}. {d}")
+                    console.print(f"{i}. {Path(d).name}")
                 
                 t_idx = IntPrompt.ask("Selecciona torneo", default=1)
                 if 1 <= t_idx <= len(available):
@@ -462,6 +516,8 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
                     continue
             else:
                 continue
+
+            if not selected_dir: continue
 
             console.print(f"\n[bold cyan]Iniciando Gran Torneo en: {selected_dir}...[/bold cyan]")
             

@@ -17,11 +17,11 @@ tournament:
   rounds:
     q: 
       board_size: 6
-      max_turns: 50
+      max_turns: 20
       ship_sizes: [4, 3, 2]
     s: 
       board_size: 8
-      max_turns: 60
+      max_turns: 20
       ship_sizes: [4, 3, 3, 2]
     f: 
       board_size: 10

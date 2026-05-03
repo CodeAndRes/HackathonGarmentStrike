@@ -1,0 +1,30 @@
+{
+  "f1": {
+    "match_id": "f1",
+    "team_a": "4Fantasticos",
+    "team_b": "balatin",
+    "winner": "EMPATE",
+    "status": "finished",
+    "result": {
+      "agent_a": "4Fantasticos",
+      "agent_b": "balatin",
+      "winner": "EMPATE",
+      "total_turns": 2,
+      "shots_a": 1,
+      "shots_b": 1,
+      "hits_a": 0,
+      "hits_b": 0,
+      "already_shot_a": 0,
+      "already_shot_b": 0,
+      "avg_latency_a": 500.0,
+      "avg_latency_b": 500.0,
+      "prompt_tokens_a": 0,
+      "completion_tokens_a": 0,
+      "prompt_tokens_b": 0,
+      "completion_tokens_b": 0,
+      "errors_a": 0,
+      "errors_b": 0,
+      "win_reason": "L\u00edmite de turnos (EMPATE ABSOLUTO)"
+    }
+  }
+}

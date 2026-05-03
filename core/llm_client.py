@@ -95,10 +95,12 @@ class OfflineLLMClient:
         self,
         model: str = "offline",
         board_size: int = 10,
+        debug_log_path: Optional[str] = None,
         **kwargs
     ) -> None:
         self.model = model
         self.board_size = board_size
+        self.debug_log_path = debug_log_path
         self.quick_mode = True
         self.api_sleep = 0
         self.history = set() # Memoria para no repetir disparos
@@ -135,6 +137,15 @@ class OfflineLLMClient:
         # Reducir latencia para que sea más fluido
         time.sleep(0.5)
         
+        # --- DEBUG LOG ---
+        if self.debug_log_path:
+            with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                debug_f.write(f"\n{'='*80}\n")
+                debug_f.write(f"[{timestamp}] TURNO: {my_name} | Modelo: {self.model} (OFFLINE)\n")
+                debug_f.write(f"COORD: {chosen} | ESTRATEGIA: Detección de Patrones\n")
+                debug_f.write(f"RAZON: Simulacion offline en {chosen}.\n")
+
         return AgentMove(
             coordenada=chosen,
             razonamiento=f"Simulación offline en {chosen}. Analizando cuadrante para optimizar logística.",
@@ -171,6 +182,7 @@ class LLMClient:
         api_sleep: float = 6.0,
         max_tokens: int = 150,
         board_size: int = 10,
+        debug_log_path: Optional[str] = "logs/llm_debug.log",
     ) -> None:
         if not LITELLM_AVAILABLE:
             raise ImportError(
@@ -183,6 +195,7 @@ class LLMClient:
         self.api_sleep = api_sleep
         self.max_tokens = max_tokens
         self.board_size = board_size
+        self.debug_log_path = debug_log_path
         self.is_local_model = self.model.lower().startswith("ollama/")
 
         # Allow explicit override; otherwise rely on env vars loaded by caller
@@ -377,20 +390,22 @@ class LLMClient:
                 # in early turns, causing premature truncation.
 
                 # --- DEBUG LOG ---
-                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
-                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                    debug_f.write(f"\n{'='*80}\n")
-                    debug_f.write(f"[{timestamp}] TURNO: {my_name} | Modelo: {self.model} | Intento: {attempt}\n")
-                    for msg in messages:
-                        debug_f.write(f"[{msg['role'].upper()}] ({len(msg['content'])} chars):\n{msg['content'][:300]}...\n")
-                    debug_f.write(f"{'-'*80}\n")
+                if self.debug_log_path:
+                    with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                        debug_f.write(f"\n{'='*80}\n")
+                        debug_f.write(f"[{timestamp}] TURNO: {my_name} | Modelo: {self.model} | Intento: {attempt}\n")
+                        for msg in messages:
+                            debug_f.write(f"[{msg['role'].upper()}] ({len(msg['content'])} chars):\n{msg['content'][:300]}...\n")
+                        debug_f.write(f"{'-'*80}\n")
 
                 response = litellm.completion(**request_kwargs)
                 raw = (response.choices[0].message.content or "").strip()
 
                 # --- DEBUG RESPONSE ---
-                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
-                    debug_f.write(f"RESP ({len(raw)} chars): {raw}\n")
+                if self.debug_log_path:
+                    with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                        debug_f.write(f"RESP ({len(raw)} chars): {raw}\n")
 
                 if not raw:
                     raise ValueError("La API devolvio una respuesta vacia.")
@@ -416,15 +431,17 @@ class LLMClient:
                 last_error = exc
                 if attempt < self.max_retries:
                     wait_time = 2 * attempt  # 2s, 4s, 6s...
-                    with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
-                        debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por error de formato/lógica. Esperando {wait_time}s...\n")
+                    if self.debug_log_path:
+                        with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                            debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por error de formato/lógica. Esperando {wait_time}s...\n")
                     time.sleep(wait_time)
 
             except Exception as exc:
                 exc_str = str(exc).lower()
                 # --- DEBUG ERROR ---
-                with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
-                    debug_f.write(f"ERROR API: {type(exc).__name__}: {str(exc)}\n")
+                if self.debug_log_path:
+                    with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                        debug_f.write(f"ERROR API: {type(exc).__name__}: {str(exc)}\n")
 
                 # DETECCIÓN DE CUOTA AGOTADA (No es un rate limit temporal, es el límite diario/total)
                 if "quota" in exc_str and "exceeded" in exc_str and "rate" not in exc_str:
@@ -441,8 +458,9 @@ class LLMClient:
                     if is_rate_limit or is_unavailable:
                         last_error = exc
                         wait_time = 5 * (2 ** (attempt - 1))  # 5s, 10s, 20s...
-                        with open("logs/llm_debug.log", "a", encoding="utf-8") as debug_f:
-                            debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por Saturación/RateLimit. Esperando {wait_time}s...\n")
+                        if self.debug_log_path:
+                            with open(self.debug_log_path, "a", encoding="utf-8") as debug_f:
+                                debug_f.write(f"REINTENTO {attempt+1}/{self.max_retries} por Saturación/RateLimit. Esperando {wait_time}s...\n")
                         time.sleep(wait_time)
                         continue
 

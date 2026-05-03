@@ -1,0 +1,178 @@
+{
+    "turn": 2,
+    "turn_agent": "team_a",
+    "team_a": {
+        "name": "4Fantasticos",
+        "pedidos_encajados": 0,
+        "total_pedidos": 4,
+        "prendas_encajadas": 0,
+        "sunk_ships": [],
+        "fleet": {
+            "3,1": "P1",
+            "3,2": "P1",
+            "3,3": "P1",
+            "3,4": "P1",
+            "5,0": "P2",
+            "5,1": "P2",
+            "5,2": "P2",
+            "2,0": "P3",
+            "3,0": "P3",
+            "4,0": "P3",
+            "1,3": "P4",
+            "2,3": "P4"
+        },
+        "board": [
+            [
+                "~",
+                "O",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "#",
+                "~",
+                "~"
+            ],
+            [
+                "#",
+                "~",
+                "~",
+                "#",
+                "~",
+                "~"
+            ],
+            [
+                "#",
+                "#",
+                "#",
+                "#",
+                "#",
+                "~"
+            ],
+            [
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "#",
+                "#",
+                "#",
+                "~",
+                "~",
+                "~"
+            ]
+        ]
+    },
+    "team_b": {
+        "name": "balatin",
+        "pedidos_encajados": 0,
+        "total_pedidos": 4,
+        "prendas_encajadas": 0,
+        "sunk_ships": [],
+        "fleet": {
+            "0,5": "P1",
+            "1,5": "P1",
+            "2,5": "P1",
+            "3,5": "P1",
+            "0,4": "P2",
+            "1,4": "P2",
+            "2,4": "P2",
+            "5,0": "P3",
+            "5,1": "P3",
+            "5,2": "P3",
+            "3,1": "P4",
+            "3,2": "P4"
+        },
+        "board": [
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "#",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "#",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "#",
+                "#"
+            ],
+            [
+                "~",
+                "#",
+                "#",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "O",
+                "~"
+            ],
+            [
+                "#",
+                "#",
+                "#",
+                "~",
+                "~",
+                "~"
+            ]
+        ]
+    },
+    "comms": [
+        {
+            "turn": 1,
+            "agent": "A",
+            "coord": "E5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Simulación offline en E5. Analizando cuadrante para optimizar logística."
+        },
+        {
+            "turn": 2,
+            "agent": "B",
+            "coord": "B1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Simulación offline en B1. Analizando cuadrante para optimizar logística."
+        }
+    ],
+    "telemetry": {
+        "team_a": {
+            "strategy": "Detección de Patrones (Offline)",
+            "reasoning": "Simulación offline en E5. Analizando cuadrante para optimizar logística.",
+            "cursor": null
+        },
+        "team_b": {
+            "strategy": "Detección de Patrones (Offline)",
+            "reasoning": "Simulación offline en B1. Analizando cuadrante para optimizar logística.",
+            "cursor": null
+        }
+    },
+    "finished": true,
+    "winner": "EMPATE"
+}

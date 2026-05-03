@@ -46,29 +46,43 @@ class BracketEngine:
                 ))
         return agents
 
-    def setup_tournament(self, seed_agents: List[str] = None):
-        """Initializes the 8-team bracket. Rediscover agents to pick up new files."""
+    def setup_tournament(self, seed_agents: List[str] = None, count: int = 8):
+        """Initializes the bracket. Rediscover agents to pick up new files."""
         self.all_agents = self._discover_agents()
         if seed_agents:
-
             selected = [a for a in self.all_agents if a.name in seed_agents]
         else:
-            selected = random.sample(self.all_agents, min(len(self.all_agents), 8))
+            selected = random.sample(self.all_agents, min(len(self.all_agents), count))
         
         random.shuffle(selected)
         
-        # Quarter Finals
-        self.matches = {
-            "q1": BracketMatch("q1", selected[0].name, selected[1].name),
-            "q2": BracketMatch("q2", selected[2].name, selected[3].name),
-            "q3": BracketMatch("q3", selected[4].name, selected[5].name),
-            "q4": BracketMatch("q4", selected[6].name, selected[7].name),
+        # Initialize matches dictionary
+        self.matches = {}
+
+        if count == 8 and len(selected) >= 8:
+            # Quarter Finals
+            self.matches.update({
+                "q1": BracketMatch("q1", selected[0].name, selected[1].name),
+                "q2": BracketMatch("q2", selected[2].name, selected[3].name),
+                "q3": BracketMatch("q3", selected[4].name, selected[5].name),
+                "q4": BracketMatch("q4", selected[6].name, selected[7].name),
+                "s1": BracketMatch("s1", None, None),
+                "s2": BracketMatch("s2", None, None),
+                "f1": BracketMatch("f1", None, None)
+            })
+        elif count >= 4:
             # Semis
-            "s1": BracketMatch("s1", None, None),
-            "s2": BracketMatch("s2", None, None),
-            # Final
-            "f1": BracketMatch("f1", None, None)
-        }
+            self.matches.update({
+                "s1": BracketMatch("s1", selected[0].name, selected[1].name),
+                "s2": BracketMatch("s2", selected[2].name, selected[3].name),
+                "f1": BracketMatch("f1", None, None)
+            })
+        else:
+            # Final Directa (size 2)
+            self.matches.update({
+                "f1": BracketMatch("f1", selected[0].name, selected[1].name)
+            })
+            
         self.save_state()
 
     def save_state(self):
@@ -151,7 +165,8 @@ class BracketEngine:
                     export_json=True, # This allows the dashboard to follow along
                     board_size=board_size,
                     max_turns=max_turns,
-                    ship_sizes=ship_sizes
+                    ship_sizes=ship_sizes,
+                    output_dir=self.tournament_dir
                 )
                 
                 # Recargar la referencia por si load_state reemplazó los objetos en memoria

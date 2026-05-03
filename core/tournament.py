@@ -120,6 +120,7 @@ def run_match(
     max_turns: int = 50,
     ship_sizes: list[int] | None = None,
     export_json: bool = False,
+    output_dir: Optional[Path] = None,
 ) -> MatchRecord:
     # Cargar tiempos de coreografía desde settings.yaml (con fallbacks)
     import yaml
@@ -169,15 +170,25 @@ def run_match(
     else:
         llm_clients = {config_a.name: llm_client, config_b.name: llm_client}
 
-    # Use a unique log file for this match in the reports folder
-    Path("reports").mkdir(exist_ok=True)
-    log_file = Path(f"reports/turns_{config_a.name}_vs_{config_b.name}.log")
+    # Use a unique log file for this match
+    effective_log_dir = output_dir if output_dir else Path("reports")
+    effective_log_dir.mkdir(exist_ok=True, parents=True)
+    
+    log_file = effective_log_dir / f"turns_{config_a.name}_vs_{config_b.name}.log"
     if log_file.exists():
         log_file.unlink()
 
-    debug_file = Path("logs/llm_debug.log")
+    effective_debug_dir = output_dir if output_dir else Path("logs")
+    effective_debug_dir.mkdir(exist_ok=True, parents=True)
+    debug_file = effective_debug_dir / "llm_debug.log"
     if debug_file.exists():
         debug_file.unlink()
+
+    # Inject debug log path into clients if we have an output directory
+    if output_dir:
+        for client in llm_clients.values():
+            if hasattr(client, 'debug_log_path'):
+                client.debug_log_path = str(debug_file)
 
     if dashboard:
         dashboard.start()
@@ -192,7 +203,7 @@ def run_match(
     
     if export_json:
         # Reset inicial para que la web limpie la pantalla de victoria anterior
-        _write_game_state(game, finished=False)
+        _write_game_state(game, finished=False, output_dir=output_dir)
 
     timeout_winner = None
     final_reason = "Aniquilación"
@@ -227,7 +238,7 @@ def run_match(
                     estrategia_aplicada="PROCESANDO..."
                 )
                 game.move_log.append(thinking_record)
-                _write_game_state(game)
+                _write_game_state(game, output_dir=output_dir)
                 game.move_log.pop() # Limpiamos para no ensuciar el log real
 
             board_text = (
@@ -240,7 +251,7 @@ def run_match(
             # Fase 1: Pensamiento (Thinking) - Coreografía
             if export_json or dashboard:
                 if export_json:
-                    _write_game_state(game, override_telemetry={current: {
+                    _write_game_state(game, finished=False, output_dir=output_dir, override_telemetry={current: {
                         "strategy": "ANALIZANDO...", "reasoning": "Sincronizando sistemas...", "cursor": "thinking"
                     }})
                 if dashboard:
@@ -270,7 +281,7 @@ def run_match(
                 
                 # Paso 1: Mostrar Estrategia
                 if export_json:
-                    _write_game_state(game, override_telemetry={current: {
+                    _write_game_state(game, finished=False, output_dir=output_dir, override_telemetry={current: {
                         "strategy": estrategia, "reasoning": "...", "cursor": None
                     }})
                 if dashboard:
@@ -279,7 +290,7 @@ def run_match(
 
                 # Paso 2: Mostrar Razonamiento
                 if export_json:
-                    _write_game_state(game, override_telemetry={current: {
+                    _write_game_state(game, finished=False, output_dir=output_dir, override_telemetry={current: {
                         "strategy": estrategia, "reasoning": razon, "cursor": None
                     }})
                 if dashboard:
@@ -288,7 +299,7 @@ def run_match(
 
                 # Paso 3: Mostrar Objetivo (Aiming)
                 if export_json:
-                    _write_game_state(game, override_telemetry={current: {
+                    _write_game_state(game, finished=False, output_dir=output_dir, override_telemetry={current: {
                         "strategy": estrategia, "reasoning": razon, "cursor": "aiming", "target": move.coordenada
                     }})
                 
@@ -327,7 +338,7 @@ def run_match(
 
             # Paso 4: Resultado del Impacto
             if export_json:
-                _write_game_state(game)
+                _write_game_state(game, output_dir=output_dir)
             
             if dashboard:
                 # 4.1: Mostrar impacto resaltado [[X]] durante 1 segundo
@@ -415,7 +426,7 @@ def run_match(
             dashboard.stop()
         if export_json:
             # Final write to ensure the dashboard sees the 'finished' state
-            _write_game_state(game, finished=True, winner=winner)
+            _write_game_state(game, finished=True, winner=winner, output_dir=output_dir)
             
     if dashboard:
         dashboard.print_winner(winner, game.turn_count)
@@ -515,7 +526,7 @@ def serialize_game_state(game: Game, finished: bool = None, winner: str = None, 
     return state
 
 
-def _write_game_state(game: Game, finished: bool = None, winner: str = None, override_telemetry: dict = None) -> None:
+def _write_game_state(game: Game, finished: bool = None, winner: str = None, override_telemetry: dict = None, output_dir: Optional[Path] = None) -> None:
     """Helper to write game_state.json and push to Real-time API."""
     state = serialize_game_state(game, finished=finished, winner=winner, override_telemetry=override_telemetry)
     
@@ -525,8 +536,8 @@ def _write_game_state(game: Game, finished: bool = None, winner: str = None, ove
         return obj
 
     # 1. Escritura tradicional en archivo (Retrocompatibilidad y Debug)
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
+    log_dir = output_dir if output_dir else Path("logs")
+    log_dir.mkdir(exist_ok=True, parents=True)
     with open(log_dir / "game_state.json", "w", encoding="utf-8") as f:
         json.dump(state, f, indent=4, ensure_ascii=False)
         
@@ -588,6 +599,7 @@ def run_tournament(
     board_size: int = 10,
     max_turns: int = 50,
     ship_sizes: list[int] | None = None,
+    output_dir: Optional[Path] = None,
 ) -> TournamentReport:
     """Run a full Round-Robin tournament and save results to JSON."""
     agents = discover_agents(agents_dir)
@@ -619,7 +631,8 @@ def run_tournament(
                 visual=visual, ui_sleep=ui_sleep, 
                 board_size=board_size,
                 max_turns=max_turns,
-                ship_sizes=ship_sizes
+                ship_sizes=ship_sizes,
+                output_dir=output_dir or Path(agents_dir) if isinstance(agents_dir, (str, Path)) else None
             )
         except Exception as exc:
             console.print(f"[red]Error en la partida: {exc}[/red]")
@@ -638,12 +651,12 @@ def run_tournament(
             f"Resultado: [bold]{result_str}[/bold]  ({match.total_turns} turnos)"
         )
 
-    _save_results(report, output_file)
+    _save_results(report, output_file, output_dir=output_dir or Path(agents_dir) if isinstance(agents_dir, (str, Path)) else None)
     _print_standings(report)
     return report
 
 
-def _save_results(report: TournamentReport, output_file: str) -> None:
+def _save_results(report: TournamentReport, output_file: str, output_dir: Optional[Path] = None) -> None:
     payload = {
         "partidas": [
             {
@@ -677,8 +690,8 @@ def _save_results(report: TournamentReport, output_file: str) -> None:
         },
     }
     # Ensure reports folder
-    report_dir = Path("reports")
-    report_dir.mkdir(exist_ok=True)
+    report_dir = output_dir if output_dir else Path("reports")
+    report_dir.mkdir(exist_ok=True, parents=True)
     
     # Ensure filename is inside reports/ if it's a relative path
     target_path = Path(output_file)
