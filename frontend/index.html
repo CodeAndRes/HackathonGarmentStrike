@@ -90,9 +90,9 @@
         main {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px; /* Espacio mínimo entre columnas */
-            padding: 8px; /* Margen de pantalla mínimo */
+            grid-template-columns: 1fr 1.2fr 1fr; /* Columna central un poco más ancha */
+            gap: 20px; /* Más espacio para evitar solapamientos */
+            padding: 10px;
             flex: 1;
             min-height: 0;
             align-items: start;
@@ -101,10 +101,10 @@
         .column {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Reducido para ganar espacio vertical */
-            height: calc(100vh - 80px); /* Ajuste preciso al alto de pantalla */
+            gap: 10px;
+            height: calc(100vh - 80px);
             min-height: 0;
-            overflow: hidden;
+            overflow: visible; /* Permitimos que el brillo y el texto escalado sobresalgan */
         }
 
         .central-console-area {
@@ -213,10 +213,29 @@
             color: var(--accent-beta);
         }
 
+        .team-header {
+            display: flex;
+            flex-direction: column;
+            height: 70px; /* Altura fija para evitar desplazamientos */
+            justify-content: center;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .team-alpha .team-header {
+            align-items: flex-end;
+            padding-right: 5px;
+        }
+
+        .team-beta .team-header {
+            align-items: flex-start;
+            padding-left: 5px;
+        }
+
         /* --- CENTRAL COLUMN --- */
         .team-name-massive {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 900;
             letter-spacing: -1px;
             margin-bottom: 2px;
@@ -225,14 +244,25 @@
             text-shadow: none;
             transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0.4;
-            transform: scale(0.9);
+            transform: scale(0.95);
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .team-alpha .team-name-massive {
+            transform-origin: left center; /* Crece hacia la derecha (centro) */
+        }
+
+        .team-beta .team-name-massive {
+            transform-origin: right center; /* Crece hacia la izquierda (centro) */
         }
 
         .active-name-glow {
             text-shadow: 0 0 30px currentColor !important;
             opacity: 1 !important;
             font-size: 2.2rem;
-            transform: scale(1.1);
+            transform: scale(1.05) !important;
         }
 
         .central-scoreboard {
@@ -285,11 +315,12 @@
 
         .score-box {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
+            font-size: 4rem; /* Un poco más contenido */
             font-weight: 900;
             transition: all 0.3s ease;
-            min-width: 80px;
+            min-width: 90px;
             text-align: center;
+            line-height: 1;
         }
 
         .score-alpha {
@@ -513,10 +544,10 @@
 
         .tele-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.65rem;
+            font-size: 0.85rem;
             font-weight: 900;
             letter-spacing: 2px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -673,6 +704,8 @@
             animation: neonPulse 2s infinite ease-in-out;
         }
 
+        /* Estilos de globos movidos a JS para máxima fiabilidad */
+
         /* --- TYPEWRITER CURSOR --- */
         .typing::after {
             content: '▊';
@@ -709,7 +742,7 @@
     <main>
         <!-- TEAM ALPHA COLUMN -->
         <div class="column team-alpha">
-            <div class="team-header" style="display: flex; flex-direction: column; align-items: flex-end; margin-top: 15px; margin-bottom: 10px;">
+            <div class="team-header">
                 <div class="team-name-massive score-alpha" id="alpha-name-huge">ALPHA</div>
             </div>
             <div class="tactical-grid" id="grid-alpha">
@@ -731,24 +764,23 @@
                     <div class="led-red"></div>
                     <span id="match-status-text">LIVE</span>
                 </div>
-                <div class="score-display">
-                    <div class="score-group">
-                        <div class="score-stats">
-                            <span class="stat-pedidos" id="alpha-total-pedidos">/4 PEDIDOS</span>
-                            <span class="stat-prendas score-alpha" id="alpha-prendas">0 PRENDAS</span>
-                        </div>
+                <div class="score-display" style="align-items: flex-end;">
+                    <div class="score-team team-alpha">
                         <div class="score-box score-alpha" id="alpha-score">0</div>
                     </div>
-                    
-                    <div class="score-divider">VS</div>
 
-                    <div class="score-group">
+                    <div class="vs-badge" style="margin-bottom: 25px;">VS</div>
+
+                    <div class="score-team team-beta">
                         <div class="score-box score-beta" id="beta-score">0</div>
-                        <div class="score-stats">
-                            <span class="stat-pedidos" id="beta-total-pedidos">/4 PEDIDOS</span>
-                            <span class="stat-prendas score-beta" id="beta-prendas">0 PRENDAS</span>
-                        </div>
                     </div>
+                </div>
+                
+                <div id="total-pedidos-global" 
+                     style="display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 1px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <span id="alpha-prendas" style="color: var(--accent-alpha); font-weight: 900; text-shadow: 0 0 10px rgba(0,255,136,0.3);">0 PRENDAS</span>
+                    <span style="opacity: 0.6; font-size: 0.8rem; letter-spacing: 4px; font-weight: 700;">OBJETIVO: <span id="pedidos-value" style="opacity: 1; color: #fff;">0</span> PEDIDOS</span>
+                    <span id="beta-prendas" style="color: var(--accent-beta); font-weight: 900; text-shadow: 0 0 10px rgba(255,75,75,0.3);">0 PRENDAS</span>
                 </div>
             </div>
 
@@ -759,8 +791,7 @@
 
         <!-- TEAM BETA COLUMN -->
         <div class="column team-beta">
-            <div class="team-header"
-                style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 15px; margin-bottom: 10px;">
+            <div class="team-header">
                 <div class="team-name-massive score-beta" id="beta-name-huge">BETA</div>
             </div>
             <div class="tactical-grid" id="grid-beta">
@@ -775,8 +806,11 @@
         </div>
     </main>
 
-    <div id="victory-overlay" onclick="if(event.target === this) { this.style.display='none'; userDismissedVictory=true; }">
-        <div style="position: absolute; top: 20px; right: 20px; font-size: 2rem; cursor: pointer; opacity: 0.5;" onclick="document.getElementById('victory-overlay').style.display='none'; userDismissedVictory=true;">×</div>
+    <!-- Contenedor de globos independiente y por encima de todo -->
+    <div id="balloon-container" style="position: fixed; top:0; left:0; width: 100vw; height: 100vh; pointer-events: none; z-index: 20000; overflow: visible; background: transparent;"></div>
+
+    <div id="victory-overlay" onclick="if(event.target === this) { this.style.display='none'; userDismissedVictory=true; }" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.95); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; overflow: visible;">
+        <div style="position: absolute; top: 20px; right: 20px; font-size: 2rem; cursor: pointer; opacity: 0.5; z-index: 10;" onclick="document.getElementById('victory-overlay').style.display='none'; userDismissedVictory=true;">×</div>
         <div class="vic-title" id="victory-text">VICTORIA</div>
         <div id="victory-subtext" style="font-family: 'Orbitron'; font-size: 1.5rem; opacity: 0.8;">TEAM ALPHA</div>
         <div style="display: flex; gap: 20px; margin-top: 40px;">
@@ -966,8 +1000,9 @@
                 document.getElementById('alpha-tele-title').innerText = `SYSTEM_LINK // ${state.team_a.name || 'ALPHA'}`;
                 document.getElementById('beta-tele-title').innerText = `SYSTEM_LINK // ${state.team_b.name || 'BETA'}`;
                 
-                document.getElementById('alpha-total-pedidos').innerText = `/${state.team_b.total_pedidos ?? 0} PEDIDOS`;
-                document.getElementById('beta-total-pedidos').innerText = `/${state.team_a.total_pedidos ?? 0} PEDIDOS`;
+                // Actualizar pedidos totales (centralizado)
+                const totalP = state.team_b.total_pedidos || state.team_a.total_pedidos || 0;
+                document.getElementById('pedidos-value').innerText = totalP;
 
                 const isAlphaTurn = state.turn_agent === 'team_a';
                 
@@ -977,8 +1012,56 @@
                 const statusSpan = document.getElementById('match-status-text');
 
                 if (state.finished) {
-                    if (!userDismissedVictory) overlay.style.display = 'flex';
-                    document.getElementById('victory-subtext').innerText = (state.winner || "EMPATE").toUpperCase();
+                    const isDraw = !state.winner || state.winner.toUpperCase().includes('EMPATE');
+                    
+                    if (!userDismissedVictory && overlay.style.display !== 'flex') {
+                        overlay.style.display = 'flex';
+                        
+                        // LANZAMIENTO ÚNICO DE GLOBOS
+                        if (!isDraw) {
+                            const cleanWinner = (state.winner || "").trim().toLowerCase();
+                            const nameA = (state.team_a.name || "").trim().toLowerCase();
+                            const winColor = cleanWinner === nameA ? 'var(--accent-alpha)' : 'var(--accent-beta)';
+                            launchCelebration(winColor);
+                        }
+
+                        // Auto-ocultar tras 5 segundos
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            userDismissedVictory = true;
+                        }, 5000);
+                    }
+                    
+                    const titleEl = document.getElementById('victory-text');
+                    const subtextEl = document.getElementById('victory-subtext');
+                    
+                    if (isDraw) {
+                        titleEl.innerText = 'EMPATE';
+                        titleEl.style.color = '#00d4ff';
+                        subtextEl.innerText = 'TABLAS TÁCTICAS';
+                    } else {
+                        titleEl.innerText = 'VICTORIA';
+                        titleEl.style.color = '#ffd700';
+                        subtextEl.innerText = state.winner.toUpperCase();
+
+                        // Gestión de Corona y Brillo (Sin re-lanzar globos)
+                        const cleanWinner = state.winner.trim().toLowerCase();
+                        const nameA = (state.team_a.name || "").trim().toLowerCase();
+                        const isAlphaWinner = cleanWinner === nameA;
+                        const winnerEl = document.getElementById(isAlphaWinner ? 'alpha-name-huge' : 'beta-name-huge');
+                        const loserEl = document.getElementById(isAlphaWinner ? 'beta-name-huge' : 'alpha-name-huge');
+
+                        if (winnerEl && !winnerEl.innerHTML.includes('👑')) {
+                            winnerEl.innerHTML = isAlphaWinner ? `👑 ${state.team_a.name}` : `${state.team_b.name} 👑`;
+                            winnerEl.style.color = '#ffd700'; 
+                            winnerEl.style.textShadow = '0 0 30px #ffd700';
+                            winnerEl.classList.add('active-name-glow');
+                        }
+                        if (loserEl) {
+                            loserEl.style.opacity = '0.2';
+                            loserEl.classList.remove('active-name-glow');
+                        }
+                    }
 
                     if (liveLed) {
                         liveLed.style.animation = 'none';
@@ -990,27 +1073,23 @@
                         statusSpan.parentElement.style.color = '#666';
                     }
                 } else {
-                    userDismissedVictory = false; // Reset al empezar nueva partida
+                    userDismissedVictory = false;
                     overlay.style.display = 'none';
-                    if (liveLed) {
-                        liveLed.style.animation = 'pulse-red 1s infinite';
-                        liveLed.style.background = '#ff4b4b';
-                        liveLed.style.boxShadow = '0 0 15px #ff4b4b';
+                    if (liveLed) { 
+                        liveLed.style.animation = 'pulse-red 1s infinite'; 
+                        liveLed.style.background = '#ff4b4b'; 
+                        liveLed.style.boxShadow = '0 0 15px #ff4b4b'; 
                     }
-                    if (statusSpan) {
-                        statusSpan.innerText = 'LIVE';
-                        statusSpan.parentElement.style.color = '#ff4b4b';
+                    if (statusSpan) { 
+                        statusSpan.innerText = 'LIVE'; 
+                        statusSpan.parentElement.style.color = '#ff4b4b'; 
                     }
+                    
+                    const aHuge = document.getElementById('alpha-name-huge');
+                    const bHuge = document.getElementById('beta-name-huge');
+                    if (aHuge) { aHuge.style.color = ''; aHuge.style.textShadow = ''; aHuge.style.opacity = ''; }
+                    if (bHuge) { bHuge.style.color = ''; bHuge.style.textShadow = ''; bHuge.style.opacity = ''; }
                 }
-
-                // Glow de los nombres laterales
-                const alphaNameHuge = document.getElementById('alpha-name-huge');
-                const betaNameHuge = document.getElementById('beta-name-huge');
-                if (alphaNameHuge) alphaNameHuge.classList.toggle('active-name-glow', isAlphaTurn);
-                if (betaNameHuge) betaNameHuge.classList.toggle('active-name-glow', !isAlphaTurn);
-
-                document.querySelector('.tele-alpha').classList.toggle('active-turn', isAlphaTurn);
-                document.querySelector('.tele-beta').classList.toggle('active-turn', !isAlphaTurn);
 
                 // 2. Telemetry
                 if (state.telemetry) {
@@ -1235,9 +1314,9 @@
                     return `
                         <div class="log-entry latest-move ${teamClass}">
                             <div class="move-main">
-                                <span style="color: ${teamColor}; opacity: 0.6; font-size: 0.8rem;">T${c.turn}</span>
-                                <span style="color: #fff; font-weight: 800;">${c.coord}</span>
-                                <span style="margin-left: 5px;">${tacticalIcon}</span>
+                                <span style="color: ${teamColor}; opacity: 0.6; font-size: 1.1rem;">T${c.turn}</span>
+                                <span style="color: #fff; font-weight: 800; font-size: 1.1rem;">${c.coord}</span>
+                                <span style="margin-left: 5px; font-size: 1.1rem;">${tacticalIcon}</span>
                             </div>
                             <div class="move-status" style="color: ${statusColor}; font-size: ${statusSize}">${statusText}</div>
                         </div>
@@ -1246,10 +1325,10 @@
 
                 return `
                     <div class="log-entry ${teamClass} ${highlightClass}">
-                        <span style="color: ${teamColor}; opacity: 0.6; font-weight: 900;">T${c.turn}</span>
-                        <span style="color: #fff; font-weight: 700;">${c.coord}</span>
-                        <span style="transform: scale(${iconScale}); display: inline-block;">${tacticalIcon}</span>
-                        <span class="move-reasoning">
+                        <span style="color: ${teamColor}; opacity: 0.5; font-weight: 900; font-size: 0.9rem;">T${c.turn}</span>
+                        <span style="color: #fff; font-weight: 700; font-size: 0.9rem;">${c.coord}</span>
+                        <span style="font-size: 0.9rem; display: inline-block;">${tacticalIcon}</span>
+                        <span class="move-reasoning" style="font-size: 0.85rem;">
                             ${c.reasoning || c.result}
                         </span>
                     </div>
@@ -1421,6 +1500,57 @@
                     <line x1="25" y1="25" x2="75" y2="75" stroke="#00d4ff" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
                 </svg>
             `;
+        }
+
+        function launchCelebration(color) {
+            const container = document.getElementById('balloon-container');
+            if (!container) return;
+            
+            const teamColor = color.includes('alpha') ? '#00ff88' : (color.includes('beta') ? '#ff4b4b' : color);
+            
+            for (let i = 0; i < 35; i++) {
+                setTimeout(() => {
+                    const b = document.createElement('div');
+                    // Probabilidad de globo dorado (40%)
+                    const isGold = Math.random() < 0.4;
+                    const finalColor = isGold ? '#ffd700' : teamColor;
+                    
+                    Object.assign(b.style, {
+                        position: 'fixed',
+                        bottom: '-150px',
+                        left: (Math.random() * 95) + 'vw',
+                        width: '75px',
+                        height: '105px',
+                        background: finalColor,
+                        borderRadius: '50% 50% 50% 50% / 40% 40% 60% 60%',
+                        zIndex: '99999',
+                        transition: 'transform 6s linear, opacity 6s linear',
+                        opacity: '0.85',
+                        boxShadow: `0 0 40px ${finalColor}`
+                    });
+                    
+                    // Cuerda más visible
+                    const s = document.createElement('div');
+                    Object.assign(s.style, {
+                        position: 'absolute',
+                        bottom: '-30px',
+                        left: '50%',
+                        width: '2px',
+                        height: '40px',
+                        background: 'rgba(255,255,255,0.6)'
+                    });
+                    b.appendChild(s);
+                    
+                    container.appendChild(b);
+                    
+                    setTimeout(() => {
+                        b.style.transform = 'translateY(-120vh) rotate(' + (Math.random() * 60 - 30) + 'deg)';
+                        b.style.opacity = '0';
+                    }, 50);
+                    
+                    setTimeout(() => b.remove(), 8000);
+                }, i * 150);
+            }
         }
 
         // Start connection
