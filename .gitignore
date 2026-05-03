@@ -32,6 +32,10 @@ Thumbs.db
 # Tournament output
 tournament_results.json
 
+# Match artifacts (auto-generated per run)
+torneos/Partida_*/
+reports/
+
 .env
 # Logs
 logs/

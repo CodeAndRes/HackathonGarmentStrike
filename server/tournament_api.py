@@ -38,10 +38,10 @@ engine = BracketEngine(tournament_dir=tournament_dir)
 # Try to load existing state
 engine.load_state()
 
-# Auto-setup if no state exists to show something to the user immediately
 if not engine.matches:
-    print("No bracket state found. Auto-initializing with random agents...")
-    engine.setup_tournament()
+    print(f"Torneo '{tournament_dir}' cargado. Esperando inicialización (2, 4 u 8 equipos)...")
+else:
+    print(f"Torneo '{tournament_dir}' cargado con {len(engine.matches)} encuentros.")
 
 def get_settings():
     path = Path("settings.yaml")
@@ -55,9 +55,20 @@ def get_bracket():
     return engine.matches
 
 @app.post("/setup")
-def setup_tournament():
-    engine.setup_tournament()
-    return {"status": "Tournament setup complete", "matches": engine.matches}
+def setup_tournament(count: int = 8):
+    if count not in [2, 4, 8]:
+        raise HTTPException(status_code=400, detail="Tournament size must be 2, 4 or 8")
+    engine.setup_tournament(count=count)
+    return {"status": f"Tournament of {count} teams setup complete", "matches": engine.matches}
+
+@app.get("/reset")
+def reset_tournament():
+    # Eliminamos el estado y forzamos redescubrimiento
+    engine.matches = {}
+    if engine.state_file.exists():
+        engine.state_file.unlink()
+    engine.all_agents = engine._discover_agents()
+    return {"status": "Tournament state reset. Ready for new setup."}
 
 @app.get("/validate/{phase}")
 def validate_agents(phase: str):

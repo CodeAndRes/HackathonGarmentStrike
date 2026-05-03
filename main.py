@@ -24,7 +24,22 @@ import sys
 import time
 import shutil
 import yaml
+import subprocess
+import webbrowser
+import atexit
 from pathlib import Path
+
+def kill_project_servers():
+    """Surgical Tree Kill: Targets the API server and all its child workers."""
+    try:
+        # We find the PIDs and then use taskkill /T (Tree kill) to clean children
+        cmd = 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*uvicorn*server.tournament_api:app*" } | ForEach-Object { taskkill /F /T /PID $_.ProcessId }'
+        subprocess.run(["powershell", "-Command", cmd], capture_output=True, check=False)
+    except:
+        pass
+
+# Register cleanup on exit
+atexit.register(kill_project_servers)
 from dotenv import load_dotenv
 
 from rich.console import Console
@@ -138,7 +153,8 @@ def cmd_play(args: argparse.Namespace) -> None:
         max_turns=args.max_turns,
         ship_sizes=args.ship_sizes,
         export_json=getattr(args, 'tactical', False),
-        output_dir=output_dir
+        output_dir=output_dir,
+        speed=getattr(args, 'speed', None)
     )
 
     winner_str = match.winner if match.winner else "EMPATE"
@@ -246,44 +262,36 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
         console.print("2. [yellow]Partida de Ejemplo (Alpha vs Beta)[/yellow]")
         console.print("3. [magenta]Partida Personalizada[/magenta]")
         console.print("4. [blue]Abrir Dashboard Táctico (Web)[/blue]")
-        console.print("5. [cyan]Gran Torneo (Bracket)[/cyan]")
-        console.print("6. [red]Salir[/red]")
+        console.print("5. [bold white]Configurar Velocidad (Presets)[/bold white]")
+        console.print("6. [cyan]Gran Torneo (Bracket)[/cyan]")
+        console.print("7. [red]Salir[/red]")
 
-        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6"], default="6")
+        choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7"], default="7")
 
         if choice == "1":
             import subprocess
-
             console.print("\n[bold]Lanzando pytest...[/bold]")
             subprocess.run([sys.executable, "-m", "pytest", "tests/", "-v"])
             Prompt.ask("\nPresiona Enter para volver")
 
         elif choice == "2":
-            # Quick match config
+            # Partida de Ejemplo
             args.command = "play"
             args.team_a = "Alpha"
-            args.agent_a = "agentes/ejemplo/agent.md"
-            args.almacen_a = "agentes/ejemplo/almacen_equipo_ejemplo.md"
+            args.agent_a = "agentes/Alpha/agent.md"
+            args.almacen_a = "agentes/Alpha/almacen.md"
             args.team_b = "Beta"
-            args.agent_b = "agentes/ejemplo/agent.md"
-            args.almacen_b = "agentes/ejemplo/almacen_equipo_ejemplo2.md"
+            args.agent_b = "agentes/Beta/agent.md"
+            args.almacen_b = "agentes/Beta/almacen.md"
             
-            # Use catalog for Example Match too
-            default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
-            selected_model = pick_model_from_catalog(default_model)
+            selected_model = pick_model_from_catalog(SETTINGS.get("default_model", "offline"))
             args.model = selected_model
             args.model_a = None
             args.model_b = None
             
-            console.print("\n[bold]Modo de Visualización:[/bold]")
-            console.print("1. Clásica (Terminal)")
-            console.print("2. Táctica (Dashboard Web — abrir http://127.0.0.1:8000)")
-            v = Prompt.ask("Elige", choices=["1", "2"], default="1")
-            args.tactical = (v == "2")
-            
             if Prompt.ask("\n¿Deseas iniciar la visualización táctica (Dashboard Web)?", choices=["s", "n"], default="n") == "s":
                 args.tactical = True
-                args.output = "partida_ejemplo.json" # Esto disparará la creación de la carpeta
+                args.output = "partida_ejemplo.json"
             else:
                 args.tactical = False
                 args.output = None
@@ -291,263 +299,179 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             cmd_play(args)
             Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
 
-        elif choice == "4":
-            import webbrowser
-            
-            console.print("\n[bold blue]Iniciando Dashboard Táctico...[/bold blue]")
-            console.print("[dim]El servidor API se inicia automáticamente al lanzar una partida.[/dim]")
-            console.print("[dim]Abriendo el dashboard en el navegador...[/dim]")
-            webbrowser.open("http://127.0.0.1:8000")
-            
-            Prompt.ask("\nPresiona Enter para volver al menú")
-
         elif choice == "3":
+            # Partida Personalizada (Long block...)
             from core.engine import validate_game_config
             from core.tournament import discover_agents
-            
-            # Defaults
             custom_board = 10
             custom_ships = [5, 4, 3, 3, 2]
             custom_turns = 50
-            default_model = SETTINGS.get("default_model", "groq/llama-3.1-8b-instant")
+            default_model = SETTINGS.get("default_model", "offline")
             custom_model_a = default_model
             custom_model_b = default_model
-            custom_viz = "1" # 1: Clásica, 2: Táctica
+            custom_viz = "1"
             custom_save_file = None
-            custom_save_label = "No"
             
-            agents_list = discover_agents("torneo")
+            agents_list = discover_agents("agentes")
             team_a_idx = 0
             team_b_idx = min(1, len(agents_list) - 1) if agents_list else 0
             
             while True:
                 console.clear()
                 console.print("\n[bold cyan]-- Configuración de Partida Personalizada --[/bold cyan]")
-                console.print(f"1. Tamaño del tablero [6-10] (actual: {custom_board})")
-                console.print(f"2. Configuración de cajas (actual: {custom_ships})")
-                console.print(f"3. Máximo de turnos (actual: {custom_turns})")
-                if custom_model_a == custom_model_b:
-                    console.print(f"4. Modelo de IA (actual: {custom_model_a})")
-                else:
-                    console.print(f"4. Modelos de IA (A: {custom_model_a} | B: {custom_model_b})")
-                
-                team_a_name = agents_list[team_a_idx].name if agents_list else "Ninguno"
-                team_b_name = agents_list[team_b_idx].name if agents_list else "Ninguno"
-                console.print(f"5. Seleccionar equipos (actual: {team_a_name} vs {team_b_name})")
-                viz_str = "Clásica (Terminal)" if custom_viz == "1" else "Táctica (Web Dashboard JSON)"
-                console.print(f"6. Modo de Visualización (actual: {viz_str})")
-                console.print(f"7. Guardar informe (actual: {custom_save_label})")
+                console.print(f"1. Tablero: {custom_board}x{custom_board}")
+                console.print(f"2. Cajas: {custom_ships}")
+                console.print(f"3. Turnos: {custom_turns}")
+                console.print(f"4. Modelos (A: {custom_model_a} | B: {custom_model_b})")
+                console.print(f"5. Equipos: {agents_list[team_a_idx].name if agents_list else 'N/A'} vs {agents_list[team_b_idx].name if agents_list else 'N/A'}")
+                console.print(f"6. Visualización: {'Clásica' if custom_viz == '1' else 'Táctica'}")
+                console.print(f"7. Guardar: {custom_save_file or 'No'}")
                 console.print("8. [bold green]▶ INICIAR PARTIDA[/bold green]")
                 console.print("9. [red]Cancelar[/red]")
                 
-                sub_choice = Prompt.ask("\nSelecciona una opción", choices=["1", "2", "3", "4", "5", "6", "7", "8", "9"], default="8")
-                
-                if sub_choice == "1":
-                    custom_board = IntPrompt.ask("Tamaño del tablero (6-10)", default=custom_board)
-                elif sub_choice == "2":
-                    ships_str = Prompt.ask("Tamaños de cajas separados por comas (ej: 3,2,2)", default=",".join(map(str, custom_ships)))
-                    try:
-                        custom_ships = [int(s.strip()) for s in ships_str.split(",")]
-                    except ValueError:
-                        console.print("[red]Formato inválido. Usa números separados por comas.[/red]")
-                        time.sleep(1)
-                elif sub_choice == "3":
-                    custom_turns = IntPrompt.ask("Máximo de turnos", default=custom_turns)
-                elif sub_choice == "4":
-                    console.print("\n  [bold]a.[/bold] Mismo modelo para ambos equipos")
-                    console.print("  [bold]b.[/bold] Modelo diferente por equipo")
-                    model_choice = Prompt.ask("  Elige", choices=["a", "b"], default="a")
-                    if model_choice == "a":
-                        custom_model_a = pick_model_from_catalog(custom_model_a)
-                        custom_model_b = custom_model_a
-                    else:
-                        console.print("\n[bold]Configuración Equipo A:[/bold]")
-                        custom_model_a = pick_model_from_catalog(custom_model_a)
-                        console.print("\n[bold]Configuración Equipo B:[/bold]")
+                sub = Prompt.ask("\nSelecciona", choices=["1","2","3","4","5","6","7","8","9"], default="8")
+                if sub == "9": break
+                elif sub == "1": custom_board = IntPrompt.ask("Tamaño", default=custom_board)
+                elif sub == "2": 
+                    s = Prompt.ask("Cajas (ej: 3,2,2)", default=",".join(map(str, custom_ships)))
+                    custom_ships = [int(x) for x in s.split(",")]
+                elif sub == "3": custom_turns = IntPrompt.ask("Turnos", default=custom_turns)
+                elif sub == "4":
+                    custom_model_a = pick_model_from_catalog(custom_model_a)
+                    if Prompt.ask("¿Usar el mismo para el equipo B?", choices=["s","n"], default="s") == "n":
                         custom_model_b = pick_model_from_catalog(custom_model_b)
-                elif sub_choice == "5":
-                    if not agents_list:
-                        console.print("[red]No se encontraron agentes en la carpeta 'agentes/'.[/red]")
-                        time.sleep(1.5)
-                        continue
-                    console.print("\n[bold]Equipos disponibles:[/bold]")
-                    for i, ag in enumerate(agents_list, 1):
-                        console.print(f"{i}. {ag.name}")
-                    idx_a = IntPrompt.ask("Selecciona el equipo A (número)", default=team_a_idx + 1)
-                    idx_b = IntPrompt.ask("Selecciona el equipo B (número)", default=team_b_idx + 1)
-                    
-                    if 1 <= idx_a <= len(agents_list) and 1 <= idx_b <= len(agents_list):
-                        team_a_idx = idx_a - 1
-                        team_b_idx = idx_b - 1
-                    else:
-                        console.print("[red]Selección inválida.[/red]")
-                        time.sleep(1.5)
-                elif sub_choice == "6":
-                    console.print("2. Táctica (Exportación JSON para Dashboard Web)")
-                    custom_viz = Prompt.ask("Selecciona modo", choices=["1", "2"], default=custom_viz)
-                elif sub_choice == "7":
-                    save_name = Prompt.ask("Nombre del archivo (ej: mi_partida.json) o 'no'", default="no")
-                    if save_name.lower() != "no":
-                        if not save_name.endswith(".json"): save_name += ".json"
-                        custom_save_file = save_name
-                        custom_save_label = save_name
-                    else:
-                        custom_save_file = None
-                        custom_save_label = "No"
-                elif sub_choice == "8":
-                    # Validate before starting
-                    try:
-                        validate_game_config(custom_board, custom_ships)
-                    except ValueError as e:
-                        console.print(f"\n[bold red]Error de Configuración:[/bold red] {e}")
-                        Prompt.ask("Presiona Enter para continuar")
-                        continue
-                    
-                    if not agents_list:
-                        console.print("\n[bold red]No hay equipos seleccionados o disponibles.[/bold red]")
-                        Prompt.ask("Presiona Enter para continuar")
-                        continue
-                        
-                    # Show summary
-                    console.clear()
-                    console.print("[bold green]-- Resumen de Configuración --[/bold green]")
-                    console.print(f"Tablero: {custom_board}x{custom_board}")
-                    console.print(f"Cajas: {custom_ships}")
-                    console.print(f"Turnos: {custom_turns}")
-                    if custom_model_a == custom_model_b:
-                        console.print(f"Modelo: {custom_model_a}")
-                    else:
-                        console.print(f"Modelo A: {custom_model_a}")
-                        console.print(f"Modelo B: {custom_model_b}")
-                    console.print(f"Enfrentamiento: {agents_list[team_a_idx].name} vs {agents_list[team_b_idx].name}")
-                    
-                    confirm = Prompt.ask("\n¿Iniciar partida?", choices=["s", "n"], default="s")
-                    if confirm.lower() == "s":
-                        args.command = "play"
-                        args.model = custom_model_a  # fallback default
-                        args.model_a = custom_model_a
-                        args.model_b = custom_model_b
-                        args.board_size = custom_board
-                        args.ship_sizes = custom_ships
-                        args.max_turns = custom_turns
-                        args.tactical = (custom_viz == "2")
-                        
-                        agent_a = agents_list[team_a_idx]
-                        agent_b = agents_list[team_b_idx]
-                        
-                        args.team_a = agent_a.name
-                        args.agent_a = str(agent_a.agent_md_path)
-                        args.almacen_a = str(agent_a.almacen_path)
-                        
-                        args.team_b = agent_b.name
-                        args.agent_b = str(agent_b.agent_md_path)
-                        args.almacen_b = str(agent_b.almacen_path)
-                        args.output = custom_save_file
-                        
-                        cmd_play(args)
-                        Prompt.ask("\nPartida finalizada. Presiona Enter para volver")
-                        break
-                elif sub_choice == "7":
+                    else: custom_model_b = custom_model_a
+                elif sub == "5":
+                    for i, ag in enumerate(agents_list, 1): console.print(f"{i}. {ag.name}")
+                    team_a_idx = IntPrompt.ask("Equipo A", default=team_a_idx+1) - 1
+                    team_b_idx = IntPrompt.ask("Equipo B", default=team_b_idx+1) - 1
+                elif sub == "6": custom_viz = Prompt.ask("Modo (1:Clásica, 2:Táctica)", choices=["1","2"], default="1")
+                elif sub == "7": custom_save_file = Prompt.ask("Nombre archivo", default="partida.json")
+                elif sub == "8":
+                    args.command = "play"
+                    args.model_a = custom_model_a
+                    args.model_b = custom_model_b
+                    args.board_size = custom_board
+                    args.ship_sizes = custom_ships
+                    args.max_turns = custom_turns
+                    args.tactical = (custom_viz == "2")
+                    args.team_a, args.agent_a, args.almacen_a = agents_list[team_a_idx].name, str(agents_list[team_a_idx].agent_md_path), str(agents_list[team_a_idx].almacen_path)
+                    args.team_b, args.agent_b, args.almacen_b = agents_list[team_b_idx].name, str(agents_list[team_b_idx].agent_md_path), str(agents_list[team_b_idx].almacen_path)
+                    args.output = custom_save_file
+                    cmd_play(args)
+                    Prompt.ask("Finalizado. Enter para volver")
                     break
 
+        elif choice == "4":
+            import webbrowser
+            console.print("\n[bold blue]Abriendo Dashboard Táctico...[/bold blue]")
+            webbrowser.open("http://127.0.0.1:8000")
+            Prompt.ask("Presiona Enter para volver")
+
         elif choice == "5":
+            speed = Prompt.ask("Velocidad", choices=["cinematic", "fast", "ultra"], default="fast")
+            try:
+                with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+                    conf = yaml.safe_load(f)
+                conf["choreography"]["active_mode"] = speed.upper()
+                with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+                    yaml.dump(conf, f, default_flow_style=False)
+                console.print(f"[green](OK) Modo {speed.upper()} activado.[/green]")
+                time.sleep(1)
+            except Exception as e: console.print(f"[red]Error: {e}[/red]")
+
+        elif choice == "6":
             import subprocess
             import webbrowser
-            
+            import shutil
+            from core.bracket_engine import BracketEngine
+
             console.print("\n[bold cyan]-- Gestión de Torneos --[/bold cyan]")
             console.print("1. [green]Crear Nuevo Torneo[/green]")
             console.print("2. [yellow]Jugar Torneo Existente[/yellow]")
             console.print("3. [red]Cancelar[/red]")
             
             t_choice = Prompt.ask("Selecciona", choices=["1", "2", "3"], default="2")
+            if t_choice == "3": continue
             
             selected_dir = None
-            
             if t_choice == "1":
-                t_name = Prompt.ask("Nombre del nuevo torneo (ej: Mayo-2026)")
+                t_name = Prompt.ask("Nombre del nuevo torneo")
                 selected_dir = f"torneos/{t_name}"
                 target_path = Path(selected_dir)
                 target_path.mkdir(parents=True, exist_ok=True)
-                console.print(f"[green]Carpeta creada: {selected_dir}[/green]")
+                dest_agents = target_path / "agentes"
                 
-                # Opción de copiar agentes de torneos previos
-                prev_torneos = [d for d in Path("torneos").iterdir() if d.is_dir() and d.name != t_name]
-                if prev_torneos:
-                    console.print("\n[dim]¿Quieres copiar agentes de un torneo anterior?[/dim]")
-                    console.print("0. No copiar (empezar vacío)")
-                    for i, d in enumerate(prev_torneos, 1):
-                        console.print(f"{i}. {d.name}")
-                    
-                    c_idx = IntPrompt.ask("Selecciona", default=0)
-                    if 1 <= c_idx <= len(prev_torneos):
-                        src_dir = prev_torneos[c_idx-1]
-                        for f in src_dir.glob("*.md"):
-                            shutil.copy(f, target_path / f.name)
-                        console.print(f"[green](OK) Agentes copiados desde {src_dir.name}[/green]")
+                # 1. Preguntar tamaño primero
+                count = IntPrompt.ask("¿Tamaño del torneo? (2, 4, 8)", choices=["2", "4", "8"], default=8)
                 
-                # Inicializar el bracket según el número de agentes
-                from core.bracket_engine import BracketEngine
-                engine = BracketEngine(tournament_dir=selected_dir)
-                count = IntPrompt.ask("¿Número de participantes? (2, 4, 8)", choices=[2, 4, 8], default=8)
-                engine.setup_tournament(count=count)
-                console.print(f"[green](OK) Torneo de {count} equipos inicializado.[/green]")
-            
-            elif t_choice == "2":
-                if not Path("torneos").exists():
-                    console.print("[red]No hay torneos guardados en 'torneos/'.[/red]")
-                    time.sleep(1.5)
+                # 2. Descubrir agentes disponibles
+                base_engine = BracketEngine(tournament_dir=".") 
+                available_agents = base_engine._discover_agents()
+                
+                if len(available_agents) < count:
+                    console.print(f"[red]Error: Solo hay {len(available_agents)} agentes disponibles, pero el torneo es de {count}.[/red]")
+                    console.print("[yellow]Añade más carpetas a 'agentes/' y reintenta.[/yellow]")
                     continue
+
+                # 3. Draft con validación estricta de cantidad
+                to_copy = []
+                while len(to_copy) != count:
+                    console.print(f"\n[bold cyan]-- Draft de Agentes (Selecciona EXACTAMENTE {count}) --[/bold cyan]")
+                    for i, agent in enumerate(available_agents, 1):
+                        console.print(f"{i}. [green]{agent.name}[/green]")
                     
-                available = [str(d) for d in Path("torneos").iterdir() if d.is_dir()]
+                    selection = Prompt.ask(f"\nSelecciona {count} números separados por coma", default="")
+                    try:
+                        idxs = [int(x.strip()) - 1 for x in selection.split(",")]
+                        to_copy = [available_agents[i] for i in idxs if 0 <= i < len(available_agents)]
+                        
+                        if len(to_copy) != count:
+                            console.print(f"[red]Error: Has seleccionado {len(to_copy)} agentes, pero se necesitan {count}.[/red]")
+                            to_copy = [] # Reset para reintentar
+                    except Exception:
+                        console.print("[red]Entrada inválida. Usa números separados por comas.[/red]")
+                        to_copy = []
+
+                # 4. Copiado selectivo
+                dest_agents.mkdir(parents=True, exist_ok=True)
+                for agent in to_copy:
+                    src_folder = agent.agent_md_path.parent
+                    shutil.copytree(src_folder, dest_agents / agent.name, dirs_exist_ok=True)
                 
+                console.print(f"[green](OK) {len(to_copy)} agentes añadidos al torneo.[/green]")
+
+                # 5. Inicializar el bracket
+                engine = BracketEngine(tournament_dir=selected_dir)
+                engine.setup_tournament(count=count)
+                console.print(f"[green](OK) Torneo inicializado correctamente.[/green]")
+            else:
+                available = [str(d) for d in Path("torneos").iterdir() if d.is_dir()]
                 if not available:
                     console.print("[red]No hay torneos guardados.[/red]")
-                    time.sleep(1.5)
                     continue
+                for i, d in enumerate(available, 1): console.print(f"{i}. {Path(d).name}")
+                t_idx = IntPrompt.ask("Selecciona", default=1)
+                selected_dir = available[t_idx-1] if 1 <= t_idx <= len(available) else None
+            
+            if selected_dir:
+                kill_project_servers() # Clean any previous zombie before starting
+                env = os.environ.copy()
+                env["TOURNAMENT_DIR"] = selected_dir
+                # Launch FastAPI server with logging
+                server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080", "--reload"]
+                log_path = target_path / "server.log"
+                with open(log_path, "a", encoding="utf-8") as log_file:
+                    subprocess.Popen(server_cmd, env=env, stdout=log_file, stderr=log_file, shell=(os.name == 'nt'))
                 
-                console.print("\n[bold]Torneos encontrados en 'torneos/':[/bold]")
-                for i, d in enumerate(available, 1):
-                    console.print(f"{i}. {Path(d).name}")
-                
-                t_idx = IntPrompt.ask("Selecciona torneo", default=1)
-                if 1 <= t_idx <= len(available):
-                    selected_dir = available[t_idx-1]
-                else:
-                    continue
-            else:
-                continue
-
-            if not selected_dir: continue
-
-            console.print(f"\n[bold cyan]Iniciando Gran Torneo en: {selected_dir}...[/bold cyan]")
-            
-            # Prepare environment with the selected directory
-            env = os.environ.copy()
-            env["TOURNAMENT_DIR"] = selected_dir
-            
-            # Launch FastAPI server in background
-            server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080", "--reload"]
-            
-            try:
-                subprocess.Popen(
-                    server_cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    shell=(os.name == 'nt'),
-                    env=env
-                )
-                console.print("[green](OK) API del Torneo iniciada en puerto 8080.[/green]")
-                console.print("[dim]Abriendo visualización del torneo...[/dim]")
+                console.print(f"[green](OK) Servidor del Torneo iniciado en puerto 8080.[/green]")
+                console.print(f"[dim]Logs disponibles en: {log_path}[/dim]")
                 time.sleep(2)
-                
-                # Open the tournament via the API server
                 webbrowser.open("http://localhost:8080")
-            except Exception as e:
-                console.print(f"[red]Error al lanzar el torneo: {e}[/red]")
-            
-            Prompt.ask("\nPresiona Enter para volver al menú")
+                Prompt.ask("Torneo en marcha. Presiona Enter para volver")
 
-        elif choice == "6":
+        elif choice == "7":
+            kill_project_servers()
             console.print("[yellow]Saliendo...[/yellow]")
             break
 
@@ -598,6 +522,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=int(SETTINGS.get("max_turns", 50)),
         help="Max turns per match (default: %(default)s)",
     )
+    base_parser.add_argument(
+        "--speed",
+        type=str,
+        choices=["cinematic", "fast", "ultra"],
+        default=None,
+        help="Modo de velocidad de la coreografía (cinematic, fast, ultra)",
+    )
     
     def parse_ship_sizes(s: str | list) -> list[int]:
         if isinstance(s, list):
@@ -641,7 +572,7 @@ def build_parser() -> argparse.ArgumentParser:
     tour = sub.add_parser("tournament", help="Torneo Round Robin con todos los equipos.", parents=[base_parser])
     tour.add_argument(
         "--agents-dir",
-        default="torneo",
+        default="agentes",
         metavar="DIR",
         help="Carpeta con subcarpetas de equipos  (default: agentes/).",
     )
@@ -679,7 +610,9 @@ def main() -> None:
         console.print(f"[red]Error de configuracion: {exc}[/red]")
         sys.exit(1)
     except Exception as exc:
+        import traceback
         console.print(f"[red]Error inesperado: {exc}[/red]")
+        traceback.print_exc()
         sys.exit(1)
 
 

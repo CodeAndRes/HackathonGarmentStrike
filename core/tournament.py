@@ -121,27 +121,34 @@ def run_match(
     ship_sizes: list[int] | None = None,
     export_json: bool = False,
     output_dir: Optional[Path] = None,
+    speed: Optional[str] = None,
 ) -> MatchRecord:
     # Cargar tiempos de coreografía desde settings.yaml (con fallbacks)
     import yaml
     try:
         with open("settings.yaml", "r", encoding="utf-8") as f:
-            choreo = yaml.safe_load(f).get("choreography", {})
+            full_conf = yaml.safe_load(f) or {}
+            choreo_conf = full_conf.get("choreography", {})
     except:
-        choreo = {}
+        choreo_conf = {}
     
-    d_strat = choreo.get("strategy_delay", 0.7)
-    d_reason = choreo.get("reasoning_delay", 1.0)
-    d_aim = choreo.get("aiming_delay", 0.8)
-    d_res = choreo.get("result_delay", ui_sleep)
-    d_trans = choreo.get("transition_delay", 0.5)
-    """
-    Play one full match.
+    # Determinar modo (Prioridad: Argumento > Settings > Default FAST)
+    effective_speed = speed or choreo_conf.get("active_mode", "FAST")
+    speed_mode = effective_speed.upper()
+    modes = choreo_conf.get("modes", {})
+    p = modes.get(speed_mode, modes.get("FAST", {
+        "strategy_delay": 0.4, "reasoning_delay": 0.4, "aiming_delay": 0.3, "result_delay": 0.3, "transition_delay": 0.5
+    }))
 
-    Reviewer Agent note on the Golden Rule:
-        After apply_move() returns 'hit' or 'sunk', switch_turn() is NOT called.
-        The same agent fires again in the next loop iteration.
-    """
+    d_strat = p.get("strategy_delay", 0.4)
+    d_reason = p.get("reasoning_delay", 0.4)
+    d_aim = p.get("aiming_delay", 0.3)
+    d_res = p.get("result_delay", 0.3)
+    d_trans = p.get("transition_delay", 0.5)
+
+    # Límites de seguridad por proveedor
+    provider_limits = choreo_conf.get("provider_limits", {})
+
     board_a = config_a.load_board(size=board_size, ship_sizes=ship_sizes)
     board_b = config_b.load_board(size=board_size, ship_sizes=ship_sizes)
     agent_md_a = config_a.load_agent_md()
@@ -184,11 +191,25 @@ def run_match(
     if debug_file.exists():
         debug_file.unlink()
 
-    # Inject debug log path into clients if we have an output directory
-    if output_dir:
-        for client in llm_clients.values():
-            if hasattr(client, 'debug_log_path'):
-                client.debug_log_path = str(debug_file)
+    # Inject debug log path and safety delays into clients
+    for name, client in llm_clients.items():
+        if output_dir and hasattr(client, 'debug_log_path'):
+            client.debug_log_path = str(debug_file)
+        
+        # Ajustar api_sleep según el proveedor si no está definido o es menor al mínimo de seguridad
+        if hasattr(client, 'model') and hasattr(client, 'api_sleep'):
+            model_lower = client.model.lower()
+            provider = "offline"
+            if "gemini" in model_lower: provider = "gemini"
+            elif "groq" in model_lower: provider = "groq"
+            elif "deepseek" in model_lower: provider = "deepseek"
+            elif "openai" in model_lower: provider = "openai"
+            elif "ollama" in model_lower: provider = "ollama"
+            
+            safety_limit = provider_limits.get(provider, 0.0)
+            # Solo aumentamos el sleep si el actual es insuficiente para este proveedor
+            if client.api_sleep < safety_limit:
+                client.api_sleep = safety_limit
 
     if dashboard:
         dashboard.start()
@@ -203,6 +224,10 @@ def run_match(
     
     if export_json:
         # Reset inicial para que la web limpie la pantalla de victoria anterior
+        try:
+            requests.post("http://127.0.0.1:8000/api/reset", timeout=0.5)
+        except:
+            pass
         _write_game_state(game, finished=False, output_dir=output_dir)
 
     timeout_winner = None
@@ -570,9 +595,17 @@ def discover_agents(agents_dir: str | Path = "agentes") -> list[AgentConfig]:
         # Caso A: Estructura anidada (agentes/nombre/agent.md)
         if item.is_dir():
             agent_md = item / "agent.md"
-            almacen_files = sorted(item.glob("almacen_*.md")) or sorted(item.glob("*.md"))
-            if agent_md.exists() and almacen_files:
-                configs.append(AgentConfig(name=item.name, agent_md_path=agent_md, almacen_path=almacen_files[0]))
+            # Prioridad 1: almacen.md exacto
+            almacen_path = item / "almacen.md"
+            
+            # Prioridad 2: Cualquier .md que no sea agent.md
+            if not almacen_path.exists():
+                candidates = sorted([f for f in item.glob("*.md") if f.name != "agent.md"])
+                if candidates:
+                    almacen_path = candidates[0]
+            
+            if agent_md.exists() and almacen_path.exists():
+                configs.append(AgentConfig(name=item.name, agent_md_path=agent_md, almacen_path=almacen_path))
         
         # Caso B: Estructura plana (torneo/nombre.md + nombre.almacen.md)
         elif item.suffix == ".md" and not item.name.endswith(".almacen.md"):

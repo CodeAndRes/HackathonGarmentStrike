@@ -1,61 +1,91 @@
-# ─── Garment Strike – Engine Settings ──────────────────────────────────────────
-# Parámetros de ejecución centralizados (No sensibles).
-# Las API Keys deben permanecer en el archivo .env.
-
+choreography:
+  active_mode: FAST
+  modes:
+    CINEMATIC:
+      aiming_delay: 1.0
+      reasoning_delay: 1.5
+      result_delay: 0.8
+      strategy_delay: 1.2
+      transition_delay: 1.5
+    FAST:
+      aiming_delay: 0.3
+      reasoning_delay: 0.4
+      result_delay: 0.3
+      strategy_delay: 0.4
+      transition_delay: 0.5
+    ULTRA:
+      aiming_delay: 0.05
+      reasoning_delay: 0.05
+      result_delay: 0.05
+      strategy_delay: 0.05
+      transition_delay: 0.1
+  provider_limits:
+    deepseek: 1.0
+    gemini: 4.0
+    groq: 2.0
+    offline: 0.0
+    ollama: 0.1
+    openai: 0.5
 engine:
-  default_model: "offline"
   api_sleep: 1.0
-  max_tokens: 120
-  ui_sleep: 1.2
-  max_retries: 3
   board_size: 6
-  max_turns: 10
-  ship_sizes: [4, 3, 3, 2]
-
+  default_model: offline
+  max_retries: 3
+  max_tokens: 120
+  max_turns: 30
+  ship_sizes:
+  - 4
+  - 3
+  - 3
+  - 2
+  ui_sleep: 1.2
+models_catalog:
+  deepseek:
+  - deepseek/deepseek-chat
+  - deepseek/deepseek-reasoner
+  especial:
+  - offline
+  gemini:
+  - gemini/gemini-2.5-flash
+  - gemini/gemini-2.0-flash
+  - gemini/gemini-1.5-flash
+  groq:
+  - groq/llama-3.1-8b-instant
+  - groq/llama-3.3-70b-versatile
+  - groq/mixtral-8x7b-32768
+  ollama:
+  - ollama/qwen2.5:1.5b
+  - ollama/llama3.2:1b
+  - ollama/qwen3.5:0.8b
+  - ollama/phi3:mini
+  - ollama/llama3:latest
+  openai:
+  - openai/gpt-4o
+  - openai/gpt-4o-mini
 tournament:
-  default_model: "deepseek/deepseek-chat"
+  default_model: deepseek/deepseek-chat
   rounds:
-    q: 
-      board_size: 6
-      max_turns: 20
-      ship_sizes: [4, 3, 2]
-    s: 
-      board_size: 8
-      max_turns: 20
-      ship_sizes: [4, 3, 3, 2]
-    f: 
+    f:
       board_size: 10
       max_turns: 100
-      ship_sizes: [5, 4, 3, 3, 2]
-
-models_catalog:
-  groq:
-    - "groq/llama-3.1-8b-instant"
-    - "groq/llama-3.3-70b-versatile"
-    - "groq/mixtral-8x7b-32768"
-  gemini:
-    - "gemini/gemini-2.5-flash"
-    - "gemini/gemini-2.0-flash"
-    - "gemini/gemini-1.5-flash"
-  openai:
-    - "openai/gpt-4o"
-    - "openai/gpt-4o-mini"
-  ollama:
-    - "ollama/qwen2.5:1.5b"
-    - "ollama/llama3.2:1b"
-    - "ollama/qwen3.5:0.8b"
-    - "ollama/phi3:mini"
-    - "ollama/llama3:latest"
-  deepseek:
-    - "deepseek/deepseek-chat"
-    - "deepseek/deepseek-reasoner"
-  especial:
-    - "offline"
-
-# 🎭 Tiempos de la Coreografía (Segundos)
-choreography:
-  strategy_delay: 1.0
-  reasoning_delay: 1.0
-  aiming_delay: 1.0
-  result_delay: 0.5
-  transition_delay: 1.0
+      ship_sizes:
+      - 5
+      - 4
+      - 3
+      - 3
+      - 2
+    q:
+      board_size: 6
+      max_turns: 60
+      ship_sizes:
+      - 4
+      - 3
+      - 2
+    s:
+      board_size: 8
+      max_turns: 50
+      ship_sizes:
+      - 4
+      - 3
+      - 3
+      - 2

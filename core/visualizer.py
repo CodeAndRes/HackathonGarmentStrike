@@ -168,12 +168,12 @@ class GameDashboard:
 
     def start(self) -> None:
         import time
-        if console.size.width < 90 or console.size.height < 24:
+        if console.size.width < 120 or console.size.height < 28:
             console.print(
                 f"[bold yellow]⚠️  AVISO: Tu terminal actual es pequeña ({console.size.width}x{console.size.height}).[/bold yellow]"
             )
             console.print(
-                "[bold yellow]Redimensiona tu consola (recomendado 90x24 mínimo) para ver correctamente la partida.[/bold yellow]"
+                "[bold yellow]Redimensiona tu consola (recomendado 120x28 mínimo) para ver correctamente el tablero 10x10.[/bold yellow]"
             )
             time.sleep(3)
         self.live.start()

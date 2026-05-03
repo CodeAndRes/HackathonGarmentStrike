@@ -14,6 +14,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 logging.getLogger("asyncio").setLevel(logging.CRITICAL)
 
@@ -74,12 +75,23 @@ async def get_state():
     if state.current_event:
         return state.current_event
     try:
-        p = Path("logs/game_state.json")
+        t_dir = os.getenv("TOURNAMENT_DIR", "logs")
+        p = Path(t_dir) / "game_state.json"
         if p.exists():
             return json.loads(p.read_text(encoding="utf-8"))
+        
+        # Fallback to logs/ for backward compatibility or non-tournament runs
+        p_fallback = Path("logs/game_state.json")
+        if p_fallback.exists():
+            return json.loads(p_fallback.read_text(encoding="utf-8"))
     except Exception:
         pass
     return {"error": "no_state"}
+
+@app.post("/api/reset")
+async def reset_api_state():
+    state.current_event = None
+    return {"status": "cleared"}
 
 # Servir el dashboard HTML directamente
 @app.get("/")

@@ -1,0 +1,404 @@
+{
+    "turn": 11,
+    "turn_agent": "team_b",
+    "team_a": {
+        "name": "cubet-ass",
+        "pedidos_encajados": 0,
+        "total_pedidos": 5,
+        "prendas_encajadas": 0,
+        "sunk_ships": [],
+        "fleet": {
+            "8,0": "P1",
+            "8,1": "P1",
+            "8,2": "P1",
+            "8,3": "P1",
+            "8,4": "P1",
+            "4,2": "P2",
+            "5,2": "P2",
+            "6,2": "P2",
+            "7,2": "P2",
+            "5,7": "P3",
+            "5,8": "P3",
+            "5,9": "P3",
+            "5,5": "P4",
+            "6,5": "P4",
+            "7,5": "P4",
+            "3,6": "P5",
+            "3,7": "P5"
+        },
+        "board": [
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "O",
+                "O",
+                "~",
+                "~",
+                "#",
+                "#",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "O",
+                "O",
+                "O",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "#",
+                "~",
+                "#",
+                "#",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "#",
+                "#",
+                "#",
+                "#",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ]
+        ]
+    },
+    "team_b": {
+        "name": "Beta",
+        "pedidos_encajados": 0,
+        "total_pedidos": 5,
+        "prendas_encajadas": 0,
+        "sunk_ships": [],
+        "fleet": {
+            "1,9": "P1",
+            "2,9": "P1",
+            "3,9": "P1",
+            "4,9": "P1",
+            "5,9": "P1",
+            "3,1": "P2",
+            "3,2": "P2",
+            "3,3": "P2",
+            "3,4": "P2",
+            "9,2": "P3",
+            "9,3": "P3",
+            "9,4": "P3",
+            "9,6": "P4",
+            "9,7": "P4",
+            "9,8": "P4",
+            "5,2": "P5",
+            "6,2": "P5"
+        },
+        "board": [
+            [
+                "O",
+                "~",
+                "~",
+                "~",
+                "O",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "O",
+                "O",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "O",
+                "~",
+                "O",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "#",
+                "#",
+                "#",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "#",
+                "#",
+                "~",
+                "#",
+                "#",
+                "#",
+                "~"
+            ]
+        ]
+    },
+    "comms": [
+        {
+            "turn": 1,
+            "agent": "A",
+            "coord": "A1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Primer disparo en patrón de tablero de ajedrez (fila+columna par). Se elige esquina A1 para iniciar la búsqueda sistemática."
+        },
+        {
+            "turn": 2,
+            "agent": "B",
+            "coord": "E5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El centro del tablero (E5) maximiza la cobertura inicial y tiene mayor probabilidad de intersectar barcos enemigos, siguiendo la estrategia de ataque semi-aleatorio priorizando el centro."
+        },
+        {
+            "turn": 3,
+            "agent": "A",
+            "coord": "B2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Primer disparo en patrón de damero (fila+columna par) para maximizar cobertura. B2 (2+2=4 par) es una celda interior, prioritaria en fase de búsqueda."
+        },
+        {
+            "turn": 4,
+            "agent": "B",
+            "coord": "D5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El ataque previo en E5 resultó en 'prenda perdida', lo que indica que no había un barco allí. Para maximizar las posibilidades de acertar, se prioriza el centro del tablero y se elige D5, una coordenada adyacente no disparada, siguiendo la estrategia de semi-aleatoriedad con enfoque central."
+        },
+        {
+            "turn": 5,
+            "agent": "A",
+            "coord": "A2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Fase de Búsqueda: Disparo en patrón de tablero de ajedrez (fila+columna par). Aún no hay impactos confirmados. Se evitan celdas ya disparadas (A1, B2)."
+        },
+        {
+            "turn": 6,
+            "agent": "B",
+            "coord": "F5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El disparo anterior en E5 y D5 resultó en 'PRENDA PERDIDA', indicando que no hay barco en esas casillas. Para continuar explorando el área central, elijo F5, que está al lado de los disparos fallidos y aún no ha sido atacado."
+        },
+        {
+            "turn": 7,
+            "agent": "A",
+            "coord": "C3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Continuando con patrón de tablero de ajedrez desde celdas internas. C3 tiene paridad par (3+3=6) y no ha sido disparada."
+        },
+        {
+            "turn": 8,
+            "agent": "B",
+            "coord": "D4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Viendo que en la fila 5 hay tres 'O' consecutivos (D5, E5, F5) que ya fueron atacados y resultaron en 'PRENDA PERDIDA', probablemente forman parte de un barco de tamaño 3 o más. Para localizar el resto del barco, tiene sentido buscar en las celdas adyacentes a los extremos. D5 ya está atacado en el extremo izquierdo, así que atacar D4 ( (auto-recuperada)"
+        },
+        {
+            "turn": 9,
+            "agent": "A",
+            "coord": "E1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Siguiendo patrón de tablero de ajedrez. Las coordenadas ya disparadas son A1, B2, A2, C3 (todas con suma par). Para continuar buscando barcos restantes, disparo en E1 (5+1=6, par) que no ha sido usado y está en zona interior del tablero."
+        },
+        {
+            "turn": 10,
+            "agent": "B",
+            "coord": "C4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El barco hundido en D4, D5, E5, F5 sugiere una orientación horizontal centrada en la fila 5. Para localizar otros barcos, ataco C4, una celda adyacente al impacto en D4, siguiendo el patrón de búsqueda en áreas no exploradas cerca de impactos previos. (auto-recuperada)"
+        },
+        {
+            "turn": 11,
+            "agent": "A",
+            "coord": "A3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Continuo patrón de búsqueda en damero (fila+columna par). Todas las celdas previas estaban en paridad par; A3 (1+3=4) es par, interior y no disparada."
+        }
+    ],
+    "telemetry": {
+        "team_a": {
+            "strategy": "Garment Strike — Fase 1 (Search)",
+            "reasoning": "Continuo patrón de búsqueda en damero (fila+columna par). Todas las celdas previas estaban en paridad par; A3 (1+3=4) es par, interior y no disparada.",
+            "cursor": null
+        },
+        "team_b": {
+            "strategy": "ANALIZANDO...",
+            "reasoning": "Sincronizando sistemas...",
+            "cursor": "thinking"
+        }
+    },
+    "finished": false,
+    "winner": null
+}
