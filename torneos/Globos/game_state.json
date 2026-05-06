@@ -1,0 +1,626 @@
+{
+    "turn": 50,
+    "turn_agent": "team_a",
+    "team_a": {
+        "name": "norco",
+        "pedidos_encajados": 0,
+        "total_pedidos": 4,
+        "prendas_encajadas": 2,
+        "sunk_ships": [],
+        "fleet": {
+            "3,7": "P1",
+            "4,7": "P1",
+            "5,7": "P1",
+            "6,7": "P1",
+            "4,1": "P2",
+            "5,1": "P2",
+            "6,1": "P2",
+            "4,2": "P3",
+            "5,2": "P3",
+            "6,2": "P3",
+            "1,6": "P4",
+            "2,6": "P4"
+        },
+        "board": [
+            [
+                "O",
+                "~",
+                "O",
+                "~",
+                "O",
+                "~",
+                "O",
+                "~"
+            ],
+            [
+                "O",
+                "~",
+                "O",
+                "~",
+                "O",
+                "O",
+                "X",
+                "~"
+            ],
+            [
+                "O",
+                "O",
+                "O",
+                "~",
+                "O",
+                "~",
+                "#",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "O",
+                "O",
+                "O",
+                "O",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "#",
+                "#",
+                "O",
+                "O",
+                "O",
+                "O",
+                "#"
+            ],
+            [
+                "O",
+                "#",
+                "#",
+                "~",
+                "O",
+                "~",
+                "~",
+                "X"
+            ],
+            [
+                "~",
+                "#",
+                "#",
+                "~",
+                "~",
+                "~",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~",
+                "~"
+            ]
+        ]
+    },
+    "team_b": {
+        "name": "cubet-ass",
+        "pedidos_encajados": 0,
+        "total_pedidos": 4,
+        "prendas_encajadas": 4,
+        "sunk_ships": [],
+        "fleet": {
+            "7,2": "P1",
+            "7,3": "P1",
+            "7,4": "P1",
+            "7,5": "P1",
+            "1,7": "P2",
+            "2,7": "P2",
+            "3,7": "P2",
+            "1,5": "P3",
+            "2,5": "P3",
+            "3,5": "P3",
+            "6,6": "P4",
+            "7,6": "P4"
+        },
+        "board": [
+            [
+                "~",
+                "~",
+                "O",
+                "~",
+                "O",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "~",
+                "O",
+                "O",
+                "#",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "O",
+                "~",
+                "O",
+                "X",
+                "~",
+                "#"
+            ],
+            [
+                "~",
+                "O",
+                "O",
+                "O",
+                "O",
+                "X",
+                "O",
+                "#"
+            ],
+            [
+                "~",
+                "~",
+                "O",
+                "O",
+                "O",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "O",
+                "~",
+                "~",
+                "O",
+                "O",
+                "~",
+                "~",
+                "~"
+            ],
+            [
+                "O",
+                "O",
+                "~",
+                "O",
+                "O",
+                "~",
+                "#",
+                "~"
+            ],
+            [
+                "~",
+                "~",
+                "#",
+                "#",
+                "#",
+                "X",
+                "X",
+                "O"
+            ]
+        ]
+    },
+    "comms": [
+        {
+            "turn": 1,
+            "agent": "A",
+            "coord": "E4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "En un tablero de 8x8 con 5 barcos (tamaños 5,4,3,3,2) sin disparos previos, la probabilidad de impacto es mayor en las zonas centrales. La coordenada E4 está en el centro del tablero, maximizando las posibles colocaciones de todos los barcos, especialmente los más grandes. E4 tiene alta densidad probabilística en simulaciones Monte Carlo iniciales, y al ser un primer disparo, se prioriza (auto-recuperada)"
+        },
+        {
+            "turn": 2,
+            "agent": "B",
+            "coord": "E5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Primer disparo en fase de búsqueda. Se elige una celda con paridad par (E=5, columna 5 → 5+5=10, par) en zona interior del tablero, siguiendo la estrategia Garment Strike."
+        },
+        {
+            "turn": 3,
+            "agent": "A",
+            "coord": "E5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El impacto en E4 indica que un barco pasa por esa casilla. Dado que es el único acierto y no hay información de dirección, aplico el Protocolo de Impacto: disparar a E5 (sur) para determinar el eje del barco. E5 está libre y es una coordenada válida."
+        },
+        {
+            "turn": 4,
+            "agent": "B",
+            "coord": "A1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Inicio de búsqueda en patrón de tablero de ajedrez. Primera jugada en casilla par (A=1, 1=1 → 1+1=2, par) en el borde interior del tablero."
+        },
+        {
+            "turn": 5,
+            "agent": "A",
+            "coord": "D4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Se detectaron dos impactos verticales en E4 y E5, indicando un barco de tamaño 2 o más. Para confirmar el eje, disparo en D4 (oeste) para verificar si el barco se extiende horizontalmente. Además, D4 es una casilla no disparada y tiene alta probabilidad en simulaciones Monte Carlo por estar cerca del centro del tablero."
+        },
+        {
+            "turn": 6,
+            "agent": "B",
+            "coord": "C3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Siguiendo el patrón de tablero de ajedrez (fila+columna par). A1 (1+1=2 par) ya fue disparado, E5 (5+5=10 par) también. C3 (3+3=6 par) es la siguiente celda interior disponible no disparada."
+        },
+        {
+            "turn": 7,
+            "agent": "A",
+            "coord": "C4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Basado en el protocolo Monte Carlo, dado que los disparos previos en D4, E4 y E5 hundieron parte de un barco, es probable que continúe en línea recta. La coordenada C4 está alineada horizontalmente con D4 y E4, y es una casilla libre con alta probabilidad de contener el resto del barco de tamaño 3 o 4. Además, está en el centro del tablero, priorizando densidad probabilística. (auto-recuperada)"
+        },
+        {
+            "turn": 8,
+            "agent": "B",
+            "coord": "A2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Aplicando patrón de tablero de ajedrez para buscar nuevos barcos. Las celdas con suma par de fila y columna (A=1, 1=1 → 1+1=2 par) son prioridad. A2 (A=1, 2=2 → 1+2=3 impar) no sigue el patrón, pero todas las celdas pares ya fueron disparadas (A1, C3, E5). Siguiente mejor op (auto-recuperada)"
+        },
+        {
+            "turn": 9,
+            "agent": "A",
+            "coord": "F4",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "Las casillas C4, D4, E4 y E5 ya han sido disparadas, con fallos en C4, D4 y E4 (O) y un acierto en E5 (O). La secuencia sugiere que podría haber un barco de tamaño 2 o 3 en orientación vertical u horizontal cerca. Dado que E5 es un acierto y E4 es un fallo, el barco podría continuar hacia F5 o hacia E6. Sin embargo, (auto-recuperada)"
+        },
+        {
+            "turn": 10,
+            "agent": "A",
+            "coord": "G4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Acerté en F4 (PRENDA ENCAJADA). El barco parece horizontal porque ya tengo fallos en C4, D4, E4 (PRENDAS PERDIDAS). Disparo a G4 para seguir la línea horizontal hacia el este y determinar la longitud del barco."
+        },
+        {
+            "turn": 11,
+            "agent": "B",
+            "coord": "D4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Se han disparado a A1, A2, C3 y E5. Sigo el patrón de tablero de ajedrez (suma par de fila+columna). D4 está en el interior, no ha sido disparado, y la suma 4+4=8 es par."
+        },
+        {
+            "turn": 12,
+            "agent": "A",
+            "coord": "D5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El impacto en F4 indica un barco horizontal. D4, C4 y G4 son fallos, por lo que el barco debe estar en E4 y F4. D5 es una casilla adyacente con alta probabilidad de continuar el barco horizontal o vertical, y no ha sido disparada."
+        },
+        {
+            "turn": 13,
+            "agent": "B",
+            "coord": "A6",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E5 ya fue disparada."
+        },
+        {
+            "turn": 14,
+            "agent": "A",
+            "coord": "C1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E5 ya fue disparada."
+        },
+        {
+            "turn": 15,
+            "agent": "B",
+            "coord": "E4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "E4 (auto-recuperada)"
+        },
+        {
+            "turn": 16,
+            "agent": "A",
+            "coord": "F8",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E4 ya fue disparada."
+        },
+        {
+            "turn": 17,
+            "agent": "A",
+            "coord": "F3",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E4 ya fue disparada."
+        },
+        {
+            "turn": 18,
+            "agent": "A",
+            "coord": "E2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E4 ya fue disparada."
+        },
+        {
+            "turn": 19,
+            "agent": "B",
+            "coord": "E3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "E3 (auto-recuperada)"
+        },
+        {
+            "turn": 20,
+            "agent": "A",
+            "coord": "B4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Basado en la simulación Monte Carlo, la casilla B4 presenta alta densidad probabilística al estar cerca del grupo de aciertos en D4-E4-F4 (O) y del impacto en C1, lo que sugiere un barco de tamaño 2 o 3 en orientación horizontal. Además, la zona central tiene mayor prioridad por desempate y no ha sido disparada. (auto-recuperada)"
+        },
+        {
+            "turn": 21,
+            "agent": "B",
+            "coord": "F5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C3 ya fue disparada."
+        },
+        {
+            "turn": 22,
+            "agent": "A",
+            "coord": "D6",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "La simulación Monte Carlo muestra que la zona central (D6) tiene la mayor densidad probabilística para albergar fragmentos de los barcos restantes (tamaños 5, 4, 3, 2), considerando los patrones de impacto y fallos previos. D6 está rodeada de casillas no disparadas y evita las áreas ya exploradas con fallos, maximizando la probabilidad de impacto. (auto-recuperada)"
+        },
+        {
+            "turn": 23,
+            "agent": "B",
+            "coord": "C1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El tablero muestra múltiples 'O' (probablemente impactos previos). Las coordenadas ya disparadas incluyen A6, E4, E3, F5. Se necesita un nuevo disparo en una celda no utilizada. C1 es válida y no ha sido disparada."
+        },
+        {
+            "turn": 24,
+            "agent": "A",
+            "coord": "G8",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C4 ya fue disparada."
+        },
+        {
+            "turn": 25,
+            "agent": "A",
+            "coord": "E6",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Tras analizar el tablero, la zona central derecha tiene alta densidad de impactos y espacios contiguos. La coordenada E6 está libre (no tiene X ni O) y se encuentra cerca de un impacto en E2 y de la línea vertical de O en D4-D5-D6, lo que sugiere un posible barco de tamaño 3 o 4 en orientación vertical. Además, está en una zona con espacio suficiente para los barcos restantes (probablemente tamaño (auto-recuperada)"
+        },
+        {
+            "turn": 26,
+            "agent": "B",
+            "coord": "E1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "E1 (auto-recuperada)"
+        },
+        {
+            "turn": 27,
+            "agent": "A",
+            "coord": "C3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Basado en la simulación Monte Carlo, la coordenada C3 tiene alta probabilidad de contener parte de un barco no hundido, considerando los espacios vacíos adyacentes y la disposición de los impactos previos. Se prioriza el centro del área no explorada para maximizar la eficiencia de búsqueda."
+        },
+        {
+            "turn": 28,
+            "agent": "B",
+            "coord": "A3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "A3 (auto-recuperada)"
+        },
+        {
+            "turn": 29,
+            "agent": "A",
+            "coord": "A6",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada E4 ya fue disparada."
+        },
+        {
+            "turn": 30,
+            "agent": "B",
+            "coord": "G5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C3 ya fue disparada."
+        },
+        {
+            "turn": 31,
+            "agent": "A",
+            "coord": "D7",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Tras analizar el tablero, las casillas con 'O' y 'X' indican disparos previos. Se necesita una casilla libre. La zona central inferior (D7) tiene alta probabilidad de contener un barco restante, ya que está rodeada de impactos y no ha sido disparada. Además, no hay fallos en D7."
+        },
+        {
+            "turn": 32,
+            "agent": "B",
+            "coord": "H6",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada A3 ya fue disparada."
+        },
+        {
+            "turn": 33,
+            "agent": "B",
+            "coord": "G2",
+            "result": "HIT",
+            "icon": "🎯",
+            "reasoning": "G2 (auto-recuperada)"
+        },
+        {
+            "turn": 34,
+            "agent": "B",
+            "coord": "F2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Continuando la caza del barco en G2 (hit), probando F2 (izquierda) que está en el tablero y no ha sido disparado. Si falla, probaré H2 o G3."
+        },
+        {
+            "turn": 35,
+            "agent": "A",
+            "coord": "E7",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Basado en el análisis de Monte Carlo, la zona central baja (columna E, filas 5-7) tiene alta densidad de barcos restantes (tamaños 4, 3, 2) tras los impactos. El patrón de fallos y aciertos sugiere un barco horizontal en fila 7 (E7 no disparado, cerca de D7 perdido). Disparo a E7 para confirmar extensión del barco en esa fila. (auto-recuperada)"
+        },
+        {
+            "turn": 36,
+            "agent": "B",
+            "coord": "F4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "F4 (auto-recuperada)"
+        },
+        {
+            "turn": 37,
+            "agent": "A",
+            "coord": "E3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Se ha identificado un patrón de impactos en D4, E4, F4 (horizontal) y en D6, D7, D5 (vertical). La coordenada E3 es una extensión lógica de la línea horizontal desde D4 hacia el norte, donde no hay disparos previos y podría albergar un barco de tamaño 4 o 5. Además, la simulación Monte Carlo muestra alta densidad de probabilidad en esa zona, ya que los barcos restantes (posible (auto-recuperada)"
+        },
+        {
+            "turn": 38,
+            "agent": "B",
+            "coord": "C2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Se busca en patrón de tablero de ajedrez en celdas no disparadas; C2 es par en suma de fila y columna (3+2=5, impar en tablero real A=1, C=3, 3+2=5 impar, pero en patrón de ajedrez se usa (letra+num) par. A1=1+1=2 par, B1=2+1=3 impar, C1=3+1=4 (auto-recuperada)"
+        },
+        {
+            "turn": 39,
+            "agent": "A",
+            "coord": "D2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C4 ya fue disparada."
+        },
+        {
+            "turn": 40,
+            "agent": "B",
+            "coord": "C4",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Continuando patrón de tablero de ajedrez desde fase de búsqueda. C4 es par (3+4=7 impar, pero en el patrón alternado desde A1 par, C4 corresponde a impar, sin embargo no se ha disparado antes y está dentro del área activa del tablero 6x6)."
+        },
+        {
+            "turn": 41,
+            "agent": "A",
+            "coord": "C5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "La cuadrícula muestra múltiples O (aciertos) en la zona central, especialmente en filas 2-7 y columnas D-E. Analizando las posiciones de los barcos restantes, la casilla C5 está rodeada de O en D4, D5, D6, D7, E4, E5, E6, E7, lo que sugiere una alta probabilidad de formar parte de un barco no hundido. Además, no ha sido disparada pre (auto-recuperada)"
+        },
+        {
+            "turn": 42,
+            "agent": "B",
+            "coord": "E6",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Continuo patrón de búsqueda en damero. E6 es par (5+6=11 impar, pero en damero alterno), no disparado aún, y está cerca del centro para optimizar cobertura."
+        },
+        {
+            "turn": 43,
+            "agent": "A",
+            "coord": "B7",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C4 ya fue disparada."
+        },
+        {
+            "turn": 44,
+            "agent": "B",
+            "coord": "D5",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "D5 (auto-recuperada)"
+        },
+        {
+            "turn": 45,
+            "agent": "A",
+            "coord": "E1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El tablero muestra múltiples O (fallos) y X (aciertos). El barco de tamaño 4 (si aún vive) podría estar en la fila 1, columnas E-H, ya que hay espacio horizontal continuo sin disparos. También considero la zona alrededor de D4 donde hay varios O juntos que podrían ser parte de un barco más grande. Selecciono E1 por alta probabilidad en la simulación Monte Carlo, ya que es una zona central con espacio disponible (auto-recuperada)"
+        },
+        {
+            "turn": 46,
+            "agent": "B",
+            "coord": "G1",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "Se buscan celdas sin disparar, priorizando patrón de tablero de ajedrez desde celdas internas. G1 está sin disparar y en patrón par (G=7, 1+7=8 par)."
+        },
+        {
+            "turn": 47,
+            "agent": "A",
+            "coord": "H8",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada D4 ya fue disparada."
+        },
+        {
+            "turn": 48,
+            "agent": "B",
+            "coord": "B3",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "El tablero es de 8x8. Se han disparado en C2, C4, E6, D5, G1 (todos fallos). La estrategia de búsqueda en patrón de tablero de ajedrez indica disparar en casillas donde fila+columna sea par. B3 tiene fila 2 + columna 3 = 5 (impar), pero es una casilla interior no disparada. Sin embargo, para seguir el patrón correcto (auto-recuperada)"
+        },
+        {
+            "turn": 49,
+            "agent": "A",
+            "coord": "A7",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C3 ya fue disparada."
+        },
+        {
+            "turn": 50,
+            "agent": "B",
+            "coord": "E2",
+            "result": "MISS",
+            "icon": "💦",
+            "reasoning": "E2 (auto-recuperada)"
+        }
+    ],
+    "telemetry": {
+        "team_a": {
+            "strategy": "EMERGENCY FALLBACK",
+            "reasoning": "SISTEMA: Fallback por error crítico de API. Detalle: LLM Error: No se obtuvo coordenada valida del LLM tras 3 intentos. Ultimo error: Coordenada C3 ya fue disparada.",
+            "cursor": null
+        },
+        "team_b": {
+            "strategy": "Auto-recovery",
+            "reasoning": "E2 (auto-recuperada)",
+            "cursor": null
+        }
+    },
+    "finished": true,
+    "winner": "norco"
+}

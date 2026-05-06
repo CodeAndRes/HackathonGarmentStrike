@@ -456,11 +456,18 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             
             if selected_dir:
                 kill_project_servers() # Clean any previous zombie before starting
+                
+                # Seleccionar modelo para el torneo
+                selected_model = pick_model_from_catalog(SETTINGS.get("default_model", "offline"))
+                console.print(f"[bold cyan]◈ Torneo configurado con modelo:[/bold cyan] {selected_model}")
+                
                 env = os.environ.copy()
                 env["TOURNAMENT_DIR"] = selected_dir
+                env["DEFAULT_MODEL"] = selected_model
+                
                 # Launch FastAPI server with logging
                 server_cmd = [sys.executable, "-m", "uvicorn", "server.tournament_api:app", "--port", "8080", "--reload"]
-                log_path = target_path / "server.log"
+                log_path = Path(selected_dir) / "server.log"
                 with open(log_path, "a", encoding="utf-8") as log_file:
                     subprocess.Popen(server_cmd, env=env, stdout=log_file, stderr=log_file, shell=(os.name == 'nt'))
                 

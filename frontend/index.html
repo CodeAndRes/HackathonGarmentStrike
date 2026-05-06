@@ -1091,6 +1091,17 @@
                     if (bHuge) { bHuge.style.color = ''; bHuge.style.textShadow = ''; bHuge.style.opacity = ''; }
                 }
 
+                // Restauración de Acentos Visuales (Highlights de Turno)
+                const alphaNameHuge = document.getElementById('alpha-name-huge');
+                const betaNameHuge = document.getElementById('beta-name-huge');
+                if (alphaNameHuge) alphaNameHuge.classList.toggle('active-name-glow', isAlphaTurn && !state.finished);
+                if (betaNameHuge) betaNameHuge.classList.toggle('active-name-glow', !isAlphaTurn && !state.finished);
+
+                const teleAlpha = document.querySelector('.tele-alpha');
+                const teleBeta = document.querySelector('.tele-beta');
+                if (teleAlpha) teleAlpha.classList.toggle('active-turn', isAlphaTurn);
+                if (teleBeta) teleBeta.classList.toggle('active-turn', !isAlphaTurn);
+
                 // 2. Telemetry
                 if (state.telemetry) {
                     updateTelemetry('alpha', state.telemetry.team_a || {}, state.team_a.name || 'Alpha');
@@ -1506,7 +1517,8 @@
             const container = document.getElementById('balloon-container');
             if (!container) return;
             
-            const teamColor = color.includes('alpha') ? '#00ff88' : (color.includes('beta') ? '#ff4b4b' : color);
+            // Re-inyectamos los acentos en la lógica de logs si es necesario
+            console.log("Celebración iniciada...");
             
             for (let i = 0; i < 35; i++) {
                 setTimeout(() => {

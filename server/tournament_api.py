@@ -93,7 +93,8 @@ def run_match_task(match_id: str, background_tasks: BackgroundTasks):
     except:
         tourn_settings = {}
         
-    model = tourn_settings.get("default_model", os.getenv("DEFAULT_MODEL", "deepseek/deepseek-chat"))
+    # Prioridad: 1. Variable de entorno (elección manual) | 2. settings.yaml | 3. Hardcoded fallback
+    model = os.getenv("DEFAULT_MODEL") or tourn_settings.get("default_model", "deepseek/deepseek-chat")
     
     settings = get_settings()
     if model.lower() == "offline":
